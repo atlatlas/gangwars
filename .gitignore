@@ -5,3 +5,7 @@ dist/
 *.db-journal
 .env
 .env.local
+backend/
+frontend/
+.claude/
+GDD.md
