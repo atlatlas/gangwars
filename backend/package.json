@@ -6,6 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "tsx src/index.ts",
+    "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/db/seed.ts",
     "seed:turf": "tsx src/db/seedTurf.ts"
   },
