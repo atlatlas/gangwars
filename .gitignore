@@ -3,7 +3,11 @@ dist/
 .next/
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 .env
 .env.local
+*.tsbuildinfo
+login.json
 .claude/
 GDD.md
