@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1778166385887,
+      "tag": "0000_add_turf_arsenal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1778192385978,
+      "tag": "0001_talented_morbius",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1778256715585,
+      "tag": "0002_volatile_wind_dancer",
+      "breakpoints": true
+    }
+  ]
+}
