@@ -59,9 +59,9 @@ app.post("/api/cleanup-demo", async (_req, res) => {
   try {
     const sqlite = new Database(path.join(__dirname, "..", "data", "gangwars.db"));
     sqlite.pragma("journal_mode = WAL");
-    const users = sqlite.prepare("SELECT id, username FROM users").all();
-    const demo = sqlite.prepare("SELECT id FROM users WHERE username = ?").get("demo");
-    if (!demo) return res.json({ message: "No demo user found", users: users.map((u: any) => u.username) });
+    const users = sqlite.prepare("SELECT id, username FROM users").all() as Record<string,any>[];
+    const demo = sqlite.prepare("SELECT id FROM users WHERE username = ?").get("demo") as { id: number } | undefined;
+    if (!demo) return res.json({ message: "No demo user found", users: users.map(u => u.username) });
     sqlite.prepare("DELETE FROM crime_log WHERE user_id = ?").run(demo.id);
     sqlite.prepare("DELETE FROM skill_crime_log WHERE user_id = ?").run(demo.id);
     sqlite.prepare("DELETE FROM player_stats WHERE user_id = ?").run(demo.id);
@@ -81,7 +81,7 @@ app.post("/api/cleanup-demo", async (_req, res) => {
     sqlite.prepare("DELETE FROM users WHERE id = ?").run(demo.id);
     const remaining = sqlite.prepare("SELECT id, username FROM users").all();
     sqlite.close();
-    res.json({ message: "Demo user deleted", remaining: remaining.map((u: any) => u.username) });
+    res.json({ message: "Demo user deleted", remaining: remaining.map((u: Record<string,any>) => u.username) });
   } catch (e: any) {
     res.status(500).json({ error: e.message, stack: e.stack });
   }
