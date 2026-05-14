@@ -433,6 +433,26 @@ export const gangContractContributors = sqliteTable("gang_contract_contributors"
   contributorUniqueIdx: uniqueIndex("contributor_unique_idx").on(table.contractId, table.userId),
 }));
 
+export const feedbackComments = sqliteTable("feedback_comments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  feedbackId: integer("feedback_id").notNull().references(() => feedback.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  feedbackIdx: index("idx_feedback_comments_feedback").on(table.feedbackId),
+}));
+
+export const feedbackCommentVotes = sqliteTable("feedback_comment_votes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  commentId: integer("comment_id").notNull().references(() => feedbackComments.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  commentVoteUnique: uniqueIndex("idx_comment_votes_unique").on(table.commentId, table.userId),
+  commentIdx: index("idx_comment_votes_comment").on(table.commentId),
+}));
+
 export const feedback = sqliteTable("feedback", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull().references(() => users.id),

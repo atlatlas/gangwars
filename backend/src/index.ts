@@ -22,6 +22,7 @@ import { hoesRouter } from "./routes/hoes";
 import { casinoRouter } from "./routes/casino";
 import { activityRouter } from "./routes/activity";
 import { feedbackRouter } from "./routes/feedback";
+import { feedbackCommentsRouter } from "./routes/feedbackComments";
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -56,6 +57,7 @@ app.use("/api/hoes", hoesRouter);
 app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/feedback", feedbackRouter);
+app.use("/api/feedback", feedbackCommentsRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {

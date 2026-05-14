@@ -12,9 +12,11 @@ import {
   Filter,
   ChevronDown,
   Clock,
+  Trash2,
 } from "lucide-react";
 import { useTopNotification } from "@/components/TopNotification";
-import { feedback as feedbackApi, FeedbackData } from "@/lib/api";
+import { useUser } from "@/lib/UserContext";
+import { feedback as feedbackApi, FeedbackData, FeedbackCommentData } from "@/lib/api";
 
 type FeedbackType = "suggestion" | "bug";
 type FeedbackStatus = "open" | "under-review" | "planned" | "completed" | "declined";
@@ -39,7 +41,8 @@ const STATUS_CONFIG: Record<FeedbackStatus, { label: string; color: string }> = 
 };
 
 export default function FeedbackPage() {
-  const { showNotification } = useTopNotification();
+  const { showNotification, showConfirm } = useTopNotification();
+  const { user } = useUser();
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | FeedbackType>("all");
@@ -51,6 +54,12 @@ export default function FeedbackPage() {
   const [formDesc, setFormDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [votedItems, setVotedItems] = useState<Set<number>>(new Set());
+  const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
+  const [commentsMap, setCommentsMap] = useState<Record<number, FeedbackCommentData[]>>({});
+  const [commentsLoading, setCommentsLoading] = useState<Set<number>>(new Set());
+  const [commentText, setCommentText] = useState<Record<number, string>>({});
+  const [submittingComment, setSubmittingComment] = useState<Set<number>>(new Set());
+  const [commentVoteLoading, setCommentVoteLoading] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     feedbackApi.list()
@@ -100,6 +109,79 @@ export default function FeedbackPage() {
         return next;
       });
     } catch {}
+  };
+
+  const handleToggleComments = async (feedbackId: number) => {
+    const next = new Set(expandedComments);
+    if (next.has(feedbackId)) {
+      next.delete(feedbackId);
+      setExpandedComments(next);
+      return;
+    }
+    next.add(feedbackId);
+    setExpandedComments(next);
+
+    if (!commentsMap[feedbackId]) {
+      setCommentsLoading((prev) => new Set(prev).add(feedbackId));
+      try {
+        const data = await feedbackApi.comments.list(feedbackId);
+        setCommentsMap((prev) => ({ ...prev, [feedbackId]: data }));
+      } catch {
+        setCommentsMap((prev) => ({ ...prev, [feedbackId]: [] }));
+      } finally {
+        setCommentsLoading((prev) => { const n = new Set(prev); n.delete(feedbackId); return n; });
+      }
+    }
+  };
+
+  const handleCommentVote = async (commentId: number, feedbackId: number) => {
+    if (commentVoteLoading.has(commentId)) return;
+    setCommentVoteLoading((prev) => new Set(prev).add(commentId));
+    try {
+      const data = await feedbackApi.comments.vote(commentId);
+      setCommentsMap((prev) => ({
+        ...prev,
+        [feedbackId]: (prev[feedbackId] ?? []).map((c) =>
+          c.id === commentId ? { ...c, votes: data.votes, userVoted: data.voted } : c
+        ),
+      }));
+    } catch {}
+    setCommentVoteLoading((prev) => { const n = new Set(prev); n.delete(commentId); return n; });
+  };
+
+  const handleCommentSubmit = async (feedbackId: number) => {
+    const text = (commentText[feedbackId] ?? "").trim();
+    if (!text) return;
+    setSubmittingComment((prev) => new Set(prev).add(feedbackId));
+    try {
+      const created = await feedbackApi.comments.create(feedbackId, text);
+      setCommentsMap((prev) => ({
+        ...prev,
+        [feedbackId]: [...(prev[feedbackId] ?? []), created],
+      }));
+      setCommentText((prev) => ({ ...prev, [feedbackId]: "" }));
+    } catch (err: any) {
+      showNotification(err.message || "Failed to post comment", "error");
+    }
+    setSubmittingComment((prev) => { const n = new Set(prev); n.delete(feedbackId); return n; });
+  };
+
+  const handleCommentDelete = async (commentId: number, feedbackId: number) => {
+    showConfirm(
+      "Delete this comment?",
+      "warning",
+      async () => {
+        try {
+          await feedbackApi.comments.delete(commentId);
+          setCommentsMap((prev) => ({
+            ...prev,
+            [feedbackId]: (prev[feedbackId] ?? []).filter((c) => c.id !== commentId),
+          }));
+        } catch (err: any) {
+          showNotification(err.message || "Failed to delete", "error");
+        }
+      }
+    );
   };
 
   let filtered = items;
@@ -379,6 +461,108 @@ export default function FeedbackPage() {
                     <p className="text-xs font-mono text-white/40 mt-1 leading-relaxed whitespace-pre-wrap">
                       {item.description}
                     </p>
+
+                    {/* Username */}
+                    <p className="text-[10px] font-mono text-purple-400/40 mt-2">
+                      by {item.username}
+                    </p>
+
+                    {/* Comments toggle */}
+                    <button
+                      onClick={() => handleToggleComments(item.id)}
+                      className="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-white/30 hover:text-white/60 transition-all"
+                    >
+                      <MessageSquare size={11} />
+                      {expandedComments.has(item.id) ? "Hide Comments" : "Comments"}
+                      {commentsMap[item.id] && ` (${commentsMap[item.id].length})`}
+                    </button>
+
+                    {/* Expandable comments section */}
+                    {expandedComments.has(item.id) && (
+                      <div className="mt-2 pl-3 border-l border-white/5 space-y-2">
+                        {/* Loading */}
+                        {commentsLoading.has(item.id) && (
+                          <div className="flex items-center gap-2 py-2">
+                            <div className="animate-spin rounded-full h-3 w-3 border border-white/10 border-t-white/40" />
+                            <span className="text-[10px] font-mono text-white/20">Loading comments...</span>
+                          </div>
+                        )}
+
+                        {/* Comment list */}
+                        {!commentsLoading.has(item.id) && (commentsMap[item.id] ?? []).length > 0 && (
+                          <div className="space-y-2">
+                            {(commentsMap[item.id] ?? []).map((comment) => (
+                              <div key={comment.id} className="flex gap-2 py-1.5">
+                                {/* Comment vote */}
+                                <div className="flex flex-col items-center gap-0.5 shrink-0 w-6">
+                                  <button
+                                    onClick={() => handleCommentVote(comment.id, item.id)}
+                                    disabled={commentVoteLoading.has(comment.id)}
+                                    className={`flex items-center justify-center w-5 h-5 rounded-sm transition-all ${
+                                      comment.userVoted
+                                        ? "bg-purple-500/20 text-purple-400"
+                                        : "text-white/20 hover:text-purple-400"
+                                    }`}
+                                  >
+                                    <ThumbsUp size={8} />
+                                  </button>
+                                  <span className={`text-[9px] font-mono ${
+                                    comment.userVoted ? "text-purple-400" : "text-white/30"
+                                  }`}>
+                                    {comment.votes}
+                                  </span>
+                                </div>
+
+                                {/* Comment content */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-mono text-white/70 whitespace-pre-wrap leading-relaxed">
+                                    {comment.content}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[9px] font-mono text-purple-400/50">{comment.username}</span>
+                                    <span className="text-[9px] font-mono text-white/20">{timeAgo(comment.createdAt)}</span>
+                                    {user?.id === comment.userId && (
+                                      <button
+                                        onClick={() => handleCommentDelete(comment.id, item.id)}
+                                        className="text-[9px] font-mono text-red-400/40 hover:text-red-400 transition-colors ml-auto"
+                                      >
+                                        <Trash2 size={9} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Empty state */}
+                        {!commentsLoading.has(item.id) && (commentsMap[item.id] ?? []).length === 0 && (
+                          <p className="text-[10px] font-mono text-white/20 py-2">
+                            No comments yet. Be the first!
+                          </p>
+                        )}
+
+                        {/* Comment form */}
+                        <div className="flex gap-2 pt-1">
+                          <input
+                            value={commentText[item.id] ?? ""}
+                            onChange={(e) => setCommentText((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                            onKeyDown={(e) => e.key === "Enter" && handleCommentSubmit(item.id)}
+                            placeholder="Write a comment..."
+                            maxLength={1000}
+                            className="flex-1 bg-black/40 border border-white/5 rounded-sm px-2 py-1.5 text-[11px] text-white/80 placeholder:text-white/20 font-mono focus:outline-none focus:border-purple-400/30 transition-all"
+                          />
+                          <button
+                            onClick={() => handleCommentSubmit(item.id)}
+                            disabled={submittingComment.has(item.id) || !(commentText[item.id] ?? "").trim()}
+                            className="shrink-0 px-2.5 py-1.5 rounded-sm bg-purple-500/20 text-purple-300 border border-purple-400/30 text-[10px] font-mono tracking-wider hover:bg-purple-500/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {submittingComment.has(item.id) ? "..." : "Post"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

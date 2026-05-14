@@ -412,6 +412,18 @@ export interface FeedbackData {
   createdAt: string;
   username: string;
 }
+
+export interface FeedbackCommentData {
+  id: number;
+  feedbackId: number;
+  userId: number;
+  content: string;
+  createdAt: string;
+  username: string;
+  votes: number;
+  userVoted: boolean;
+}
+
 export const feedback = {
   list: () => request<FeedbackData[]>("/feedback"),
   create: (data: { type: string; title: string; description: string }) =>
@@ -424,4 +436,21 @@ export const feedback = {
       method: "POST",
       body: JSON.stringify({ up }),
     }),
+  comments: {
+    list: (feedbackId: number) =>
+      request<FeedbackCommentData[]>(`/feedback/${feedbackId}/comments`),
+    create: (feedbackId: number, content: string) =>
+      request<FeedbackCommentData>(`/feedback/${feedbackId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ content }),
+      }),
+    vote: (commentId: number) =>
+      request<{ success: boolean; voted: boolean; votes: number }>(`/feedback/comments/${commentId}/vote`, {
+        method: "POST",
+      }),
+    delete: (commentId: number) =>
+      request<{ success: boolean }>(`/feedback/comments/${commentId}`, {
+        method: "DELETE",
+      }),
+  },
 };
