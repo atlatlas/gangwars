@@ -130,7 +130,7 @@ gangInvestmentsRouter.get("/:id/investments",
   authMiddleware,
   async (req: AuthRequest, res: Response) => {
     try {
-      const gangId = parseInt(req.params.id);
+      const gangId = parseInt(req.params.id as string);
       if (isNaN(gangId)) {
         res.status(400).json({ error: "Invalid gang ID" });
         return;
@@ -183,7 +183,7 @@ gangInvestmentsRouter.post("/:id/investments/toggle",
   hpCheck,
   async (req: AuthRequest, res: Response) => {
     try {
-      const gangId = parseInt(req.params.id);
+      const gangId = parseInt(req.params.id as string);
       if (isNaN(gangId)) {
         res.status(400).json({ error: "Invalid gang ID" });
         return;
@@ -223,7 +223,7 @@ gangInvestmentsRouter.put("/:id/investments/share",
   hpCheck,
   async (req: AuthRequest, res: Response) => {
     try {
-      const gangId = parseInt(req.params.id);
+      const gangId = parseInt(req.params.id as string);
       if (isNaN(gangId)) {
         res.status(400).json({ error: "Invalid gang ID" });
         return;
@@ -268,7 +268,7 @@ gangInvestmentsRouter.post("/:id/investments/invest",
   hpCheck,
   async (req: AuthRequest, res: Response) => {
     try {
-      const gangId = parseInt(req.params.id);
+      const gangId = parseInt(req.params.id as string);
       if (isNaN(gangId)) {
         res.status(400).json({ error: "Invalid gang ID" });
         return;
@@ -361,7 +361,7 @@ gangInvestmentsRouter.post("/:id/investments/withdraw",
   hpCheck,
   async (req: AuthRequest, res: Response) => {
     try {
-      const gangId = parseInt(req.params.id);
+      const gangId = parseInt(req.params.id as string);
       if (isNaN(gangId)) {
         res.status(400).json({ error: "Invalid gang ID" });
         return;
