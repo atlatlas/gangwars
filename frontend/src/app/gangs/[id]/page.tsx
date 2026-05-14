@@ -1003,7 +1003,7 @@ const handleInvite = async () => {
                       }`}
                     >
                       <Send size={12} /> Requests
-                      {gang && gang.pendingRequestCount > 0 && (
+                      {gang && (gang.pendingRequestCount ?? 0) > 0 && (
                         <span className="bg-pink-500/20 text-pink-300 text-[9px] font-mono px-1.5 py-0.5 rounded-sm">
                           {gang.pendingRequestCount}
                         </span>
