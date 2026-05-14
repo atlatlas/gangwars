@@ -1,0 +1,11 @@
+.claude/
+.git/
+node_modules/
+backend/node_modules/
+backend/data/
+frontend/node_modules/
+frontend/.next/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal

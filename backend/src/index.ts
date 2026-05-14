@@ -52,6 +52,17 @@ app.use("/api/hoes", hoesRouter);
 app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
 
+// TEMP: check database users
+app.get("/api/db-check", (_req, res) => {
+  const sqlite = require("better-sqlite3");
+  const path = require("path");
+  const s = new sqlite(path.join(__dirname, "..", "data", "gangwars.db"));
+  s.pragma("journal_mode = WAL");
+  const users = s.prepare("SELECT id, username FROM users").all();
+  s.close();
+  res.json({ users: (users as any[]).map((u: any) => u.username) });
+});
+
 // Health check
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
