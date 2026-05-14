@@ -98,5 +98,21 @@ try {
   sqlite.exec("CREATE INDEX IF NOT EXISTS idx_comment_votes_comment ON feedback_comment_votes(comment_id)");
 } catch {}
 
+// ─── Cleanup: remove test feedback entries ───
+try {
+  const testRows = sqlite.prepare("SELECT id FROM feedback WHERE title = ? OR title LIKE ?")
+    .all("gacheck1778794242", "%testinvest%") as { id: number }[];
+  if (testRows.length > 0) {
+    const ids = testRows.map(r => r.id);
+    const del = (sql: string) => sqlite.prepare(sql).run(...ids);
+    del(`DELETE FROM feedback_comment_votes WHERE comment_id IN (SELECT id FROM feedback_comments WHERE feedback_id IN (${ids.map(() => "?").join(",")}))`);
+    del(`DELETE FROM feedback_comments WHERE feedback_id IN (${ids.map(() => "?").join(",")})`);
+    del(`DELETE FROM feedback WHERE id IN (${ids.map(() => "?").join(",")})`);
+    console.log(`Cleaned up ${ids.length} test feedback entries`);
+  }
+} catch (e: any) {
+  console.log("Feedback cleanup skipped:", e.message);
+}
+
 export const db = drizzle(sqlite, { schema });
 export { schema };
