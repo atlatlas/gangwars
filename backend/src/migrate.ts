@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 
-const dataDir = path.join(__dirname, "data");
+const dataDir = path.join(__dirname, "..", "data");
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -15,7 +15,7 @@ sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
 // Run all migration SQL files in order
-const migrationsDir = path.join(__dirname, "migrations");
+const migrationsDir = path.join(__dirname, "..", "migrations");
 if (fs.existsSync(migrationsDir)) {
   const files = fs
     .readdirSync(migrationsDir)
