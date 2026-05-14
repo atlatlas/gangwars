@@ -8,6 +8,7 @@ import GameLayout from "@/components/GameLayout";
 import { useUser } from "@/lib/UserContext";
 import { crimes as crimesApi, profile as profileApi, bank as bankApi, profileExt, activity as activityApi, FeedEntry } from "@/lib/api";
 import { useToast } from "@/components/Toast";
+import Tooltip from "@/components/Tooltip";
 import { CrimeResult } from "@/types";
 import {
   Zap,
@@ -362,41 +363,43 @@ export default function DashboardPage() {
               {/* Attributes — larger font row */}
               <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-white/10">
                 {stats.map((stat) => (
-                  <div key={stat.key} className="flex items-center gap-1 flex-1">
-                    <span className="text-xs font-mono text-white/30 uppercase drop-shadow-lg">{stat.label.substring(0, 3)}</span>
-                    <div className="flex-1 h-1.5 bg-black/30 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{
-                        width: `${Math.min(100, stat.value)}%`,
-                        background: `linear-gradient(90deg, ${stat.key === 'strength' ? '#ec4899' : stat.key === 'agility' ? '#06b6d4' : stat.key === 'intelligence' ? '#06b6d4' : stat.key === 'charisma' ? '#eab308' : '#a855f7'}66, ${stat.key === 'strength' ? '#ec4899' : stat.key === 'agility' ? '#06b6d4' : stat.key === 'intelligence' ? '#06b6d4' : stat.key === 'charisma' ? '#eab308' : '#a855f7'}cc)`,
-                      }} />
+                  <Tooltip key={stat.key} content={stat.tooltip}>
+                    <div className="flex items-center gap-1 flex-1">
+                      <span className="text-xs font-mono text-white/30 uppercase drop-shadow-lg">{stat.label.substring(0, 3)}</span>
+                      <div className="flex-1 h-1.5 bg-black/30 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{
+                          width: `${Math.min(100, stat.value)}%`,
+                          background: `linear-gradient(90deg, ${stat.key === 'strength' ? '#ec4899' : stat.key === 'agility' ? '#06b6d4' : stat.key === 'intelligence' ? '#06b6d4' : stat.key === 'charisma' ? '#eab308' : '#a855f7'}66, ${stat.key === 'strength' ? '#ec4899' : stat.key === 'agility' ? '#06b6d4' : stat.key === 'intelligence' ? '#06b6d4' : stat.key === 'charisma' ? '#eab308' : '#a855f7'}cc)`,
+                        }} />
+                      </div>
+                      <span className="text-xs font-mono text-white/70 drop-shadow-lg">{stat.value}</span>
+                      {user.statPoints > 0 && (
+                        <button
+                          onClick={() => handleAssign(stat.key)}
+                          disabled={assigning[stat.key]}
+                          className={`shrink-0 ml-0.5 w-4 h-4 flex items-center justify-center rounded-sm drop-shadow-lg animate-pulse-soft ${
+                            stat.key === 'strength' ? 'bg-pink-500/20 text-pink-300 hover:bg-pink-500/40' :
+                            stat.key === 'agility' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40' :
+                            stat.key === 'intelligence' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40' :
+                            stat.key === 'charisma' ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/40' :
+                            'bg-purple-500/20 text-purple-300 hover:bg-purple-500/40'
+                          }`}
+                        >
+                          {assigning[stat.key] ? (
+                            <div className={`animate-spin h-2.5 w-2.5 border-2 border-white/30 border-t-white rounded-full ${
+                              stat.key === 'strength' ? 'border-t-pink-300' :
+                              stat.key === 'agility' ? 'border-t-cyan-300' :
+                              stat.key === 'intelligence' ? 'border-t-cyan-300' :
+                              stat.key === 'charisma' ? 'border-t-yellow-300' :
+                              'border-t-purple-300'
+                            }`} />
+                          ) : (
+                            <Plus size={10} />
+                          )}
+                        </button>
+                      )}
                     </div>
-                    <span className="text-xs font-mono text-white/70 drop-shadow-lg">{stat.value}</span>
-                    {user.statPoints > 0 && (
-                      <button
-                        onClick={() => handleAssign(stat.key)}
-                        disabled={assigning[stat.key]}
-                        className={`shrink-0 ml-0.5 w-4 h-4 flex items-center justify-center rounded-sm drop-shadow-lg animate-pulse-soft ${
-                          stat.key === 'strength' ? 'bg-pink-500/20 text-pink-300 hover:bg-pink-500/40' :
-                          stat.key === 'agility' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40' :
-                          stat.key === 'intelligence' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/40' :
-                          stat.key === 'charisma' ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/40' :
-                          'bg-purple-500/20 text-purple-300 hover:bg-purple-500/40'
-                        }`}
-                      >
-                        {assigning[stat.key] ? (
-                          <div className={`animate-spin h-2.5 w-2.5 border-2 border-white/30 border-t-white rounded-full ${
-                            stat.key === 'strength' ? 'border-t-pink-300' :
-                            stat.key === 'agility' ? 'border-t-cyan-300' :
-                            stat.key === 'intelligence' ? 'border-t-cyan-300' :
-                            stat.key === 'charisma' ? 'border-t-yellow-300' :
-                            'border-t-purple-300'
-                          }`} />
-                        ) : (
-                          <Plus size={10} />
-                        )}
-                      </button>
-                    )}
-                  </div>
+                  </Tooltip>
                 ))}
               </div>
             </div>
