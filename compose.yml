@@ -23,18 +23,5 @@ services:
     expose:
       - "3000"
 
-  nginx:
-    image: nginx:alpine
-    container_name: gangwars-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - frontend
-      - backend
-
 volumes:
   gangwars-data:
