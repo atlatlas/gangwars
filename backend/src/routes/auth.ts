@@ -9,7 +9,6 @@ export const authRouter = Router();
 
 const registerSchema = z.object({
   username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/),
-  email: z.string().email(),
   password: z.string().min(6).max(100),
 });
 
@@ -31,20 +30,13 @@ authRouter.post("/register", async (req, res: Response) => {
       return;
     }
 
-    const existingEmail = await db.query.users.findFirst({
-      where: eq(schema.users.email, data.email),
-    });
-    if (existingEmail) {
-      res.status(400).json({ error: "Email already registered" });
-      return;
-    }
-
     const passwordHash = await bcrypt.hash(data.password, 10);
     const now = new Date().toISOString();
+    const placeholderEmail = `${data.username}@placeholder.gangwars`;
 
     const result = db.insert(schema.users).values({
       username: data.username,
-      email: data.email,
+      email: placeholderEmail,
       passwordHash,
       lastTurnRegen: now,
       createdAt: now,

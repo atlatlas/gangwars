@@ -95,13 +95,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Forgot password */}
-          <div className="mt-5 text-right">
-            <a href="#" className="text-[#ddd] text-sm uppercase tracking-wider no-underline transition-colors duration-300 hover:text-[#2563eb] hover:[text-shadow:0_0_8px_rgba(37,99,235,0.8)]">
-              Forget Password?
-            </a>
-          </div>
-
           {/* Signup link */}
           <div className="mt-10 text-base text-[#ccc]">
             New here?{" "}

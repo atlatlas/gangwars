@@ -9,7 +9,7 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-const sqlite = new Database(path.join(dataDir, "gangwars.db"));
+const sqlite: any = new Database(path.join(dataDir, "gangwars.db"));
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
 
@@ -37,3 +37,4 @@ try {
 
 export const db = drizzle(sqlite, { schema });
 export { schema };
+export { sqlite };

@@ -7,7 +7,6 @@ import { auth } from "@/lib/api";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +20,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const res = await auth.register(username, email, password);
+      const res = await auth.register(username, password);
       localStorage.setItem("token", res.token);
       window.location.href = "/dashboard";
     } catch (err: any) {
@@ -74,20 +73,7 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* Email */}
-            <div className="relative">
-              <i className="fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-[#6b93d6] text-lg" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-[rgba(40,30,40,0.8)] border-2 border-[#3b4a6c] rounded-lg px-12 py-3.5 text-white text-base placeholder:text-[#aaa] placeholder:uppercase placeholder:tracking-widest outline-none transition-all duration-300 focus:border-[#2563eb] focus:shadow-[0_0_15px_rgba(37,99,235,0.4)]"
-                placeholder="Email"
-                required
-              />
-            </div>
-
-            {/* Password */}
+{/* Password */}
             <div className="relative">
               <i className="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-[#6b93d6] text-lg" />
               <input
