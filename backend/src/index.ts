@@ -20,7 +20,7 @@ import { bankRouter } from "./routes/bank";
 import { hoesRouter } from "./routes/hoes";
 import { casinoRouter } from "./routes/casino";
 import { activityRouter } from "./routes/activity";
-import { db, schema } from "./db";
+import { db, schema, rawDb } from "./db";
 import { eq } from "drizzle-orm";
 
 const app = express();
@@ -51,6 +51,13 @@ app.use("/api/bank", bankRouter);
 app.use("/api/hoes", hoesRouter);
 app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
+
+// TEMP: read-only db check
+app.get("/api/db-check", (_req, res) => {
+  const users = rawDb.prepare("SELECT id, username, level FROM users").all();
+  const leaderboard = rawDb.prepare("SELECT id, username, level FROM users ORDER BY level DESC").all();
+  res.json({ users, leaderboard });
+});
 
 // Health check
 app.get("/api/health", (_req, res) => {

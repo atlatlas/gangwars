@@ -1,7 +1,6 @@
 import { db } from "./index";
-import { crimeDefinitions, skillCrimeDefinitions, users, playerStats, items, skillDefinitions, drugPriceHistory, drugNews, gangOperationDefs, gangOperationReqs } from "./schema";
+import { crimeDefinitions, skillCrimeDefinitions, items, skillDefinitions, drugPriceHistory, drugNews, gangOperationDefs, gangOperationReqs } from "./schema";
 import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
 
 // Clear volatile data (no FK references to users)
 db.delete(drugNews).run();
@@ -194,44 +193,7 @@ for (const { opName, reqs } of operationReqs) {
   }
 }
 
-// Create demo user only if not already present
-const existing = db.select().from(users).where(eq(users.username, "demo")).all()[0];
-if (!existing) {
-  const hash = bcrypt.hashSync("password123", 10);
-  const now = new Date().toISOString();
-
-  const result = db.insert(users).values({
-    username: "demo",
-    email: "demo@gangwars.test",
-    passwordHash: hash,
-    level: 14,
-    xp: 1850,
-    turns: 85,
-    lastTurnRegen: now,
-    cash: 12450,
-    respect: 890,
-    hp: 100,
-    maxHp: 100,
-    statPoints: 3,
-    strength: 7,
-    agility: 5,
-    intelligence: 3,
-    charisma: 3,
-    endurance: 3,
-    createdAt: now,
-    lastActive: now,
-  }).run();
-
-  db.insert(playerStats).values({
-    userId: Number(result.lastInsertRowid),
-    crimesCommitted: 47,
-    pvpWins: 12,
-    pvpLosses: 5,
-    totalMoneyEarned: 45200,
-    totalMoneyLost: 3200,
-    timesArrested: 3,
-  }).run();
-}
+// Demo user creation removed — no test accounts on production.
 
 // Upsert skill crime definitions
 const skillCrimes = [
