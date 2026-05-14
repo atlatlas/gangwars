@@ -42,7 +42,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
         break;
       }
       case "networth": {
-        // Net worth = cash + respect * 10 + bank
+        // Net worth = cash + bank
         rows = db.select({
           id: schema.users.id,
           username: schema.users.username,
@@ -52,7 +52,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           respect: schema.users.respect,
         })
           .from(schema.users)
-          .orderBy(desc(sql`${schema.users.cash} + COALESCE(${schema.users.bank}, 0) + ${schema.users.respect} * 10`))
+          .orderBy(desc(sql`${schema.users.cash} + COALESCE(${schema.users.bank}, 0)`))
           .limit(limit)
           .all();
 
@@ -60,7 +60,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           id: r.id,
           username: r.username,
           level: r.level,
-          netWorth: r.cash + (r.bank ?? 0) + r.respect * 10,
+          netWorth: r.cash + (r.bank ?? 0),
         }));
         break;
       }

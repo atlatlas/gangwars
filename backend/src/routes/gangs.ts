@@ -602,7 +602,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       level: m.level,
       respect: m.respect,
       avatarUrl: m.avatarUrl,
-      netWorth: m.cash + m.respect * 10 + m.bank,
+      netWorth: m.cash + m.bank,
     }));
 
     // ─── Gang Leveling: reputation, contract, benefits ───

@@ -144,7 +144,7 @@ profileRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =
     const hospitalTime = user.hospitalUntil ? Math.max(0, Math.ceil((new Date(user.hospitalUntil).getTime() - now.getTime()) / 60000)) : 0;
 
     // Net worth milestone checks
-    const netWorth = user.cash + user.respect * 10 + user.bank;
+    const netWorth = user.cash + user.bank;
     const MILESTONES: { netWorth: number; respect: number }[] = [
       { netWorth: 10000, respect: 10 },
       { netWorth: 50000, respect: 25 },
