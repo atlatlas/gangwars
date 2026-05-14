@@ -420,3 +420,64 @@ gangInvestmentsRouter.post("/:id/investments/withdraw",
     }
   }
 );
+
+// ─── Collect returns ───
+
+gangInvestmentsRouter.post("/:id/investments/collect",
+  authMiddleware,
+  jailCheck,
+  hpCheck,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const gangId = parseInt(req.params.id as string);
+      if (isNaN(gangId)) {
+        res.status(400).json({ error: "Invalid gang ID" });
+        return;
+      }
+
+      const investment = db.select()
+        .from(schema.gangInvestments)
+        .where(and(
+          eq(schema.gangInvestments.gangId, gangId),
+          eq(schema.gangInvestments.userId, req.userId!),
+        ))
+        .all()[0];
+
+      if (!investment || investment.returnsEarned <= 0) {
+        res.status(400).json({ error: "No returns to collect" });
+        return;
+      }
+
+      const user = await db.query.users.findFirst({
+        where: eq(schema.users.id, req.userId!),
+      });
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+
+      const collected = investment.returnsEarned;
+
+      db.transaction(() => {
+        db.update(schema.users)
+          .set({ cash: user.cash + collected })
+          .where(eq(schema.users.id, user.id))
+          .run();
+
+        db.update(schema.gangInvestments)
+          .set({ returnsEarned: 0 })
+          .where(eq(schema.gangInvestments.id, investment.id))
+          .run();
+      });
+
+      res.json({
+        success: true,
+        collected,
+        cash: user.cash + collected,
+      });
+    } catch (err) {
+      console.error("Collect returns error:", err);
+      res.status(500).json({ error: "Server error" });
+    }
+  }
+);

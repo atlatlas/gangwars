@@ -116,6 +116,7 @@ export default function BankPage() {
   const [investAmounts, setInvestAmounts] = useState<Record<number, string>>({});
   const [investingId, setInvestingId] = useState<number | null>(null);
   const [withdrawingId, setWithdrawingId] = useState<number | null>(null);
+  const [collectingId, setCollectingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"totalInvestments" | "dailyReturn" | "level" | "name">("totalInvestments");
 
@@ -172,6 +173,20 @@ export default function BankPage() {
       showNotification(err.message, "error");
     } finally {
       setWithdrawingId(null);
+    }
+  };
+
+  const handleCollect = async (gangId: number) => {
+    setCollectingId(gangId);
+    try {
+      const data = await gangsApi.investments.collect(gangId);
+      await refreshUser();
+      showNotification(`Collected $${data.collected.toLocaleString()} returns!`, "success");
+      loadOpenGangs();
+    } catch (err: any) {
+      showNotification(err.message, "error");
+    } finally {
+      setCollectingId(null);
     }
   };
 
@@ -419,17 +434,28 @@ export default function BankPage() {
                           <span className="text-xs font-mono text-white/70">Your investment</span>
                           <span className="text-sm font-mono text-cyan-300">${gang.investment.amount.toLocaleString()}</span>
                         </div>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-mono text-white/30">Returns earned</span>
                           <span className="text-sm font-mono text-green-400">+${gang.investment.returnsEarned.toLocaleString()}</span>
                         </div>
-                        <button
-                          onClick={() => handleInvestWithdraw(gang.id)}
-                          disabled={withdrawingId === gang.id}
-                          className="w-full text-xs font-mono text-pink-400/70 border border-pink-400/20 rounded-sm px-3 py-1.5 hover:border-pink-400/40 transition-all disabled:opacity-30"
-                        >
-                          {withdrawingId === gang.id ? "Withdrawing..." : "Withdraw Investment"}
-                        </button>
+                        <div className="flex gap-2">
+                          {gang.investment.returnsEarned > 0 && (
+                            <button
+                              onClick={() => handleCollect(gang.id)}
+                              disabled={collectingId === gang.id}
+                              className="flex-1 text-xs font-mono text-emerald-400/70 border border-emerald-400/20 rounded-sm px-3 py-1.5 hover:border-emerald-400/40 transition-all disabled:opacity-30"
+                            >
+                              {collectingId === gang.id ? "Collecting..." : "Collect Returns"}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleInvestWithdraw(gang.id)}
+                            disabled={withdrawingId === gang.id}
+                            className="flex-1 text-xs font-mono text-pink-400/70 border border-pink-400/20 rounded-sm px-3 py-1.5 hover:border-pink-400/40 transition-all disabled:opacity-30"
+                          >
+                            {withdrawingId === gang.id ? "Withdrawing..." : "Withdraw"}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="flex gap-2">

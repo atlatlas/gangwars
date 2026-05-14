@@ -332,6 +332,8 @@ export const gangs = {
       }),
     withdraw: (gangId: number) =>
       request<any>(`/gangs/${gangId}/investments/withdraw`, { method: "POST" }),
+    collect: (gangId: number) =>
+      request<any>(`/gangs/${gangId}/investments/collect`, { method: "POST" }),
     my: () => request<any>("/investments"),
     open: () => request<any>("/investments/open"),
   },

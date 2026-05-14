@@ -467,7 +467,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
             const investorPortion = Math.floor(totalIncome * investorSharePct / 100);
             const vaultPortion = totalIncome - investorPortion;
 
-            // Pay investors proportionally
+            // Track investor returns (must be collected manually)
             if (investorPortion > 0 && (gang.totalInvestments ?? 0) > 0) {
               const investors = db.select()
                 .from(schema.gangInvestments)
@@ -482,10 +482,6 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
                   db.update(schema.gangInvestments)
                     .set({ returnsEarned: sql`${schema.gangInvestments.returnsEarned} + ${share}` })
                     .where(eq(schema.gangInvestments.id, inv.id))
-                    .run();
-                  db.update(schema.users)
-                    .set({ cash: sql`cash + ${share}` })
-                    .where(eq(schema.users.id, inv.userId))
                     .run();
                 }
               }
