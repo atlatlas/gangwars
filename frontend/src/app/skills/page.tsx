@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import GameLayout from "@/components/GameLayout";
-import { Skill, TrainResult } from "@/types";
+import { Skill } from "@/types";
 import { skills as skillsApi } from "@/lib/api";
-import { BookOpen, Zap, Loader2, ChevronRight, TrendingUp, Brain, Eye, Users, Heart, AlertCircle, Lock, User, Shield, Terminal } from "lucide-react";
+import { useTopNotification } from "@/components/TopNotification";
+import { BookOpen, Zap, Loader2, TrendingUp, Brain, Eye, Users, Heart, Lock, User, Shield, Terminal } from "lucide-react";
 
 const statIcons: Record<string, React.ReactNode> = {
   strength: <Zap size={14} className="text-neon-red" />,
@@ -29,9 +30,8 @@ export default function SkillsPage() {
   const [skillList, setSkillList] = useState<Skill[]>([]);
   const [turns, setTurns] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { showNotification } = useTopNotification();
   const [trainingId, setTrainingId] = useState<number | null>(null);
-  const [result, setResult] = useState<TrainResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const fetchSkills = async () => {
     try {
@@ -39,7 +39,7 @@ export default function SkillsPage() {
       setSkillList(data.skills);
       setTurns(data.turns);
     } catch (err: any) {
-      setError(err.message);
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -51,14 +51,17 @@ export default function SkillsPage() {
 
   const handleTrain = async (skillId: number) => {
     setTrainingId(skillId);
-    setResult(null);
-    setError(null);
     try {
       const res = await skillsApi.train(skillId);
-      setResult(res);
+      showNotification(
+        res.leveledUp
+          ? `${res.skillName}: +${res.xpGained} XP · LEVEL UP! Now level ${res.newLevel}`
+          : `${res.skillName}: +${res.xpGained} XP`,
+        res.leveledUp ? "success" : "info"
+      );
       await fetchSkills();
     } catch (err: any) {
-      setError(err.message);
+      showNotification(err.message, "error");
     } finally {
       setTrainingId(null);
     }
@@ -95,33 +98,6 @@ export default function SkillsPage() {
             <span className="font-mono text-sm text-yellow-300">{turns} turns</span>
           </div>
         </div>
-
-        {/* Result banner */}
-        {result && (
-          <div className={`p-4 border rounded ${
-            result.leveledUp
-              ? "bg-green-500/10 border-green-500/30 text-green-300"
-              : "bg-cyan-500/10 border-cyan-500/30 text-cyan-300"
-          }`}>
-            <div className="flex items-center gap-2">
-              <ChevronRight size={16} />
-              <span className="text-sm font-mono">
-                {result.skillName}: +{result.xpGained} XP
-                {result.leveledUp && (
-                  <span className="text-yellow-300"> &middot; LEVEL UP! Now level {result.newLevel}</span>
-                )}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Error banner */}
-        {error && (
-          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded flex items-center gap-2">
-            <AlertCircle size={16} className="text-red-400" />
-            <span className="text-sm text-red-300 font-mono">{error}</span>
-          </div>
-        )}
 
         {/* Skill cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
