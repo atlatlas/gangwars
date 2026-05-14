@@ -234,6 +234,7 @@ export interface GangDetail extends Gang {
   levelBenefits: GangLevelBenefits;
   pendingRequestCount?: number;
   accountantId?: number | null;
+  lastSalaryPayout?: string | null;
 }
 
 export interface GangLevelBenefits {
