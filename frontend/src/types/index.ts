@@ -218,6 +218,7 @@ export interface GangMember {
   userId: number;
   username: string;
   level: number;
+  avatarUrl?: string | null;
   role: "leader" | "lieutenant" | "enforcer" | "member";
   joinedAt: string;
   respect: number;

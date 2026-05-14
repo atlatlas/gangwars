@@ -1261,7 +1261,25 @@ const handleWithdrawInvestment = () => {
                   const isMemberLeader = member.role === "leader";
 
                   return (
-                    <div key={member.userId} className="bg-black/20 rounded-sm border border-white/5 p-2 flex flex-col gap-1">
+                    <div key={member.userId} className="bg-black/20 rounded-sm border border-white/5 p-2 flex gap-2">
+                      {/* Avatar */}
+                      <div className="shrink-0">
+                        {member.avatarUrl ? (
+                          <img
+                            src={member.avatarUrl}
+                            alt=""
+                            className="w-10 h-10 rounded-sm object-cover bg-black/30"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-sm bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center">
+                            <span className="text-sm font-mono text-white/30">
+                              {member.username?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div className="flex flex-col gap-1 min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <RoleIcon size={12} className={`${roleConfig.color} shrink-0`} />
                         <span className="font-mono text-xs text-white/80 truncate">{member.username}</span>
@@ -1365,6 +1383,7 @@ const handleWithdrawInvestment = () => {
                             </button>
                           </div>
                         )}
+                      </div>
                       </div>
                     </div>
                   );
