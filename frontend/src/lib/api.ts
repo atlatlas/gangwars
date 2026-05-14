@@ -436,6 +436,10 @@ export const feedback = {
       method: "POST",
       body: JSON.stringify({ up }),
     }),
+  delete: (id: number) =>
+    request<{ success: boolean }>(`/feedback/${id}`, {
+      method: "DELETE",
+    }),
   comments: {
     list: (feedbackId: number) =>
       request<FeedbackCommentData[]>(`/feedback/${feedbackId}/comments`),

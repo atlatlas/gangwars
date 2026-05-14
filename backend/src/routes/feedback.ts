@@ -68,6 +68,29 @@ feedbackRouter.post("/", authMiddleware, async (req: AuthRequest, res: Response)
   }
 });
 
+// DELETE /api/feedback/:id — delete own feedback
+feedbackRouter.delete("/:id", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const id = parseInt(req.params.id as string);
+    const item = db.select().from(schema.feedback).where(eq(schema.feedback.id, id)).get();
+    if (!item) {
+      res.status(404).json({ error: "Feedback not found" });
+      return;
+    }
+    if (item.userId !== req.userId) {
+      res.status(403).json({ error: "You can only delete your own feedback" });
+      return;
+    }
+
+    db.delete(schema.feedbackComments).where(eq(schema.feedbackComments.feedbackId, id)).run();
+    db.delete(schema.feedback).where(eq(schema.feedback.id, id)).run();
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Feedback delete error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // POST /api/feedback/:id/vote — toggle vote
 feedbackRouter.post("/:id/vote", authMiddleware, async (req: AuthRequest, res: Response) => {
   try {

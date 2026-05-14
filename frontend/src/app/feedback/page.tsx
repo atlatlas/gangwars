@@ -23,6 +23,7 @@ type FeedbackStatus = "open" | "under-review" | "planned" | "completed" | "decli
 
 interface FeedbackItem {
   id: number;
+  userId: number;
   type: FeedbackType;
   title: string;
   description: string;
@@ -109,6 +110,22 @@ export default function FeedbackPage() {
         return next;
       });
     } catch {}
+  };
+
+  const handleDeleteFeedback = (id: number) => {
+    showConfirm(
+      "Delete this feedback post?",
+      "warning",
+      async () => {
+        try {
+          await feedbackApi.delete(id);
+          setItems((prev) => prev.filter((item) => item.id !== id));
+          showNotification("Feedback deleted", "success");
+        } catch (err: any) {
+          showNotification(err.message || "Failed to delete", "error");
+        }
+      },
+    );
   };
 
   const handleToggleComments = async (feedbackId: number) => {
@@ -463,8 +480,17 @@ export default function FeedbackPage() {
                     </p>
 
                     {/* Username */}
-                    <p className="text-[10px] font-mono text-purple-400/40 mt-2">
-                      by {item.username}
+                    <p className="text-[10px] font-mono text-purple-400/40 mt-2 flex items-center gap-2">
+                      <span>by {item.username}</span>
+                      {user?.id === item.userId && (
+                        <button
+                          onClick={() => handleDeleteFeedback(item.id)}
+                          className="text-red-400/40 hover:text-red-400 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      )}
                     </p>
 
                     {/* Comments toggle */}
