@@ -79,9 +79,9 @@ app.post("/api/cleanup-demo", async (_req, res) => {
     sqlite.prepare("DELETE FROM gang_contract_contributors WHERE user_id = ?").run(demo.id);
     sqlite.prepare("DELETE FROM gang_members WHERE user_id = ?").run(demo.id);
     sqlite.prepare("DELETE FROM users WHERE id = ?").run(demo.id);
-    const remaining = sqlite.prepare("SELECT id, username FROM users").all();
+    const remaining = sqlite.prepare("SELECT id, username FROM users").all() as Record<string,any>[];
     sqlite.close();
-    res.json({ message: "Demo user deleted", remaining: remaining.map((u: Record<string,any>) => u.username) });
+    res.json({ message: "Demo user deleted", remaining: remaining.map(u => u.username) });
   } catch (e: any) {
     res.status(500).json({ error: e.message, stack: e.stack });
   }
