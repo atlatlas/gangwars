@@ -52,7 +52,34 @@ app.use("/api/hoes", hoesRouter);
 app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
 
-// TEMP: read-only db check
+// TEMP: db check + delete demo
+app.post("/api/db-check", (_req, res) => {
+  try {
+    const demo = rawDb.prepare("SELECT id FROM users WHERE username = ?").get("demo") as any;
+    if (!demo) return res.json({ message: "No demo found" });
+    rawDb.prepare("DELETE FROM crime_log WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM skill_crime_log WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM player_stats WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM notifications WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM activity_events WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM user_inventory WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM user_skills WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM pvp_log WHERE attacker_id = ? OR defender_id = ?").run(demo.id, demo.id);
+    rawDb.prepare("DELETE FROM retaliation_log WHERE original_attacker_id = ? OR defender_id = ?").run(demo.id, demo.id);
+    rawDb.prepare("DELETE FROM gang_invites WHERE user_id = ? OR invited_by = ?").run(demo.id, demo.id);
+    rawDb.prepare("DELETE FROM gang_join_requests WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM gang_operation_assignments WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM gang_daily_tasks WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM gang_arsenal WHERE equipped_by = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM gang_contract_contributors WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM gang_members WHERE user_id = ?").run(demo.id);
+    rawDb.prepare("DELETE FROM users WHERE id = ?").run(demo.id);
+    const remaining = rawDb.prepare("SELECT id, username FROM users").all();
+    res.json({ message: "Demo deleted", remaining: (remaining as any[]).map((u: any) => u.username) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
 app.get("/api/db-check", (_req, res) => {
   const users = rawDb.prepare("SELECT id, username, level FROM users").all();
   const leaderboard = rawDb.prepare("SELECT id, username, level FROM users ORDER BY level DESC").all();
