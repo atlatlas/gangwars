@@ -143,8 +143,18 @@ profileRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =
     const jailTime = user.jailUntil ? Math.max(0, Math.ceil((new Date(user.jailUntil).getTime() - now.getTime()) / 60000)) : 0;
     const hospitalTime = user.hospitalUntil ? Math.max(0, Math.ceil((new Date(user.hospitalUntil).getTime() - now.getTime()) / 60000)) : 0;
 
+    // Drug asset value (quantity × current market price)
+    const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+      .from(schema.userInventory)
+      .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+      .where(and(
+        eq(schema.userInventory.userId, req.userId!),
+        eq(schema.items.type, 'drug'),
+      ))
+      .all()[0]?.value ?? 0;
+
     // Net worth milestone checks
-    const netWorth = user.cash + user.bank;
+    const netWorth = user.cash + user.bank + drugAssets;
     const MILESTONES: { netWorth: number; respect: number }[] = [
       { netWorth: 10000, respect: 10 },
       { netWorth: 50000, respect: 25 },

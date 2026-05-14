@@ -1,6 +1,6 @@
 import { Router, Response } from "express";
 import { db, schema } from "../db";
-import { desc, eq, sql, inArray } from "drizzle-orm";
+import { and, desc, eq, sql, inArray } from "drizzle-orm";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 
 export const leaderboardRouter = Router();
@@ -42,7 +42,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
         break;
       }
       case "networth": {
-        // Net worth = cash + bank
+        // Net worth = cash + bank + drug assets
         rows = db.select({
           id: schema.users.id,
           username: schema.users.username,
@@ -56,12 +56,23 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           .limit(limit)
           .all();
 
-        rows = rows.map(r => ({
-          id: r.id,
-          username: r.username,
-          level: r.level,
-          netWorth: r.cash + (r.bank ?? 0),
-        }));
+        rows = rows.map(r => {
+          const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+            .from(schema.userInventory)
+            .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+            .where(and(
+              eq(schema.userInventory.userId, r.id),
+              eq(schema.items.type, 'drug'),
+            ))
+            .all()[0]?.value ?? 0;
+
+          return {
+            id: r.id,
+            username: r.username,
+            level: r.level,
+            netWorth: r.cash + (r.bank ?? 0) + drugAssets,
+          };
+        }).sort((a, b) => b.netWorth - a.netWorth);
         break;
       }
       case "pvp": {

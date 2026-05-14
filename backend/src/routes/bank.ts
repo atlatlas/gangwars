@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
 import { refreshTurns } from "./turns";
@@ -15,10 +15,19 @@ bankRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
     });
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
+    const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+      .from(schema.userInventory)
+      .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+      .where(and(
+        eq(schema.userInventory.userId, user.id),
+        eq(schema.items.type, 'drug'),
+      ))
+      .all()[0]?.value ?? 0;
+
     res.json({
       bank: user.bank,
       cash: user.cash,
-      totalNetworth: user.cash + user.bank + user.respect * 10,
+      totalNetworth: user.cash + user.bank + drugAssets,
       totalInterestEarned: user.totalInterestEarned ?? 0,
     });
   } catch (err) {

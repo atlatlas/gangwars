@@ -291,7 +291,7 @@ export default function BankPage() {
             <p className="text-xl font-mono text-purple-300 font-bold">
               ${(bankData?.totalNetworth ?? 0).toLocaleString()}
             </p>
-            <p className="text-xs font-mono text-white/20 mt-1">Cash + Bank</p>
+            <p className="text-xs font-mono text-white/20 mt-1">Cash + Bank + Drug Assets</p>
           </div>
         </div>
 

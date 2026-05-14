@@ -592,18 +592,29 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
     )
     .all();
 
-    const members = updatedMembers.map(m => ({
-      userId: m.userId,
-      gangId: m.gangId,
-      role: m.role,
-      joinedAt: m.joinedAt,
-      salary: m.salary ?? 0,
-      username: m.username,
-      level: m.level,
-      respect: m.respect,
-      avatarUrl: m.avatarUrl,
-      netWorth: m.cash + m.bank,
-    }));
+    const members = updatedMembers.map(m => {
+      const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+        .from(schema.userInventory)
+        .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+        .where(and(
+          eq(schema.userInventory.userId, m.userId),
+          eq(schema.items.type, 'drug'),
+        ))
+        .all()[0]?.value ?? 0;
+
+      return {
+        userId: m.userId,
+        gangId: m.gangId,
+        role: m.role,
+        joinedAt: m.joinedAt,
+        salary: m.salary ?? 0,
+        username: m.username,
+        level: m.level,
+        respect: m.respect,
+        avatarUrl: m.avatarUrl,
+        netWorth: m.cash + m.bank + drugAssets,
+      };
+    });
 
     // ─── Gang Leveling: reputation, contract, benefits ───
     const reputationToNext = getRepToNext(gang.level);
