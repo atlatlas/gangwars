@@ -15,4 +15,4 @@ RUN npx tsc
 EXPOSE 3006
 
 # Run migrations then start the server
-CMD npx tsx src/migrate.ts && node dist/index.js
+CMD npx tsx src/migrate.ts && npx tsx src/db/seed.ts && npx tsx src/db/seedTurf.ts && node dist/index.js
