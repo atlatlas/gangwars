@@ -6,7 +6,7 @@ import GameLayout from "@/components/GameLayout";
 import CrimeCard from "@/components/CrimeCard";
 import SkillCrimeCard from "@/components/SkillCrimeCard";
 import TimingGame from "@/components/TimingGame";
-import ShellGame from "@/components/ShellGame";
+import PickpocketGame from "@/components/PickpocketGame";
 import MastermindGame from "@/components/MastermindGame";
 import TerminalHackGame from "@/components/TerminalHackGame";
 import { crimes as crimesApi, skillCrimes as skillCrimesApi } from "@/lib/api";
@@ -187,7 +187,7 @@ export default function CrimesPage() {
           };
           switch (playing.id) {
             case 1: return <TimingGame {...props} />;
-            case 2: return <ShellGame {...props} />;
+            case 2: return <PickpocketGame {...props} />;
             case 3: return <MastermindGame {...props} />;
             case 4: return <TerminalHackGame {...props} />;
             default: return null;
