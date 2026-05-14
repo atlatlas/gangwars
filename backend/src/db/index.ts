@@ -15,6 +15,11 @@ sqlite.pragma("foreign_keys = ON");
 
 // ─── Auto-migrate: add columns ───
 try {
+  sqlite.exec("ALTER TABLE users ADD COLUMN total_interest_earned INTEGER DEFAULT 0 NOT NULL");
+} catch {
+  // column already exists
+}
+try {
   sqlite.exec("ALTER TABLE gangs ADD COLUMN banner_url TEXT");
 } catch {
   // column already exists
