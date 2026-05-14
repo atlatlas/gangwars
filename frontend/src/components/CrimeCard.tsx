@@ -70,7 +70,7 @@ export default function CrimeCard({ crime, onCommit, disabled, loading, turnsRem
   return (
     <div className={`rounded-sm border border-white/5 bg-bg-dark/80 animate-slide-in transition-all duration-150 hover:border-white/10 ${isLocked ? "opacity-40" : ""}`}>
       <div className="p-3.5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-pink-400/60 shrink-0">{crimeIcons[crime.name] || <Skull size={16} />}</div>
             <div className="min-w-0">
@@ -86,14 +86,25 @@ export default function CrimeCard({ crime, onCommit, disabled, loading, turnsRem
             </div>
           ) : (
             <div className="flex items-center gap-1.5 shrink-0">
-              <input
-                type="number"
-                min={1}
-                max={maxTimes}
-                value={times}
-                onChange={(e) => setTimes(Math.max(1, Math.min(maxTimes, parseInt(e.target.value) || 1)))}
-                className="w-12 bg-black/40 border border-white/10 rounded-sm px-1.5 py-1 text-xs font-mono text-white/70 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
+              <div className="flex items-center gap-0.5 select-none">
+                <button
+                  type="button"
+                  onClick={() => setTimes(Math.max(1, times - 1))}
+                  disabled={times <= 1}
+                  className="w-8 h-8 flex items-center justify-center rounded-sm border border-white/10 text-white/40 hover:text-white/70 hover:border-white/30 transition-all text-lg disabled:opacity-20 active:bg-white/5"
+                >
+                  −
+                </button>
+                <span className="w-8 text-center text-xs font-mono text-white/70 tabular-nums">{times}</span>
+                <button
+                  type="button"
+                  onClick={() => setTimes(Math.min(maxTimes, times + 1))}
+                  disabled={times >= maxTimes}
+                  className="w-8 h-8 flex items-center justify-center rounded-sm border border-white/10 text-white/40 hover:text-white/70 hover:border-white/30 transition-all text-lg disabled:opacity-20 active:bg-white/5"
+                >
+                  +
+                </button>
+              </div>
               <button
                 onClick={() => onCommit(crime.id, times)}
                 disabled={disabled || loading}
