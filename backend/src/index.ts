@@ -52,6 +52,36 @@ app.use("/api/hoes", hoesRouter);
 app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
 
+// TEMP: Cleanup demo user
+app.post("/api/cleanup-demo", async (_req, res) => {
+  try {
+    const result = (db as any).session.all("SELECT id, username FROM users");
+    const demo = (db as any).session.get("SELECT id FROM users WHERE username = ?", "demo");
+    if (!demo) return res.json({ message: "No demo user found", users: result.map((u: any) => u.username) });
+    (db as any).session.run("DELETE FROM crime_log WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM skill_crime_log WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM player_stats WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM notifications WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM activity_events WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM user_inventory WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM user_skills WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM pvp_log WHERE attacker_id = ? OR defender_id = ?", demo.id, demo.id);
+    (db as any).session.run("DELETE FROM retaliation_log WHERE original_attacker_id = ? OR defender_id = ?", demo.id, demo.id);
+    (db as any).session.run("DELETE FROM gang_invites WHERE user_id = ? OR invited_by = ?", demo.id, demo.id);
+    (db as any).session.run("DELETE FROM gang_join_requests WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM gang_operation_assignments WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM gang_daily_tasks WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM gang_arsenal WHERE equipped_by = ?", demo.id);
+    (db as any).session.run("DELETE FROM gang_contract_contributors WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM gang_members WHERE user_id = ?", demo.id);
+    (db as any).session.run("DELETE FROM users WHERE id = ?", demo.id);
+    const remaining = (db as any).session.all("SELECT id, username FROM users");
+    res.json({ message: "Demo user deleted", remaining: remaining.map((u: any) => u.username) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Health check
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
