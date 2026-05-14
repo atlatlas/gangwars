@@ -42,7 +42,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
         break;
       }
       case "networth": {
-        // Net worth = cash + bank + drug assets
+        // Net worth = cash + bank + all black market assets
         rows = db.select({
           id: schema.users.id,
           username: schema.users.username,
@@ -57,20 +57,28 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           .all();
 
         rows = rows.map(r => {
-          const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
-            .from(schema.userInventory)
-            .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
-            .where(and(
-              eq(schema.userInventory.userId, r.id),
-              eq(schema.items.type, 'drug'),
-            ))
-            .all()[0]?.value ?? 0;
+          type ItemType = "arm" | "drug" | "footman" | "drug_dealer" | "hoe" | "pimp";
+          const assetVal = (type: ItemType) =>
+            db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+              .from(schema.userInventory)
+              .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+              .where(and(eq(schema.userInventory.userId, r.id), eq(schema.items.type, type)))
+              .all()[0]?.value ?? 0;
+
+          const fixedAssetVal = (type: ItemType) =>
+            db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.buyPrice}), 0)` })
+              .from(schema.userInventory)
+              .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+              .where(and(eq(schema.userInventory.userId, r.id), eq(schema.items.type, type)))
+              .all()[0]?.value ?? 0;
+
+          const blackMarket = assetVal('drug') + fixedAssetVal('arm') + fixedAssetVal('footman') + fixedAssetVal('drug_dealer') + fixedAssetVal('hoe') + fixedAssetVal('pimp');
 
           return {
             id: r.id,
             username: r.username,
             level: r.level,
-            netWorth: r.cash + (r.bank ?? 0) + drugAssets,
+            netWorth: r.cash + (r.bank ?? 0) + blackMarket,
           };
         }).sort((a, b) => b.netWorth - a.netWorth);
         break;

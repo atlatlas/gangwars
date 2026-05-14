@@ -5,7 +5,7 @@ import GameLayout from "@/components/GameLayout";
 import { bank as bankApi, gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { useTopNotification } from "@/components/TopNotification";
-import { Building, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Shield, TrendingUp, Users, TrendingDown, Search, SortAsc } from "lucide-react";
+import { Building, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Shield, TrendingUp, Users, TrendingDown, Search, SortAsc, Package, Crosshair, Skull, Hand, VenetianMask, Gem } from "lucide-react";
 
 // ─── Interest Projection Chart ───
 
@@ -105,7 +105,10 @@ function InterestChart({ bankBalance }: { bankBalance: number }) {
 export default function BankPage() {
   const { user, refreshUser } = useUser();
   const { showNotification } = useTopNotification();
-  const [bankData, setBankData] = useState<{ bank: number; cash: number; totalNetworth: number; totalInterestEarned: number } | null>(null);
+  const [bankData, setBankData] = useState<{
+    bank: number; cash: number; totalNetworth: number; totalInterestEarned: number;
+    blackMarket?: { total: number; drugs: number; arms: number; footmen: number; dealers: number; hoes: number; pimps: number };
+  } | null>(null);
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -291,9 +294,49 @@ export default function BankPage() {
             <p className="text-xl font-mono text-purple-300 font-bold">
               ${(bankData?.totalNetworth ?? 0).toLocaleString()}
             </p>
-            <p className="text-xs font-mono text-white/20 mt-1">Cash + Bank + Drug Assets</p>
+            <p className="text-xs font-mono text-white/20 mt-1">Cash + Bank + Black Market</p>
           </div>
         </div>
+
+        {/* Black Market card */}
+        {bankData?.blackMarket && (
+          <div className="rounded-sm border border-amber-500/10 bg-bg-dark/80 p-4 mb-6 reveal">
+            <div className="flex items-center gap-2 mb-3">
+              <Package size={14} className="text-amber-400" />
+              <span className="text-xs font-mono text-amber-400/70 uppercase tracking-wider">Black Market Assets</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs font-mono">
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><Gem size={11} /> Drugs</span>
+                <span className="text-white/80">${bankData.blackMarket.drugs.toLocaleString()}</span>
+              </div>
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><Crosshair size={11} /> Arms</span>
+                <span className="text-white/80">${bankData.blackMarket.arms.toLocaleString()}</span>
+              </div>
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><Skull size={11} /> Footmen</span>
+                <span className="text-white/80">${bankData.blackMarket.footmen.toLocaleString()}</span>
+              </div>
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><Hand size={11} /> Dealers</span>
+                <span className="text-white/80">${bankData.blackMarket.dealers.toLocaleString()}</span>
+              </div>
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><VenetianMask size={11} /> Hoes</span>
+                <span className="text-white/80">${bankData.blackMarket.hoes.toLocaleString()}</span>
+              </div>
+              <div className="bg-black/30 rounded-sm px-3 py-2 flex items-center justify-between">
+                <span className="text-white/40 flex items-center gap-1.5"><Users size={11} /> Pimps</span>
+                <span className="text-white/80">${bankData.blackMarket.pimps.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+              <span className="text-amber-400/60">Total Black Market Value</span>
+              <span className="text-amber-300 font-bold">${bankData.blackMarket.total.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
 
         {/* Interest projection chart */}
         {bankData && <InterestChart bankBalance={bankData.bank} />}

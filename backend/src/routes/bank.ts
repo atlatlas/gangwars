@@ -15,20 +15,50 @@ bankRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
     });
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
-    const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
-      .from(schema.userInventory)
-      .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
-      .where(and(
-        eq(schema.userInventory.userId, user.id),
-        eq(schema.items.type, 'drug'),
-      ))
-      .all()[0]?.value ?? 0;
+    // Asset valuation helpers — drugs use currentPrice, everything else uses buyPrice
+    type ItemType = "arm" | "drug" | "footman" | "drug_dealer" | "hoe" | "pimp";
+    const assetVal = (type: ItemType) =>
+      db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+        .from(schema.userInventory)
+        .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+        .where(and(
+          eq(schema.userInventory.userId, user.id),
+          eq(schema.items.type, type),
+        ))
+        .all()[0]?.value ?? 0;
+
+    const fixedAssetVal = (type: ItemType) =>
+      db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.buyPrice}), 0)` })
+        .from(schema.userInventory)
+        .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+        .where(and(
+          eq(schema.userInventory.userId, user.id),
+          eq(schema.items.type, type),
+        ))
+        .all()[0]?.value ?? 0;
+
+    const drugAssets = assetVal('drug');
+    const armsAssets = fixedAssetVal('arm');
+    const footmenAssets = fixedAssetVal('footman');
+    const dealerAssets = fixedAssetVal('drug_dealer');
+    const hoeAssets = fixedAssetVal('hoe');
+    const pimpAssets = fixedAssetVal('pimp');
+    const blackMarketValue = drugAssets + armsAssets + footmenAssets + dealerAssets + hoeAssets + pimpAssets;
 
     res.json({
       bank: user.bank,
       cash: user.cash,
-      totalNetworth: user.cash + user.bank + drugAssets,
+      totalNetworth: user.cash + user.bank + blackMarketValue,
       totalInterestEarned: user.totalInterestEarned ?? 0,
+      blackMarket: {
+        total: blackMarketValue,
+        drugs: drugAssets,
+        arms: armsAssets,
+        footmen: footmenAssets,
+        dealers: dealerAssets,
+        hoes: hoeAssets,
+        pimps: pimpAssets,
+      },
     });
   } catch (err) {
     console.error("Bank balance error:", err);

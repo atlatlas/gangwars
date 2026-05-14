@@ -593,14 +593,28 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
     .all();
 
     const members = updatedMembers.map(m => {
-      const drugAssets = db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
-        .from(schema.userInventory)
-        .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
-        .where(and(
-          eq(schema.userInventory.userId, m.userId),
-          eq(schema.items.type, 'drug'),
-        ))
-        .all()[0]?.value ?? 0;
+      type ItemType = "arm" | "drug" | "footman" | "drug_dealer" | "hoe" | "pimp";
+      const assetVal = (type: ItemType) =>
+        db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.currentPrice}), 0)` })
+          .from(schema.userInventory)
+          .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+          .where(and(
+            eq(schema.userInventory.userId, m.userId),
+            eq(schema.items.type, type),
+          ))
+          .all()[0]?.value ?? 0;
+
+      const fixedAssetVal = (type: ItemType) =>
+        db.select({ value: sql<number>`COALESCE(SUM(${schema.userInventory.quantity} * ${schema.items.buyPrice}), 0)` })
+          .from(schema.userInventory)
+          .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+          .where(and(
+            eq(schema.userInventory.userId, m.userId),
+            eq(schema.items.type, type),
+          ))
+          .all()[0]?.value ?? 0;
+
+      const blackMarket = assetVal('drug') + fixedAssetVal('arm') + fixedAssetVal('footman') + fixedAssetVal('drug_dealer') + fixedAssetVal('hoe') + fixedAssetVal('pimp');
 
       return {
         userId: m.userId,
@@ -612,7 +626,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
         level: m.level,
         respect: m.respect,
         avatarUrl: m.avatarUrl,
-        netWorth: m.cash + m.bank + drugAssets,
+        netWorth: m.cash + m.bank + blackMarket,
       };
     });
 
