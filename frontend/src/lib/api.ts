@@ -379,3 +379,29 @@ export const skillCrimes = {
       body: JSON.stringify({ accuracy }),
     }),
 };
+
+// Feedback
+export interface FeedbackData {
+  id: number;
+  userId: number;
+  type: "suggestion" | "bug";
+  title: string;
+  description: string;
+  votes: number;
+  status: string;
+  createdAt: string;
+  username: string;
+}
+export const feedback = {
+  list: () => request<FeedbackData[]>("/feedback"),
+  create: (data: { type: string; title: string; description: string }) =>
+    request<FeedbackData>("/feedback", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  vote: (id: number, up: boolean) =>
+    request<any>(`/feedback/${id}/vote`, {
+      method: "POST",
+      body: JSON.stringify({ up }),
+    }),
+};

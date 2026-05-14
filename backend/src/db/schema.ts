@@ -415,3 +415,14 @@ export const gangContractContributors = sqliteTable("gang_contract_contributors"
 }, (table) => ({
   contributorUniqueIdx: uniqueIndex("contributor_unique_idx").on(table.contractId, table.userId),
 }));
+
+export const feedback = sqliteTable("feedback", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  type: text("type", { enum: ["suggestion", "bug"] }).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  votes: integer("votes").default(1).notNull(),
+  status: text("status", { enum: ["open", "under-review", "planned", "completed", "declined"] }).default("open").notNull(),
+  createdAt: text("created_at").notNull(),
+});

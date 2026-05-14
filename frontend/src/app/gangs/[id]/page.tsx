@@ -1305,10 +1305,10 @@ const handleInvite = async () => {
             {/* Tab Bar + Content */}
             {isOwnGang && (
               <>
-                <div className="flex gap-0 border-b border-white/5 mb-4 reveal">
+                <div className="flex gap-0 border-b border-white/5 mb-4 overflow-x-auto reveal">
                   <button
                     onClick={() => setActiveTab("operations")}
-                    className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all ${
+                    className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all ${
                       activeTab === "operations"
                         ? "text-pink-400 border-b-2 border-pink-400"
                         : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
@@ -1318,7 +1318,7 @@ const handleInvite = async () => {
                   </button>
                   <button
                     onClick={() => { setActiveTab("turf"); if (districts.length === 0) loadTurf(); }}
-                    className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1.5 ${
                       activeTab === "turf"
                         ? "text-pink-400 border-b-2 border-pink-400"
                         : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
@@ -1328,7 +1328,7 @@ const handleInvite = async () => {
                   </button>
                   <button
                     onClick={() => { setActiveTab("arsenal"); if (!arsenalData) loadArsenal(); }}
-                    className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1.5 ${
                       activeTab === "arsenal"
                         ? "text-pink-400 border-b-2 border-pink-400"
                         : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
@@ -1338,7 +1338,7 @@ const handleInvite = async () => {
                   </button>
                   <button
                     onClick={() => setActiveTab("accountant")}
-                    className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                    className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1.5 ${
                       activeTab === "accountant"
                         ? "text-pink-400 border-b-2 border-pink-400"
                         : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
@@ -1349,7 +1349,7 @@ const handleInvite = async () => {
                   {(isLeader || isLieutenant) && (
                     <button
                       onClick={() => { setActiveTab("requests"); if (requests.length === 0) loadRequests(); }}
-                      className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1.5 ${
                         activeTab === "requests"
                           ? "text-pink-400 border-b-2 border-pink-400"
                           : "text-white/30 hover:text-white/60 border-b-2 border-transparent"

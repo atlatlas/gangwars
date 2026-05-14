@@ -7,30 +7,27 @@ import {
   Bug,
   Lightbulb,
   ThumbsUp,
-  ThumbsDown,
   Plus,
   X,
   Filter,
   ChevronDown,
   Clock,
-  CheckCircle2,
-  RotateCcw,
-  Eye,
 } from "lucide-react";
 import { useTopNotification } from "@/components/TopNotification";
+import { feedback as feedbackApi, FeedbackData } from "@/lib/api";
 
 type FeedbackType = "suggestion" | "bug";
 type FeedbackStatus = "open" | "under-review" | "planned" | "completed" | "declined";
 
 interface FeedbackItem {
-  id: string;
+  id: number;
   type: FeedbackType;
   title: string;
   description: string;
   votes: number;
-  voted: boolean;
   status: FeedbackStatus;
-  createdAt: number;
+  createdAt: string;
+  username: string;
 }
 
 const STATUS_CONFIG: Record<FeedbackStatus, { label: string; color: string }> = {
@@ -41,28 +38,10 @@ const STATUS_CONFIG: Record<FeedbackStatus, { label: string; color: string }> = 
   "declined": { label: "Declined", color: "text-red-400 border-red-400/30 bg-red-500/8" },
 };
 
-const STORAGE_KEY = "gangwars_feedback";
-
-function loadFeedback(): FeedbackItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveFeedback(items: FeedbackItem[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch { /* quota exceeded, silently fail */ }
-}
-
 export default function FeedbackPage() {
   const { showNotification } = useTopNotification();
   const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"all" | FeedbackType>("all");
   const [statusFilter, setStatusFilter] = useState<FeedbackStatus | "all">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "top">("newest");
@@ -71,51 +50,56 @@ export default function FeedbackPage() {
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [votedItems, setVotedItems] = useState<Set<number>>(new Set());
 
   useEffect(() => {
-    setItems(loadFeedback());
-    setLoaded(true);
+    feedbackApi.list()
+      .then((data) => setItems(data as any))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    if (loaded) saveFeedback(items);
-  }, [items, loaded]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formTitle.trim() || !formDesc.trim()) return;
 
     setSubmitting(true);
-    // Simulate a brief delay like a real API call
-    await new Promise((r) => setTimeout(r, 400));
-
-    const newItem: FeedbackItem = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-      type: formType,
-      title: formTitle.trim(),
-      description: formDesc.trim(),
-      votes: 1,
-      voted: true,
-      status: "open",
-      createdAt: Date.now(),
-    };
-
-    setItems((prev) => [newItem, ...prev]);
-    setFormTitle("");
-    setFormDesc("");
-    setShowForm(false);
-    setSubmitting(false);
-    showNotification("Feedback submitted!", "success");
+    try {
+      const created = await feedbackApi.create({
+        type: formType,
+        title: formTitle.trim(),
+        description: formDesc.trim(),
+      });
+      setItems((prev) => [{ ...created as any, username: "You" }, ...prev]);
+      setFormTitle("");
+      setFormDesc("");
+      setShowForm(false);
+      showNotification("Feedback submitted!", "success");
+    } catch (err: any) {
+      showNotification(err.message || "Failed to submit", "error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleVote = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? { ...item, votes: item.votes + (item.voted ? -1 : 1), voted: !item.voted }
-          : item
-      )
-    );
+  const handleVote = async (id: number) => {
+    const alreadyVoted = votedItems.has(id);
+    try {
+      await feedbackApi.vote(id, !alreadyVoted);
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id
+            ? { ...item, votes: item.votes + (alreadyVoted ? -1 : 1) }
+            : item
+        )
+      );
+      setVotedItems((prev) => {
+        const next = new Set(prev);
+        if (alreadyVoted) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    } catch {}
   };
 
   let filtered = items;
@@ -127,15 +111,15 @@ export default function FeedbackPage() {
     filtered = filtered.filter((i) => i.status === statusFilter);
   }
 
-  if (sortBy === "newest") filtered.sort((a, b) => b.createdAt - a.createdAt);
-  else if (sortBy === "oldest") filtered.sort((a, b) => a.createdAt - b.createdAt);
+  if (sortBy === "newest") filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  else if (sortBy === "oldest") filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   else if (sortBy === "top") filtered.sort((a, b) => b.votes - a.votes);
 
   const suggestionCount = items.filter((i) => i.type === "suggestion").length;
   const bugCount = items.filter((i) => i.type === "bug").length;
 
-  function timeAgo(ts: number): string {
-    const diff = Date.now() - ts;
+  function timeAgo(ts: string): string {
+    const diff = Date.now() - new Date(ts).getTime();
     const mins = Math.floor(diff / 60000);
     if (mins < 1) return "just now";
     if (mins < 60) return `${mins}m ago`;
@@ -146,7 +130,17 @@ export default function FeedbackPage() {
     return `${Math.floor(days / 30)}mo ago`;
   }
 
-  if (!loaded) return null;
+  if (loading) {
+    return (
+      <GameLayout>
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-center py-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-pink-400/30 border-t-pink-400" />
+          </div>
+        </div>
+      </GameLayout>
+    );
+  }
 
   return (
     <GameLayout>
@@ -340,7 +334,7 @@ export default function FeedbackPage() {
                     <button
                       onClick={() => handleVote(item.id)}
                       className={`flex items-center justify-center w-7 h-7 rounded-sm transition-all ${
-                        item.voted
+                        votedItems.has(item.id)
                           ? "bg-purple-500/20 text-purple-400 border border-purple-400/30"
                           : "bg-transparent text-white/20 border border-transparent hover:text-purple-400 hover:border-purple-400/30"
                       }`}
@@ -348,7 +342,7 @@ export default function FeedbackPage() {
                       <ThumbsUp size={11} />
                     </button>
                     <span className={`text-xs font-mono font-bold ${
-                      item.voted ? "text-purple-400" : "text-white/40"
+                      votedItems.has(item.id) ? "text-purple-400" : "text-white/40"
                     }`}>
                       {item.votes}
                     </span>
