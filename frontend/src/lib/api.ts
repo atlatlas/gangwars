@@ -122,7 +122,7 @@ export const leaderboard = {
 // Gangs
 // Bank
 export const bank = {
-  get: () => request<{ bank: number; cash: number; totalNetworth: number }>("/bank"),
+  get: () => request<{ bank: number; cash: number; totalNetworth: number; totalInterestEarned: number }>("/bank"),
   deposit: (amount: number) =>
     request<any>("/bank/deposit", { method: "POST", body: JSON.stringify({ amount }) }),
   withdraw: (amount: number) =>

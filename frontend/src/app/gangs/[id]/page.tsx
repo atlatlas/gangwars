@@ -68,7 +68,7 @@ export default function GangDetailPage() {
   const [opNotif, setOpNotif] = useState<{ id: number; title: string; message: string; type: string; exiting?: boolean } | null>(null);
   const opNotifKey = useRef(0);
   const [expandedOp, setExpandedOp] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"operations" | "turf" | "arsenal" | "accountant" | "requests">("operations");
+  const [activeTab, setActiveTab] = useState<"operations" | "turf" | "arsenal" | "accountant" | "requests" | "investments">("operations");
 
   // Turf state
   const [districts, setDistricts] = useState<(TurfDistrict & { owner: GangTurfEntry | null })[]>([]);
@@ -547,27 +547,7 @@ const handleInvite = async () => {
     }
   };
 
-  const handleInvest = async () => {
-    const amount = parseInt(investAmount);
-    if (isNaN(amount) || amount < 10000) {
-      showNotif("Invest", "Minimum investment is $10,000", "error");
-      return;
-    }
-    setInvesting(true);
-    try {
-      const data = await gangsApi.investments.invest(gangId, amount);
-      await refreshUser();
-      showNotif("Invest", `Invested $${data.amount.toLocaleString()}`, "success");
-      setInvestAmount("");
-      loadInvestments();
-    } catch (err: any) {
-      showNotif("Error", err.message, "error");
-    } finally {
-      setInvesting(false);
-    }
-  };
-
-  const handleWithdrawInvestment = () => {
+const handleWithdrawInvestment = () => {
     showConfirm(
       "Withdraw your full principal? Returns earned so far are yours to keep.",
       "warning",
