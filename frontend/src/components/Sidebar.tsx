@@ -14,6 +14,7 @@ import {
   Dices,
   MessageSquare,
   HelpCircle,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,7 +34,12 @@ const navItems = [
   { href: "/feedback", label: "Feedback", icon: MessageSquare },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -42,8 +48,12 @@ export default function Sidebar() {
     router.push("/login");
   };
 
-  return (
-    <aside className="relative sticky top-12 min-h-[calc(100vh-3rem)] flex flex-col overflow-y-auto w-full">
+  const handleNavClick = () => {
+    if (onMobileClose) onMobileClose();
+  };
+
+  const content = (
+    <>
       {/* Retro background layers */}
       <div className="absolute inset-0 bg-bg-dark" />
       {/* Subtle grid pattern */}
@@ -61,11 +71,23 @@ export default function Sidebar() {
           background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)",
         }}
       />
-      {/* Border-right glow */}
+      {/* Border-right glow (desktop) / border-none (mobile) */}
       <div className="absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-purple-500/20 via-purple-500/5 to-transparent" />
 
       {/* Content — relative to sit above backgrounds */}
       <div className="relative flex flex-col h-full">
+        {/* Close button (mobile only) */}
+        {onMobileClose && (
+          <div className="flex justify-end px-3 pt-3 md:hidden">
+            <button
+              onClick={onMobileClose}
+              className="p-1.5 rounded-sm text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
         {/* Nav */}
         <nav className="flex-1 py-4 px-3 space-y-1">
           {navItems.map((item) => {
@@ -74,6 +96,7 @@ export default function Sidebar() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={handleNavClick}
                 className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-sm text-sm tracking-wider uppercase transition-all duration-150 ${
                   isActive
                     ? "text-purple-300 bg-purple-500/10 border-l-2 border-purple-500 shadow-[inset_0_0_12px_rgba(147,51,234,0.08)]"
@@ -102,6 +125,37 @@ export default function Sidebar() {
           </button>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile drawer overlay */}
+      {onMobileClose && (
+        <>
+          {/* Backdrop */}
+          {mobileOpen && (
+            <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={onMobileClose} />
+          )}
+          {/* Drawer panel */}
+          <aside
+            className={`fixed top-0 left-0 z-50 h-full w-72 bg-bg-dark border-r border-purple-500/10 transition-transform duration-300 ease-in-out md:hidden ${
+              mobileOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="h-full overflow-y-auto pt-12">
+              {content}
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* Desktop sidebar — only renders when NOT in mobile mode */}
+      {!onMobileClose && (
+        <aside className="relative sticky top-12 min-h-[calc(100vh-3rem)] hidden md:flex flex-col overflow-y-auto w-full">
+          {content}
+        </aside>
+      )}
+    </>
   );
 }

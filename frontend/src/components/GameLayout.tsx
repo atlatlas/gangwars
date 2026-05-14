@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
-import MobileNav from "./MobileNav";
 import AmbientOrbs from "./AmbientOrbs";
 import CursorGlow from "./CursorGlow";
 import { useUser } from "@/lib/UserContext";
 import AnimatedValue from "./AnimatedValue";
 import Link from "next/link";
-import { LogOut, Heart, Zap, DollarSign, TrendingUp, PanelLeftClose, PanelLeft, Shield } from "lucide-react";
+import { LogOut, Heart, Zap, DollarSign, TrendingUp, PanelLeftClose, PanelLeft, Shield, Menu } from "lucide-react";
 import { profile as profileApi } from "@/lib/api";
 import { useTopNotification } from "./TopNotification";
 
@@ -22,6 +21,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
   const { user, loading, refreshUser } = useUser();
   const { showNotification } = useTopNotification();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [healing, setHealing] = useState(false);
   const [showHealDropdown, setShowHealDropdown] = useState(false);
 
@@ -124,7 +124,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
           />
         </div>
 
-        <div className="relative flex items-center h-full px-3 md:px-4 gap-3">
+        <div className="relative flex items-center h-full px-2 md:px-4 gap-1.5 md:gap-3">
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="hidden md:flex items-center justify-center w-8 h-8 rounded-sm text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
@@ -133,32 +133,40 @@ export default function GameLayout({ children }: GameLayoutProps) {
             {sidebarCollapsed ? <PanelLeft size={16} /> : <PanelLeftClose size={16} />}
           </button>
 
-          <div className="flex items-center gap-3 md:gap-5 flex-1 overflow-x-auto ml-auto justify-end">
-            <div className="flex items-center gap-1.5 shrink-0 relative" title="HP">
-              <Heart size={13} className="text-neon-red drop-shadow-[0_0_4px_rgba(248,113,113,0.3)]" />
-              <AnimatedValue value={`${user.hp}/${user.maxHp}`} format="hp" className="font-mono text-xs text-pink-300" />
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden flex items-center justify-center w-8 h-8 rounded-sm text-white/40 hover:text-white hover:bg-white/5 transition-all shrink-0"
+            title="Menu"
+          >
+            <Menu size={16} />
+          </button>
+
+          <div className="flex items-center gap-1.5 md:gap-5 flex-1 overflow-x-auto justify-end">
+            <div className="flex items-center gap-1 shrink-0" title="HP">
+              <Heart size={12} className="text-neon-red drop-shadow-[0_0_4px_rgba(248,113,113,0.3)]" />
+              <AnimatedValue value={`${user.hp}/${user.maxHp}`} format="hp" className="font-mono text-[11px] md:text-xs text-pink-300" />
               {user.hp < user.maxHp && user.hp > 0 && (
                 <button
                   onClick={() => setShowHealDropdown(!showHealDropdown)}
                   disabled={healing}
-                  className="ml-1 font-mono text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
+                  className="ml-0.5 font-mono text-[8px] md:text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
                 >
                   {healing ? (
-                    <div className="animate-spin h-2.5 w-2.5 border border-pink-400/30 border-t-pink-400 rounded-full" />
+                    <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
                   ) : (
                     "Heal"
                   )}
                 </button>
               )}
               {user.hp <= 0 && (
-                <div className="flex gap-1 ml-1">
+                <div className="flex gap-0.5 ml-0.5">
                   <button
                     onClick={() => handleHeal("cash")}
                     disabled={healing}
-                    className="font-mono text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
+                    className="font-mono text-[8px] md:text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
                   >
                     {healing ? (
-                      <div className="animate-spin h-2.5 w-2.5 border border-pink-400/30 border-t-pink-400 rounded-full" />
+                      <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
                     ) : (
                       "Heal"
                     )}
@@ -167,14 +175,14 @@ export default function GameLayout({ children }: GameLayoutProps) {
                     <button
                       onClick={() => handleHeal("turns")}
                       disabled={healing}
-                      className="font-mono text-[9px] uppercase text-cyan-400/60 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 rounded-sm px-1 py-0.5 transition-all"
+                      className="font-mono text-[8px] md:text-[9px] uppercase text-cyan-400/60 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 rounded-sm px-1 py-0.5 transition-all"
                     >
                       Turns
                     </button>
                   )}
                 </div>
               )}
-              {/* Heal dropdown */}
+              {/* Heal dropdown — unchanged */}
               {showHealDropdown && user.hp > 0 && user.hp < user.maxHp && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowHealDropdown(false)} />
@@ -201,28 +209,28 @@ export default function GameLayout({ children }: GameLayoutProps) {
                 </>
               )}
             </div>
-            <div className="w-px h-4 bg-white/5 shrink-0" />
-            <div className="flex items-center gap-1.5 shrink-0" title="Turns">
-              <Zap size={13} className="text-neon-yellow drop-shadow-[0_0_4px_rgba(250,204,21,0.3)]" />
-              <AnimatedValue value={turnsDisplay} format="turns" className="font-mono text-xs text-cyan-300" />
-              <span className="font-mono text-[10px] text-white/30">{nextTurnIn}s</span>
+            <div className="w-px h-3 md:h-4 bg-white/5 shrink-0" />
+            <div className="flex items-center gap-1 shrink-0" title="Turns">
+              <Zap size={12} className="text-neon-yellow drop-shadow-[0_0_4px_rgba(250,204,21,0.3)]" />
+              <AnimatedValue value={turnsDisplay} format="turns" className="font-mono text-[11px] md:text-xs text-cyan-300" />
+              <span className="font-mono text-[9px] md:text-[10px] text-white/30">{nextTurnIn}s</span>
             </div>
-            <div className="w-px h-4 bg-white/5 shrink-0" />
-            <div className="flex items-center gap-1.5 shrink-0" title="Cash">
-              <DollarSign size={13} className="text-neon-green drop-shadow-[0_0_4px_rgba(74,222,128,0.3)]" />
-              <AnimatedValue value={user.cash ?? 0} format="cash" className="font-mono text-xs text-cyan-300" />
+            <div className="w-px h-3 md:h-4 bg-white/5 shrink-0" />
+            <div className="flex items-center gap-1 shrink-0" title="Cash">
+              <DollarSign size={12} className="text-neon-green drop-shadow-[0_0_4px_rgba(74,222,128,0.3)]" />
+              <AnimatedValue value={user.cash ?? 0} format="cash" className="font-mono text-[11px] md:text-xs text-cyan-300" />
             </div>
-            <div className="w-px h-4 bg-white/5 shrink-0" />
-            <div className="flex items-center gap-1.5 shrink-0" title="Respect">
+            <div className="w-px h-3 md:h-4 bg-white/5 shrink-0 hidden sm:block" />
+            <div className="items-center gap-1.5 shrink-0 hidden sm:flex" title="Respect">
               <TrendingUp size={13} className="text-neon-cyan drop-shadow-[0_0_4px_rgba(34,211,238,0.3)]" />
               <span className="font-mono text-xs text-pink-300">{user.respect}</span>
             </div>
             {user.gangTag && (
               <>
-                <div className="w-px h-4 bg-white/5 shrink-0" />
+                <div className="w-px h-3 md:h-4 bg-white/5 shrink-0 hidden sm:block" />
                 <Link
                   href={`/gangs/${user.gangId}`}
-                  className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity"
+                  className="items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity hidden sm:flex"
                   title={user.gangName}
                 >
                   <Shield size={13} className="text-purple-400 drop-shadow-[0_0_4px_rgba(147,51,234,0.3)]" />
@@ -232,8 +240,8 @@ export default function GameLayout({ children }: GameLayoutProps) {
             )}
             {jailRemaining > 0 && (
               <>
-                <div className="w-px h-4 bg-white/5 shrink-0" />
-                <span className="text-[10px] text-yellow-500 uppercase tracking-wider font-mono bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20 shrink-0">
+                <div className="w-px h-3 md:h-4 bg-white/5 shrink-0 hidden sm:block" />
+                <span className="text-[9px] md:text-[10px] text-yellow-500 uppercase tracking-wider font-mono bg-yellow-500/10 px-1.5 md:px-2 py-0.5 rounded border border-yellow-500/20 shrink-0 hidden sm:inline">
                   Jail {jailRemaining}m
                 </span>
               </>
@@ -259,12 +267,13 @@ export default function GameLayout({ children }: GameLayoutProps) {
           <Sidebar />
         </div>
 
-        <main className="flex-1 min-w-0 pb-20 md:pb-8">
+        {/* Mobile drawer — rendered outside the hidden wrapper so fixed positioning works */}
+        <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
+
+        <main className="flex-1 min-w-0 pb-4 md:pb-8">
           {children}
         </main>
       </div>
-
-      <MobileNav />
     </div>
   );
 }
