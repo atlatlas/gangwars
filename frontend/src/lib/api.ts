@@ -272,6 +272,10 @@ export const gangs = {
       request<any>(`/gangs/${gangId}/arsenal/${arsenalId}/unassign-turf`, { method: "POST" }),
     repair: (gangId: number, arsenalId: number) =>
       request<any>(`/gangs/${gangId}/arsenal/${arsenalId}/repair`, { method: "POST" }),
+    equip: (gangId: number, arsenalId: number) =>
+      request<any>(`/gangs/${gangId}/arsenal/${arsenalId}/assign`, { method: "POST" }),
+    unequip: (gangId: number, arsenalId: number) =>
+      request<any>(`/gangs/${gangId}/arsenal/${arsenalId}/unassign`, { method: "POST" }),
   },
   // Leaderboard
   leaderboard: (type: string, limit = 50) =>
