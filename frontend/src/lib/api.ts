@@ -186,6 +186,11 @@ export const gangs = {
     }),
   disband: (id: number) =>
     request<any>(`/gangs/${id}/disband`, { method: "POST" }),
+  setBanner: (gangId: number, bannerUrl: string | null) =>
+    request<any>(`/gangs/${gangId}/banner`, {
+      method: "POST",
+      body: JSON.stringify({ bannerUrl }),
+    }),
   levelUp: (gangId: number) =>
     request<{ level: number; reputation: number; levelBenefits: any }>(
       `/gangs/${gangId}/levelup`, { method: "POST" }
@@ -220,6 +225,26 @@ export const gangs = {
   // Vault
   deposit: (gangId: number, amount: number) =>
     request<{ vault: number; amount: number }>(`/gangs/${gangId}/deposit`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
+  withdraw: (gangId: number, amount: number) =>
+    request<{ vault: number; amount: number }>(`/gangs/${gangId}/withdraw`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
+  payMember: (gangId: number, userId: number, amount: number) =>
+    request<{ vault: number; amount: number; targetUsername: string }>(`/gangs/${gangId}/pay/${userId}`, {
+      method: "POST",
+      body: JSON.stringify({ amount }),
+    }),
+  setAccountant: (gangId: number, hire: boolean) =>
+    request<{ success: boolean; hired: boolean }>(`/gangs/${gangId}/accountant`, {
+      method: "POST",
+      body: JSON.stringify({ hire }),
+    }),
+  setSalary: (gangId: number, userId: number, amount: number) =>
+    request<{ success: boolean; salary: number }>(`/gangs/${gangId}/salary/${userId}`, {
       method: "POST",
       body: JSON.stringify({ amount }),
     }),
@@ -298,6 +323,8 @@ export const hoes = {
     request<any>("/hoes/collect", { method: "POST" }),
   buy: (itemId: number) =>
     request<any>(`/hoes/buy/${itemId}`, { method: "POST" }),
+  fire: (inventoryId: number) =>
+    request<any>(`/hoes/fire/${inventoryId}`, { method: "POST" }),
 };
 
 export const casino = {

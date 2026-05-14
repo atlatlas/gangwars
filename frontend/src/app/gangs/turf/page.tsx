@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import GameLayout from "@/components/GameLayout";
 import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { TurfDistrict, GangTurfEntry } from "@/types";
 import { Map, Shield, DollarSign, Crown, Swords, ArrowLeft, TrendingUp, Skull } from "lucide-react";
 
 export default function TurfPage() {
   const router = useRouter();
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [districts, setDistricts] = useState<(TurfDistrict & { owner: GangTurfEntry | null })[]>([]);
   const [vault, setVault] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function TurfPage() {
       setDistricts(data.districts);
       setVault(data.vault);
     } catch (err: any) {
-      toast(err.message || "Failed to load turf", "error");
+      showNotification(err.message || "Failed to load turf", "error");
     }
     setLoading(false);
   };
@@ -46,11 +46,11 @@ export default function TurfPage() {
     setActionLoading(`claim-${districtId}`);
     try {
       const result = await gangsApi.turf.claim(gangId, districtId);
-      toast(`Claimed ${name}!`, "success");
+      showNotification(`Claimed ${name}!`, "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      toast(err.message || "Failed to claim district", "error");
+      showNotification(err.message || "Failed to claim district", "error");
     }
     setActionLoading(null);
   };
@@ -60,11 +60,11 @@ export default function TurfPage() {
     setActionLoading(`challenge-${districtId}`);
     try {
       const result = await gangsApi.turf.challenge(gangId, districtId);
-      toast(result.message || `Challenged for ${name}!`, "success");
+      showNotification(result.message || `Challenged for ${name}!`, "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      toast(err.message || "Failed to challenge", "error");
+      showNotification(err.message || "Failed to challenge", "error");
     }
     setActionLoading(null);
   };
@@ -74,11 +74,11 @@ export default function TurfPage() {
     setActionLoading(`abandon-${districtId}`);
     try {
       const result = await gangsApi.turf.abandon(gangId, districtId);
-      toast(result.message || `Abandoned ${name}`, "success");
+      showNotification(result.message || `Abandoned ${name}`, "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      toast(err.message || "Failed to abandon", "error");
+      showNotification(err.message || "Failed to abandon", "error");
     }
     setActionLoading(null);
   };

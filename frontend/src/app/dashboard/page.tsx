@@ -7,7 +7,7 @@ import Image from "next/image";
 import GameLayout from "@/components/GameLayout";
 import { useUser } from "@/lib/UserContext";
 import { crimes as crimesApi, profile as profileApi, bank as bankApi, profileExt, activity as activityApi, FeedEntry } from "@/lib/api";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import Tooltip from "@/components/Tooltip";
 import { CrimeResult } from "@/types";
 import {
@@ -38,7 +38,7 @@ import {
 
 export default function DashboardPage() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [crimeResult, setCrimeResult] = useState<CrimeResult | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [assigning, setAssigning] = useState<Record<string, boolean>>({});
@@ -75,7 +75,7 @@ export default function DashboardPage() {
       setCrimeResult(result);
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     }
   };
 
@@ -87,7 +87,7 @@ export default function DashboardPage() {
       await profileApi.assignStats(points);
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setAssigning((prev) => ({ ...prev, [stat]: false }));
     }
@@ -101,13 +101,13 @@ export default function DashboardPage() {
     try {
       await profileApi.heal(method);
       await refreshUser();
-      if (method === "turns") toast("Sacrificed turns to heal 50% HP", "info");
+      if (method === "turns") showNotification("Sacrificed turns to heal 50% HP", "info");
     } catch (err: any) {
       const data = err.data;
       if (data?.turnHealAvailable) {
-        toast(data.error || "Not enough cash. Use turns to heal instead?", "warning");
+        showNotification(data.error || "Not enough cash. Use turns to heal instead?", "warning");
       } else {
-        toast(err.message || "Failed to heal", "error");
+        showNotification(err.message || "Failed to heal", "error");
       }
     } finally {
       setHealing(false);
@@ -124,9 +124,9 @@ export default function DashboardPage() {
       const dataUrl = await compressImage(file, 256, 0.8);
       await profileApi.avatar(dataUrl);
       await refreshUser();
-      toast("Profile picture updated!", "success");
+      showNotification("Profile picture updated!", "success");
     } catch (err: any) {
-      toast(err?.message || "Failed to upload image", "error");
+      showNotification(err?.message || "Failed to upload image", "error");
     } finally {
       setUploadingAvatar(false);
     }
@@ -167,9 +167,9 @@ export default function DashboardPage() {
     try {
       await profileApi.avatar(null);
       await refreshUser();
-      toast("Profile picture removed", "success");
+      showNotification("Profile picture removed", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setUploadingAvatar(false);
     }
@@ -363,7 +363,7 @@ export default function DashboardPage() {
               {/* Attributes — larger font row */}
               <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-white/10">
                 {stats.map((stat) => (
-                  <Tooltip key={stat.key} content={stat.tooltip}>
+                  <Tooltip key={stat.key} content={stat.tooltip} className="flex flex-1">
                     <div className="flex items-center gap-1 flex-1">
                       <span className="text-xs font-mono text-white/30 uppercase drop-shadow-lg">{stat.label.substring(0, 3)}</span>
                       <div className="flex-1 h-1.5 bg-black/30 rounded-full overflow-hidden">
@@ -747,7 +747,7 @@ export default function DashboardPage() {
                     const w = await profileExt.warfare();
                     setWarfare(w);
                   } catch (e: any) {
-                    toast(e.message, "error");
+                    showNotification(e.message, "error");
                   } finally {
                     setChoosingSpec(false);
                   }
@@ -768,7 +768,7 @@ export default function DashboardPage() {
                     const w = await profileExt.warfare();
                     setWarfare(w);
                   } catch (e: any) {
-                    toast(e.message, "error");
+                    showNotification(e.message, "error");
                   } finally {
                     setChoosingSpec(false);
                   }
@@ -789,7 +789,7 @@ export default function DashboardPage() {
                     const w = await profileExt.warfare();
                     setWarfare(w);
                   } catch (e: any) {
-                    toast(e.message, "error");
+                    showNotification(e.message, "error");
                   } finally {
                     setChoosingSpec(false);
                   }

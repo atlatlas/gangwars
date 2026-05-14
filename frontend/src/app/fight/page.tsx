@@ -4,13 +4,11 @@ import { useState } from "react";
 import GameLayout from "@/components/GameLayout";
 import { pvp } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
 import { PlayerIntel, AttackResult } from "@/types";
 import { Swords, Search, Skull, Shield, Crosshair, AlertTriangle, Zap, TrendingUp } from "lucide-react";
 
 export default function FightPage() {
   const { refreshUser } = useUser();
-  const { toast } = useToast();
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ id: number; username: string; level: number }[]>([]);
   const [searching, setSearching] = useState(false);

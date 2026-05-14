@@ -7,7 +7,7 @@ import GameLayout from "@/components/GameLayout";
 import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { GangDetail, GangMember, GangOperationsData, TurfDistrict, GangTurfEntry } from "@/types";
-import { Shield, Users, Crown, LogOut, Skull, ArrowLeft, Star, ChevronUp, ChevronDown, Plus, X, Check, Send, DollarSign, TrendingUp, Landmark, Map, Swords, Crosshair, Eye, Wrench, Trophy } from "lucide-react";
+import { Shield, Users, Crown, LogOut, Skull, ArrowLeft, Star, ChevronUp, ChevronDown, Plus, X, Check, Send, DollarSign, TrendingUp, Landmark, Map, Swords, Crosshair, Eye, Wrench, Trophy, Camera, Image as ImageIcon } from "lucide-react";
 
 const ROLE_CONFIG: Record<string, { icon: typeof Crown; color: string; label: string }> = {
   leader: { icon: Crown, color: "text-yellow-500 drop-shadow-[0_0_4px_rgba(234,179,8,0.3)]", label: "Leader" },
@@ -45,16 +45,28 @@ export default function GangDetailPage() {
   const [showInvites, setShowInvites] = useState(false);
   const [depositAmount, setDepositAmount] = useState("");
   const [depositing, setDepositing] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [payAmount, setPayAmount] = useState<Record<number, string>>({});
+  const [paying, setPaying] = useState<number | null>(null);
   const [levelingUp, setLevelingUp] = useState(false);
   const [opData, setOpData] = useState<GangOperationsData | null>(null);
   const [opLoading, setOpLoading] = useState(false);
   const [confirmOp, setConfirmOp] = useState<string | null>(null);
   const [opActionLoading, setOpActionLoading] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
+  const [showBannerPicker, setShowBannerPicker] = useState(false);
+  const [bannerSetting, setBannerSetting] = useState(false);
+  const [customBannerUrl, setCustomBannerUrl] = useState("");
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [settingAccountant, setSettingAccountant] = useState(false);
+  const [settingSalary, setSettingSalary] = useState<number | null>(null);
+  const [salaryInput, setSalaryInput] = useState<Record<number, string>>({});
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const [opNotif, setOpNotif] = useState<{ id: number; title: string; message: string; type: string; exiting?: boolean } | null>(null);
   const opNotifKey = useRef(0);
   const [expandedOp, setExpandedOp] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"operations" | "turf" | "arsenal" | "requests">("operations");
+  const [activeTab, setActiveTab] = useState<"operations" | "turf" | "arsenal" | "accountant" | "requests">("operations");
 
   // Turf state
   const [districts, setDistricts] = useState<(TurfDistrict & { owner: GangTurfEntry | null })[]>([]);
@@ -112,6 +124,7 @@ export default function GangDetailPage() {
   const isLieutenant = user?.gangId === gangId && user?.gangRole === "lieutenant";
   const isEnforcer = user?.gangId === gangId && user?.gangRole === "enforcer";
   const canInviteMembers = isLeader || isLieutenant;
+  const canManageVault = isLeader || isEnforcer;
   const isOwnGang = user?.gangId === gangId;
 
   const handleLeave = async () => {
@@ -238,6 +251,46 @@ const handleInvite = async () => {
       showNotif("Error", err.message, "error");
     } finally {
       setDepositing(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    const amount = parseInt(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      showNotif("Withdraw", "Enter a valid amount", "error");
+      return;
+    }
+    setWithdrawing(true);
+    try {
+      const result = await gangsApi.withdraw(gangId, amount);
+      await refreshUser();
+      showNotif("Withdraw", `Withdrew $${result.amount.toLocaleString()} from gang vault`, "success");
+      setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
+      setWithdrawAmount("");
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  const handlePayMember = async (targetId: number, targetName: string) => {
+    const amount = parseInt(payAmount[targetId] ?? "");
+    if (isNaN(amount) || amount <= 0) {
+      showNotif("Pay", "Enter a valid amount", "error");
+      return;
+    }
+    setPaying(targetId);
+    try {
+      const result = await gangsApi.payMember(gangId, targetId, amount);
+      await refreshUser();
+      showNotif("Payment", `Paid $${result.amount.toLocaleString()} to ${result.targetUsername}`, "success");
+      setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
+      setPayAmount((prev) => ({ ...prev, [targetId]: "" }));
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setPaying(null);
     }
   };
 
@@ -524,6 +577,118 @@ const handleInvite = async () => {
     setOpNotif({ id: opNotifKey.current, title, message, type });
   };
 
+  /** Resize & compress an image file to a base64 data URL */
+  function compressImage(file: File, maxDim: number, quality: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new window.Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > height && width > maxDim) {
+            height = (height / width) * maxDim;
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = (width / height) * maxDim;
+            height = maxDim;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/webp", quality));
+        };
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingBanner(true);
+    try {
+      const dataUrl = await compressImage(file, 1200, 0.85);
+      await gangsApi.setBanner(gangId, dataUrl);
+      setGang((prev) => prev ? { ...prev, bannerUrl: dataUrl } : prev);
+      showNotif("Banner", "Banner updated!", "success");
+      setShowBannerPicker(false);
+    } catch (err: any) {
+      showNotif("Banner", err?.message || "Failed to upload image", "error");
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleSetBannerUrl = async () => {
+    if (!customBannerUrl.trim()) return;
+    setBannerSetting(true);
+    try {
+      await gangsApi.setBanner(gangId, customBannerUrl.trim());
+      setGang((prev) => prev ? { ...prev, bannerUrl: customBannerUrl.trim() } : prev);
+      showNotif("Banner", "Banner updated!", "success");
+      setShowBannerPicker(false);
+      setCustomBannerUrl("");
+    } catch (err: any) {
+      showNotif("Banner", err.message, "error");
+    } finally {
+      setBannerSetting(false);
+    }
+  };
+
+  const handleRemoveBanner = async () => {
+    setBannerSetting(true);
+    try {
+      await gangsApi.setBanner(gangId, null);
+      setGang((prev) => prev ? { ...prev, bannerUrl: null } : prev);
+      showNotif("Banner", "Banner removed", "success");
+      setShowBannerPicker(false);
+    } catch (err: any) {
+      showNotif("Banner", err.message, "error");
+    } finally {
+      setBannerSetting(false);
+    }
+  };
+
+  const handleSetAccountant = async (hire: boolean) => {
+    setSettingAccountant(true);
+    try {
+      await gangsApi.setAccountant(gangId, hire);
+      showNotif("Accountant", hire ? "Accountant bot hired" : "Accountant bot fired", "success");
+      loadGang();
+    } catch (err: any) {
+      showNotif("Accountant", err.message, "error");
+    } finally {
+      setSettingAccountant(false);
+    }
+  };
+
+  const handleSetSalary = async (userId: number) => {
+    const amount = parseInt(salaryInput[userId] ?? "0");
+    if (isNaN(amount) || amount < 0) {
+      showNotif("Salary", "Enter a valid amount", "error");
+      return;
+    }
+    setSettingSalary(userId);
+    try {
+      await gangsApi.setSalary(gangId, userId, amount);
+      const name = gang?.members.find((m) => m.userId === userId)?.username;
+      showNotif("Salary", amount > 0 ? `${name} salary set to $${amount}/day` : `Salary removed for ${name}`, "success");
+      loadGang();
+      setSalaryInput((prev) => ({ ...prev, [userId]: "" }));
+    } catch (err: any) {
+      showNotif("Salary", err.message, "error");
+    } finally {
+      setSettingSalary(null);
+    }
+  };
+
+  const hasAccountant = gang?.accountantId != null;
+
   return (
     <GameLayout>
       {/* Top notification overlay — portaled to body */}
@@ -576,6 +741,96 @@ const handleInvite = async () => {
         {/* Gang detail */}
         {!loading && !error && gang && (
           <>
+            {/* Banner */}
+            <div className="relative mb-4 rounded-sm overflow-hidden border border-white/5 reveal">
+              {gang.bannerUrl ? (
+                <div className="relative">
+                  <img
+                    src={gang.bannerUrl}
+                    alt="Gang banner"
+                    className="w-full h-32 md:h-48 object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg-dark/80 via-transparent to-transparent" />
+                </div>
+              ) : (
+                <div className="w-full h-24 md:h-32 bg-gradient-to-r from-purple-900/20 via-pink-900/10 to-cyan-900/20 flex items-center justify-center">
+                  <Shield size={32} className="text-white/10" />
+                </div>
+              )}
+              {isLeader && (
+                <button
+                  onClick={() => setShowBannerPicker(!showBannerPicker)}
+                  className="absolute bottom-2 right-2 text-[10px] font-mono text-white/40 hover:text-white/70 bg-black/60 border border-white/10 rounded-sm px-2 py-1 transition-colors"
+                >
+                  {gang.bannerUrl ? "Change Banner" : "Set Banner"}
+                </button>
+              )}
+            </div>
+
+            {/* Banner picker — leader only */}
+            {isLeader && showBannerPicker && (
+              <div className="mb-4 rounded-sm border border-white/5 bg-bg-dark/80 p-4 animate-slide-in reveal">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-mono text-white/30 uppercase tracking-wider">Set Gang Banner</h2>
+                  {gang.bannerUrl && (
+                    <button
+                      onClick={handleRemoveBanner}
+                      disabled={bannerSetting}
+                      className="text-[10px] font-mono text-red-400/60 hover:text-red-400 transition-colors"
+                    >
+                      Remove Banner
+                    </button>
+                  )}
+                </div>
+
+                {/* Upload from file */}
+                <div className="mb-4">
+                  <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider mb-2">Upload an image</p>
+                  <button
+                    onClick={() => bannerFileInputRef.current?.click()}
+                    disabled={uploadingBanner}
+                    className="w-full flex items-center justify-center gap-2 border border-dashed border-white/10 hover:border-pink-400/30 rounded-sm px-4 py-6 transition-all text-white/40 hover:text-pink-300"
+                  >
+                    {uploadingBanner ? (
+                      <div className="animate-spin h-5 w-5 border-2 border-pink-400/30 border-t-pink-400 rounded-full" />
+                    ) : (
+                      <><Camera size={18} /> Click to upload banner image</>
+                    )}
+                  </button>
+                  <input
+                    ref={bannerFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleBannerUpload}
+                  />
+                </div>
+
+                {/* Or paste URL */}
+                <div className="border-t border-white/5 pt-3">
+                  <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider mb-2">Or paste an image URL</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customBannerUrl}
+                      onChange={(e) => setCustomBannerUrl(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSetBannerUrl()}
+                      placeholder="https://example.com/my-banner.jpg"
+                      className="flex-1 bg-black/30 border border-white/5 rounded-sm px-3 py-2 text-sm font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-pink-400/30 transition-all"
+                    />
+                    <button
+                      onClick={handleSetBannerUrl}
+                      disabled={bannerSetting || !customBannerUrl.trim()}
+                      className="font-mono tracking-wider text-xs uppercase text-pink-400/70 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-3 py-2 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      {bannerSetting ? "..." : "Set"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header */}
             <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mb-4 reveal">
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -644,7 +899,8 @@ const handleInvite = async () => {
                   <p className="font-mono text-sm text-cyan-300 drop-shadow-[0_0_4px_rgba(34,211,238,0.15)] mb-2">
                     ${gang.vault?.toLocaleString() ?? 0}
                   </p>
-                  <div className="flex gap-2">
+                  {/* Deposit - everyone */}
+                  <div className="flex gap-2 mb-2">
                     <input
                       type="number"
                       value={depositAmount}
@@ -667,6 +923,46 @@ const handleInvite = async () => {
                       Deposit
                     </button>
                   </div>
+                  {/* Withdraw - leader/enforcer only */}
+                  {canManageVault && (
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        value={withdrawAmount}
+                        onChange={(e) => setWithdrawAmount(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleWithdraw()}
+                        placeholder="Withdraw amount..."
+                        min={1}
+                        max={gang.vault ?? 0}
+                        className="flex-1 bg-black/30 border border-white/5 rounded-sm px-3 py-2 text-sm font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/30 transition-all"
+                      />
+                      <button
+                        onClick={handleWithdraw}
+                        disabled={withdrawing || !withdrawAmount || parseInt(withdrawAmount) <= 0 || parseInt(withdrawAmount) > (gang.vault ?? 0)}
+                        className="font-mono tracking-wider text-xs uppercase text-cyan-400/70 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 rounded-sm px-3 py-2 transition-all duration-150 flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        {withdrawing ? (
+                          <div className="animate-spin h-3 w-3 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full" />
+                        ) : (
+                          <DollarSign size={12} />
+                        )}
+                        Withdraw
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Accountant info */}
+              {isOwnGang && hasAccountant && (
+                <div className="border-t border-white/5 mt-3 pt-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign size={12} className="text-emerald-400/60" />
+                    <span className="text-xs font-mono text-emerald-400/60 uppercase tracking-wider">Accountant</span>
+                  </div>
+                  <p className="text-xs font-mono text-white/70">
+                    Bot Accountant <span className="text-white/30">(takes 2% fee on all salary payouts)</span>
+                  </p>
                 </div>
               )}
 
@@ -912,6 +1208,9 @@ const handleInvite = async () => {
                       <div className="flex items-center gap-2 text-xs font-mono text-white/20">
                         <span className="flex items-center gap-0.5"><DollarSign size={9} />{member.netWorth?.toLocaleString() ?? 0}</span>
                         <span className="flex items-center gap-0.5"><TrendingUp size={9} />{member.respect ?? 0}</span>
+                        {(member.salary ?? 0) > 0 && (
+                          <span className="flex items-center gap-0.5 text-emerald-400/60"><DollarSign size={9} />{member.salary}/d</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-white/5 min-h-[20px]">
                         {isLeader && !isMemberLeader && member.userId !== user?.id && (
@@ -951,6 +1250,50 @@ const handleInvite = async () => {
                               <button onClick={() => setConfirming(`kick-${member.userId}`)} className="text-[10px] font-mono text-red-400/50 hover:text-red-400" title="Kick"><LogOut size={10} /></button>
                             )}
                           </>
+                        )}
+                        {/* Salary set — leader only */}
+                        {isLeader && member.userId !== user?.id && (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              value={salaryInput[member.userId] ?? (member.salary ?? 0).toString()}
+                              onChange={(e) => setSalaryInput((prev) => ({ ...prev, [member.userId]: e.target.value }))}
+                              onKeyDown={(e) => e.key === "Enter" && handleSetSalary(member.userId)}
+                              placeholder="$"
+                              min={0}
+                              max={1000000}
+                              className="w-14 bg-black/30 border border-white/5 rounded-sm px-1.5 py-0.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-emerald-400/30 transition-all text-right"
+                            />
+                            <button
+                              onClick={() => handleSetSalary(member.userId)}
+                              disabled={settingSalary === member.userId}
+                              className="text-[10px] font-mono text-emerald-400/60 hover:text-emerald-300 transition-colors disabled:opacity-30"
+                            >
+                              {settingSalary === member.userId ? "..." : "Sal"}
+                            </button>
+                          </div>
+                        )}
+                        {/* Pay member — leader/enforcer only */}
+                        {canManageVault && member.userId !== user?.id && (
+                          <div className="flex items-center gap-1 ml-auto">
+                            <input
+                              type="number"
+                              value={payAmount[member.userId] ?? ""}
+                              onChange={(e) => setPayAmount((prev) => ({ ...prev, [member.userId]: e.target.value }))}
+                              onKeyDown={(e) => e.key === "Enter" && handlePayMember(member.userId, member.username)}
+                              placeholder="Pay $"
+                              min={1}
+                              max={gang?.vault ?? 0}
+                              className="w-14 bg-black/30 border border-white/5 rounded-sm px-1.5 py-0.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/30 transition-all text-right"
+                            />
+                            <button
+                              onClick={() => handlePayMember(member.userId, member.username)}
+                              disabled={paying === member.userId || !payAmount[member.userId] || parseInt(payAmount[member.userId] ?? "0") <= 0}
+                              className="text-[10px] font-mono text-cyan-400/60 hover:text-cyan-300 transition-colors disabled:opacity-30"
+                            >
+                              {paying === member.userId ? "..." : "Pay"}
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -992,6 +1335,16 @@ const handleInvite = async () => {
                     }`}
                   >
                     <Swords size={12} /> Arsenal
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("accountant")}
+                    className={`px-4 py-2.5 text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                      activeTab === "accountant"
+                        ? "text-pink-400 border-b-2 border-pink-400"
+                        : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
+                    }`}
+                  >
+                    <DollarSign size={12} /> Accountant
                   </button>
                   {(isLeader || isLieutenant) && (
                     <button
@@ -1209,12 +1562,19 @@ const handleInvite = async () => {
                                         <div key={r.sortOrder} className="flex items-center gap-1.5 text-xs font-mono">
                                           <span className={meets ? "text-green-400" : "text-white/40"}>{r.skillName}</span>
                                           <span className={meets ? "text-green-400/80" : "text-yellow-400/60"}>Lv.{r.minLevel}</span>
+                                          <span className="text-white/20">(yours: {r.userLevel ?? 0})</span>
                                           <span>{meets ? " ✅" : " ❌"}</span>
                                         </div>
                                       );
                                     })}
                                     <p className={`text-xs font-mono mt-0.5 ${myEntry?.isEligible ? "text-green-400" : "text-yellow-400"}`}>
-                                      {myEntry?.isEligible ? "You qualify! (meet at least 1 requirement)" : "Meet at least 1 requirement to qualify"}
+                                      {(() => {
+                                        if (!myEntry?.isEligible) return "Meet at least 1 requirement to qualify";
+                                        if (entry.allRequirementsSatisfied) return "You qualify!";
+                                        const missing = def.requirements?.filter((r: any) => !r.satisfied) ?? [];
+                                        const names = missing.map((r: any) => `${r.skillName} Lv.${r.minLevel}`).join(", ");
+                                        return `You qualify! Need a member with ${names} to start.`;
+                                      })()}
                                     </p>
                                   </div>
                                 );
@@ -1311,11 +1671,14 @@ const handleInvite = async () => {
                               ) : (
                                 <button
                                   onClick={() => { setConfirmOp(`start-${def.id}`); setSelectedMemberIds([]); }}
-                                  disabled={!entry.allRequirementsSatisfied}
-                                  className="mt-2 font-mono text-xs uppercase text-pink-400/50 border border-pink-400/20 rounded-sm px-2 py-1 hover:border-pink-400/40 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                  title={!entry.allRequirementsSatisfied ? "Not all requirements are met by gang members" : ""}
+                                  disabled={false}
+                                  className={`mt-2 font-mono text-xs uppercase rounded-sm px-2 py-1 transition-all ${
+                                    entry.allRequirementsSatisfied
+                                      ? "text-pink-400/50 border border-pink-400/20 hover:border-pink-400/40"
+                                      : "text-orange-400/50 border border-orange-400/20 hover:border-orange-400/40"
+                                  }`}
                                 >
-                                  {entry.allRequirementsSatisfied ? "Start Operation" : "Requirements not met"}
+                                  {entry.allRequirementsSatisfied ? "Start Operation" : "Start (requirements not met)"}
                                 </button>
                               )
                             )}
@@ -1676,6 +2039,103 @@ const handleInvite = async () => {
                         <p className="text-xs font-mono text-white/30">Failed to load arsenal</p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {activeTab === "accountant" && (
+                  <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mb-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <DollarSign size={16} className="text-emerald-400" />
+                      <div>
+                        <h2 className="text-sm font-mono text-white/90">Accountant</h2>
+                        <p className="text-xs font-mono text-white/30">Bot handles daily salary payouts (2% fee)</p>
+                      </div>
+                    </div>
+
+                    {/* Hire / Fire */}
+                    {isLeader && (
+                      <div className="bg-black/20 rounded-sm border border-white/5 p-3 mb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${hasAccountant ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]" : "bg-white/10"}`} />
+                            <span className="text-xs font-mono text-white/70">
+                              {hasAccountant ? "Accountant bot is active" : "No accountant hired"}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleSetAccountant(!hasAccountant)}
+                            disabled={settingAccountant}
+                            className={`text-xs font-mono uppercase tracking-wider rounded-sm px-3 py-1.5 transition-all flex items-center gap-1.5 ${
+                              hasAccountant
+                                ? "text-red-400/70 hover:text-red-300 border border-red-400/20 hover:border-red-400/40"
+                                : "text-emerald-400/70 hover:text-emerald-300 border border-emerald-400/20 hover:border-emerald-400/40"
+                            }`}
+                          >
+                            {settingAccountant ? (
+                              <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                            ) : hasAccountant ? (
+                              <><X size={10} /> Fire</>
+                            ) : (
+                              <><Check size={10} /> Hire</>
+                            )}
+                          </button>
+                        </div>
+                        {gang?.lastSalaryPayout && (
+                          <p className="text-[10px] font-mono text-white/20 mt-2">
+                            Last payout: {new Date(gang.lastSalaryPayout).toLocaleDateString()} {new Date(gang.lastSalaryPayout).toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Salary overview */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between px-1 py-1.5 border-b border-white/5 mb-1">
+                        <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Member</span>
+                        <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Daily Salary</span>
+                      </div>
+                      {gang?.members.map((m) => (
+                        <div key={m.userId} className="flex items-center justify-between px-2 py-2 rounded-sm hover:bg-white/[0.02] transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-white/80">{m.username}</span>
+                            {m.role === "leader" && <Crown size={10} className="text-yellow-500" />}
+                            <span className="text-[10px] font-mono text-white/20">Lv.{m.level}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {isLeader ? (
+                              <>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-mono text-white/30">$</span>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    placeholder={m.salary ? m.salary.toString() : "0"}
+                                    value={salaryInput[m.userId] ?? ""}
+                                    onChange={(e) => setSalaryInput((prev) => ({ ...prev, [m.userId]: e.target.value }))}
+                                    className="w-20 bg-black/30 border border-white/5 rounded-sm px-2 py-1 text-xs font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/30 text-right"
+                                  />
+                                </div>
+                                <button
+                                  onClick={() => handleSetSalary(m.userId)}
+                                  disabled={settingSalary === m.userId || !salaryInput[m.userId]}
+                                  className="text-[10px] font-mono text-cyan-400/60 hover:text-cyan-300 disabled:opacity-30 disabled:cursor-not-allowed px-2 py-1"
+                                >
+                                  {settingSalary === m.userId ? (
+                                    <div className="animate-spin h-3 w-3 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full" />
+                                  ) : (
+                                    "Set"
+                                  )}
+                                </button>
+                              </>
+                            ) : (
+                              <span className={`text-xs font-mono ${m.salary && m.salary > 0 ? "text-emerald-400/70" : "text-white/20"}`}>
+                                {m.salary && m.salary > 0 ? `$${m.salary.toLocaleString()}/d` : "—"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

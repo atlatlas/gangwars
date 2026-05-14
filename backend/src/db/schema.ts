@@ -165,6 +165,9 @@ export const gangs = sqliteTable("gangs", {
   vault: integer("vault").default(0).notNull(),
   reputation: integer("reputation").default(0).notNull(),
   createdAt: text("created_at").notNull(),
+  bannerUrl: text("banner_url"),
+  accountantId: integer("accountant_id"),
+  lastSalaryPayout: text("last_salary_payout"),
 });
 
 export const gangMembers = sqliteTable("gang_members", {
@@ -174,6 +177,7 @@ export const gangMembers = sqliteTable("gang_members", {
   role: text("role", { enum: ["leader", "lieutenant", "enforcer", "member"] }).notNull(),
   joinedAt: text("joined_at").notNull(),
   lastRespectPayout: text("last_respect_payout"),
+  salary: integer("salary").default(0).notNull(),
 }, (table) => ({
   gangIdIdx: index("gang_members_gang_id_idx").on(table.gangId),
 }));

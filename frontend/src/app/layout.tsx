@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UserProvider } from "@/lib/UserContext";
-import { ToastProvider } from "@/components/Toast";
+import { TopNotificationProvider } from "@/components/TopNotification";
 
 export const metadata: Metadata = {
   title: "Gang Wars",
@@ -22,9 +22,9 @@ export default function RootLayout({
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body className="min-h-screen">
-        <UserProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </UserProvider>
+        <TopNotificationProvider>
+          <UserProvider>{children}</UserProvider>
+        </TopNotificationProvider>
       </body>
     </html>
   );

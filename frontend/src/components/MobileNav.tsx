@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Swords, Users, Map, ShoppingBag, Shield, BookOpen, Eye, Building, Dices, MessageSquare } from "lucide-react";
+import { Home, Swords, Users, Map, ShoppingBag, Shield, BookOpen, Eye, Building, Dices, MessageSquare, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/casino", label: "Casino", icon: Dices },
   { href: "/leaderboard", label: "Ranks", icon: Users },
   { href: "/gangs", label: "Gangs", icon: Shield },
+  { href: "/help", label: "Help", icon: HelpCircle },
   { href: "/feedback", label: "Feedback", icon: MessageSquare },
 ];
 

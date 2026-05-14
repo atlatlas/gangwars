@@ -5,7 +5,7 @@ import GameLayout from "@/components/GameLayout";
 import ItemCard from "@/components/ItemCard";
 import { market as marketApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { MarketItem, InventoryItem } from "@/types";
 import { ShoppingBag, Sword, AlertTriangle, Users, RefreshCw, Package, DollarSign } from "lucide-react";
 import DrugMarketPanel from "@/components/DrugMarketPanel";
@@ -14,7 +14,7 @@ type Tab = "arms" | "drugs" | "footmen" | "pimps";
 
 export default function MarketPage() {
   const { refreshUser, user } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [activeTab, setActiveTab] = useState<Tab>("arms");
   const [arms, setArms] = useState<MarketItem[]>([]);
   const [drugs, setDrugs] = useState<MarketItem[]>([]);
@@ -86,10 +86,10 @@ export default function MarketPage() {
     try {
       const res = await marketApi.buy(itemId, quantity);
       setPlayerCash(res.cash);
-      await Promise.all([loadInventory(), refreshUser()]);
-      toast("Item purchased!", "success");
+      await Promise.all([loadInventory(), loadMarket(), refreshUser()]);
+      showNotification("Item purchased!", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setActiveItemId(null);
     }
@@ -101,9 +101,9 @@ export default function MarketPage() {
       const res = await marketApi.sell(inventoryId, quantity);
       setPlayerCash(res.cash);
       await Promise.all([loadInventory(), loadMarket(), refreshUser()]);
-      toast("Item sold!", "success");
+      showNotification("Item sold!", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setActiveItemId(null);
     }
@@ -114,9 +114,9 @@ export default function MarketPage() {
     try {
       await marketApi.equip(inventoryId);
       await Promise.all([loadInventory(), loadMarket(), refreshUser()]);
-      toast("Equipment changed!", "success");
+      showNotification("Equipment changed!", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setActiveItemId(null);
     }
@@ -249,7 +249,7 @@ export default function MarketPage() {
                   playerRespect={playerRespect}
                   inventoryFull={inventory.length >= capacity.max}
                   onBuy={handleBuy}
-                  onSell={undefined}
+                  onSell={activeTab !== "arms" ? handleSell : undefined}
                   onEquip={activeTab === "arms" && (typeof item.owned === "number" ? item.owned > 0 : item.owned) ? handleEquip : undefined}
                   inventoryId={getInventoryId(item.id)}
                 />

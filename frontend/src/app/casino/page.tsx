@@ -3,7 +3,7 @@
 import { useState } from "react";
 import GameLayout from "@/components/GameLayout";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { casino as casinoApi } from "@/lib/api";
 import { Dices, DollarSign, Loader2 } from "lucide-react";
 
@@ -61,7 +61,7 @@ export default function CasinoPage() {
 
 function BlackjackPanel() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [bet, setBet] = useState("");
   const [gameId, setGameId] = useState<string | null>(null);
   const [playerHand, setPlayerHand] = useState<any[]>([]);
@@ -76,8 +76,8 @@ function BlackjackPanel() {
 
   const handleDeal = async () => {
     const val = parseInt(bet);
-    if (!val || val < 100) { toast("Minimum bet is $100", "error"); return; }
-    if ((user?.cash ?? 0) < val) { toast("Not enough cash", "error"); return; }
+    if (!val || val < 100) { showNotification("Minimum bet is $100", "error"); return; }
+    if ((user?.cash ?? 0) < val) { showNotification("Not enough cash", "error"); return; }
     setLoading(true);
     try {
       const data = await casinoApi.blackjackDeal(val);
@@ -93,12 +93,12 @@ function BlackjackPanel() {
         setGameId(null);
         setDealerHand(data.dealerHand);
         setStatus("round_over");
-        if (data.status === "blackjack") toast("Blackjack! $" + data.payout, "success");
-        else if (data.status === "push") toast("Push — bet returned", "info");
+        if (data.status === "blackjack") showNotification("Blackjack! $" + data.payout, "success");
+        else if (data.status === "push") showNotification("Push — bet returned", "info");
       }
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -124,15 +124,15 @@ function BlackjackPanel() {
         setGameId(null);
         setStatus("round_over");
 
-        if (data.status === "player_bust") toast("Bust!", "error");
+        if (data.status === "player_bust") showNotification("Bust!", "error");
         else if (data.status === "player_win" || data.status === "dealer_bust")
-          toast(`You won $${data.payout}!`, "success");
-        else if (data.status === "push") toast("Push — bet returned", "info");
-        else toast("Dealer wins!", "error");
+          showNotification(`You won $${data.payout}!`, "success");
+        else if (data.status === "push") showNotification("Push — bet returned", "info");
+        else showNotification("Dealer wins!", "error");
       }
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -255,7 +255,7 @@ const SYMBOL_NAMES: Record<string, string> = {
 
 function SlotsPanel() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [bet, setBet] = useState("");
   const [reels, setReels] = useState<string[] | null>(null);
   const [payout, setPayout] = useState(0);
@@ -264,8 +264,8 @@ function SlotsPanel() {
 
   const handleSpin = async () => {
     const val = parseInt(bet);
-    if (!val || val < 100) { toast("Minimum bet is $100", "error"); return; }
-    if ((user?.cash ?? 0) < val) { toast("Not enough cash", "error"); return; }
+    if (!val || val < 100) { showNotification("Minimum bet is $100", "error"); return; }
+    if ((user?.cash ?? 0) < val) { showNotification("Not enough cash", "error"); return; }
     setSpinning(true);
     setReels(null);
     try {
@@ -274,13 +274,13 @@ function SlotsPanel() {
       setPayout(data.payout);
       setMultiplier(data.multiplier);
       if (data.payout > 0) {
-        toast(`You won $${data.payout} (${data.multiplier}x)!`, "success");
+        showNotification(`You won $${data.payout} (${data.multiplier}x)!`, "success");
       } else {
-        toast("No luck this time!", "error");
+        showNotification("No luck this time!", "error");
       }
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setSpinning(false);
     }
@@ -381,7 +381,7 @@ function renderGuessButtons(round: number, onGuess: (g: string) => void, loading
 
 function RideTheBusPanel() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [bet, setBet] = useState("");
   const [gameId, setGameId] = useState<string | null>(null);
   const [round, setRound] = useState(0);
@@ -397,8 +397,8 @@ function RideTheBusPanel() {
 
   const handleDeal = async () => {
     const val = parseInt(bet);
-    if (!val || val < 100) { toast("Minimum bet is $100", "error"); return; }
-    if ((user?.cash ?? 0) < val) { toast("Not enough cash", "error"); return; }
+    if (!val || val < 100) { showNotification("Minimum bet is $100", "error"); return; }
+    if ((user?.cash ?? 0) < val) { showNotification("Not enough cash", "error"); return; }
     setLoading(true);
     try {
       const data = await casinoApi.rtbDeal(val);
@@ -407,7 +407,7 @@ function RideTheBusPanel() {
       setCurrentCard(data.currentCard);
       setStatus("playing");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -422,13 +422,13 @@ function RideTheBusPanel() {
         setStatus("lost");
         setPayout(0);
         setGameId(null);
-        toast("Wrong! Game over.", "error");
+        showNotification("Wrong! Game over.", "error");
       } else if (data.status === "won") {
         setStatus("won");
         setPayout(data.payout);
         setMultiplier(data.multiplier);
         setGameId(null);
-        toast(`You won $${data.payout}!`, "success");
+        showNotification(`You won $${data.payout}!`, "success");
       } else {
         setRound(data.round);
         setMultiplier(data.multiplier);
@@ -438,7 +438,7 @@ function RideTheBusPanel() {
       }
       await refreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
 import MobileNav from "./MobileNav";
@@ -11,8 +11,7 @@ import AnimatedValue from "./AnimatedValue";
 import Link from "next/link";
 import { LogOut, Heart, Zap, DollarSign, TrendingUp, PanelLeftClose, PanelLeft, Shield } from "lucide-react";
 import { profile as profileApi } from "@/lib/api";
-import { useToast } from "@/components/Toast";
-import { TopNotificationContextProvider, TopNotif } from "./TopNotification";
+import { useTopNotification } from "./TopNotification";
 
 interface GameLayoutProps {
   children: React.ReactNode;
@@ -21,16 +20,10 @@ interface GameLayoutProps {
 export default function GameLayout({ children }: GameLayoutProps) {
   const router = useRouter();
   const { user, loading, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [healing, setHealing] = useState(false);
   const [showHealDropdown, setShowHealDropdown] = useState(false);
-  const [topNotif, setTopNotif] = useState<TopNotif | null>(null);
-
-  const showTopNotification = useCallback((message: string, type: "success" | "error" = "success") => {
-    setTopNotif({ message, type });
-    setTimeout(() => setTopNotif(null), 3000);
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -69,13 +62,13 @@ export default function GameLayout({ children }: GameLayoutProps) {
     try {
       await profileApi.heal(method);
       await refreshUser();
-      toast(method === "cash" ? "Healed to full HP" : "Sacrificed turns to heal", "success");
+      showNotification(method === "cash" ? "Healed to full HP" : "Sacrificed turns to heal", "success");
       setShowHealDropdown(false);
     } catch (err: any) {
       if (err.data?.turnHealAvailable) {
-        toast("Not enough cash. Use turns to heal instead.", "warning");
+        showNotification("Not enough cash. Use turns to heal instead.", "warning");
       } else {
-        toast(err.message || "Failed to heal", "error");
+        showNotification(err.message || "Failed to heal", "error");
       }
     } finally {
       setHealing(false);
@@ -256,20 +249,6 @@ export default function GameLayout({ children }: GameLayoutProps) {
         </div>
       </header>
 
-      {/* Top notification overlay — appears below the header bar */}
-      {topNotif && (
-        <div
-          className={`fixed top-12 left-0 right-0 z-[100] h-12 flex items-center px-4 font-mono text-xs tracking-wider animate-slide-in ${
-            topNotif.type === "success"
-              ? "bg-pink-500/10 text-pink-300 border-b border-pink-500/20"
-              : "bg-cyan-500/10 text-cyan-300 border-b border-cyan-500/20"
-          }`}
-        >
-          {topNotif.type === "success" ? "> SUCCESS" : "> FAILED"}
-          <span className="text-white/50 ml-2">{topNotif.message}</span>
-        </div>
-      )}
-
       {/* Flex layout: sidebar + main */}
       <div className="flex pt-12 min-h-screen relative z-0">
         <div
@@ -281,9 +260,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
         </div>
 
         <main className="flex-1 min-w-0 pb-20 md:pb-8">
-          <TopNotificationContextProvider value={{ notif: topNotif, showNotification: showTopNotification }}>
-            {children}
-          </TopNotificationContextProvider>
+          {children}
         </main>
       </div>
 

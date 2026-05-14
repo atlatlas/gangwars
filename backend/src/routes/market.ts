@@ -251,7 +251,7 @@ marketRouter.post("/buy/:itemId", authMiddleware, jailCheck, hpCheck, async (req
 
       if (existing.length > 0) {
         db.update(schema.userInventory)
-          .set({ quantity: existing[0].quantity + 1 })
+          .set({ quantity: existing[0].quantity + quantity })
           .where(eq(schema.userInventory.id, existing[0].id))
           .run();
       } else {
@@ -328,9 +328,15 @@ marketRouter.post("/sell/:inventoryId", authMiddleware, jailCheck, hpCheck, asyn
         db.update(schema.userInventory).set({ quantity: remaining }).where(eq(schema.userInventory.id, inv.id)).run();
       }
     } else if (item.sellPrice > 0) {
-      cashAwarded = item.sellPrice;
-      if (inv.equipped) db.update(schema.userInventory).set({ equipped: false }).where(eq(schema.userInventory.id, inv.id)).run();
-      db.delete(schema.userInventory).where(eq(schema.userInventory.id, inv.id)).run();
+      const toSell = Math.min(quantity, inv.quantity);
+      cashAwarded = item.sellPrice * toSell;
+      remaining = inv.quantity - toSell;
+      if (remaining <= 0) {
+        if (inv.equipped) db.update(schema.userInventory).set({ equipped: false }).where(eq(schema.userInventory.id, inv.id)).run();
+        db.delete(schema.userInventory).where(eq(schema.userInventory.id, inv.id)).run();
+      } else {
+        db.update(schema.userInventory).set({ quantity: remaining }).where(eq(schema.userInventory.id, inv.id)).run();
+      }
     } else {
       res.status(400).json({ error: "This item cannot be sold" });
       return;

@@ -322,3 +322,53 @@ hoesRouter.post("/buy/:itemId", authMiddleware, jailCheck, hpCheck, async (req: 
     res.status(500).json({ error: "Server error" });
   }
 });
+
+// ─── POST /api/hoes/fire/:inventoryId — fire (release) a hoe ───
+
+hoesRouter.post("/fire/:inventoryId", authMiddleware, jailCheck, hpCheck, async (req: AuthRequest, res: Response) => {
+  try {
+    const inventoryId = Number(req.params.inventoryId);
+    const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.userId!) });
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    // Fetch inventory row and verify it's a hoe
+    const invRow = db.select({
+      inventory: schema.userInventory,
+      item: schema.items,
+    })
+    .from(schema.userInventory)
+    .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+    .where(and(
+      eq(schema.userInventory.id, inventoryId),
+      eq(schema.userInventory.userId, user.id),
+      eq(schema.items.type, "hoe"),
+    ))
+    .all();
+
+    if (invRow.length === 0) {
+      res.status(404).json({ error: "Hoe not found" });
+      return;
+    }
+
+    const inv = invRow[0].inventory;
+
+    // Remove the hoe (decrement quantity or delete)
+    if (inv.quantity > 1) {
+      db.update(schema.userInventory)
+        .set({ quantity: inv.quantity - 1 })
+        .where(eq(schema.userInventory.id, inv.id))
+        .run();
+    } else {
+      db.delete(schema.userInventory).where(eq(schema.userInventory.id, inv.id)).run();
+    }
+
+    res.json({
+      success: true,
+      itemName: invRow[0].item.name,
+      message: `Fired ${invRow[0].item.name}`,
+    });
+  } catch (err) {
+    console.error("Hoes fire error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});

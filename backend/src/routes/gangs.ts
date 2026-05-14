@@ -485,12 +485,67 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       }
     }
 
+    // ─── Auto-payout for salaries (24h cycle) ───
+    if (gang.accountantId && gang.lastSalaryPayout) {
+      const elapsedHours = (Date.now() - new Date(gang.lastSalaryPayout).getTime()) / 3600000;
+      if (elapsedHours >= 24) {
+        const salaryMembers = db.select({
+          userId: schema.gangMembers.userId,
+          username: schema.users.username,
+          salary: schema.gangMembers.salary,
+        })
+          .from(schema.gangMembers)
+          .innerJoin(schema.users, eq(schema.gangMembers.userId, schema.users.id))
+          .where(and(
+            eq(schema.gangMembers.gangId, gangId),
+            sql`${schema.gangMembers.salary} > 0`,
+          ))
+          .all();
+
+        if (salaryMembers.length > 0) {
+          const totalSalaries = salaryMembers.reduce((sum, m) => sum + (m.salary ?? 0), 0);
+          const accountantFee = Math.ceil(totalSalaries * 0.02);
+          const totalCost = totalSalaries + accountantFee;
+
+          if (gang.vault >= totalCost) {
+            db.transaction(() => {
+              // Deduct from vault
+              db.update(schema.gangs)
+                .set({ vault: gang.vault - totalCost })
+                .where(eq(schema.gangs.id, gangId))
+                .run();
+
+              // Pay each member
+              for (const m of salaryMembers) {
+                if (m.salary > 0) {
+                  db.update(schema.users)
+                    .set({ cash: sql`cash + ${m.salary}` })
+                    .where(eq(schema.users.id, m.userId))
+                    .run();
+                }
+              }
+
+              // 2% accountant fee is burnt (overhead cost)
+            });
+
+            gang.vault -= totalCost;
+          }
+        }
+
+        db.update(schema.gangs)
+          .set({ lastSalaryPayout: now.toISOString() })
+          .where(eq(schema.gangs.id, gangId))
+          .run();
+      }
+    }
+
     // Re-fetch members with updated respect values
     const updatedMembers = db.select({
       userId: schema.gangMembers.userId,
       gangId: schema.gangMembers.gangId,
       role: schema.gangMembers.role,
       joinedAt: schema.gangMembers.joinedAt,
+      salary: schema.gangMembers.salary,
       username: schema.users.username,
       level: schema.users.level,
       respect: schema.users.respect,
@@ -516,6 +571,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       gangId: m.gangId,
       role: m.role,
       joinedAt: m.joinedAt,
+      salary: m.salary ?? 0,
       username: m.username,
       level: m.level,
       respect: m.respect,
@@ -581,6 +637,8 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       contract,
       levelBenefits,
       pendingRequestCount,
+      bannerUrl: gang.bannerUrl,
+      accountantId: gang.accountantId,
     });
   } catch (err) {
     console.error("Get gang error:", err);
@@ -1314,6 +1372,46 @@ gangsRouter.post("/:id/disband", authMiddleware, jailCheck, hpCheck, (req: AuthR
   }
 });
 
+// ─── POST /api/gangs/:id/banner — set gang banner image (leader only) ───
+
+const BANNER_MAX_LENGTH = 2000000; // 2MB for base64 data URL
+
+const bannerSchema = z.object({
+  bannerUrl: z.string().max(BANNER_MAX_LENGTH).optional().nullable(),
+});
+
+gangsRouter.post("/:id/banner", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.id as string);
+    const gang = getGang(gangId);
+    if (!gang) {
+      res.status(404).json({ error: "Gang not found" });
+      return;
+    }
+
+    if (!isLeader(gang, req.userId!)) {
+      res.status(403).json({ error: "Only the gang leader can set the banner" });
+      return;
+    }
+
+    const data = bannerSchema.parse(req.body);
+
+    db.update(schema.gangs)
+      .set({ bannerUrl: data.bannerUrl ?? null })
+      .where(eq(schema.gangs.id, gangId))
+      .run();
+
+    res.json({ success: true, bannerUrl: data.bannerUrl ?? null });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Set banner error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // ─── Invite Routes ───
 
 // POST /api/gangs/:id/invite/:userId — invite a user to the gang
@@ -1555,6 +1653,251 @@ gangsRouter.delete("/:id/invite/:inviteId", authMiddleware, (req: AuthRequest, r
     res.json({ message: "Invite cancelled" });
   } catch (err) {
     console.error("Cancel invite error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ─── POST /api/gangs/:id/withdraw — withdraw from vault (leader/enforcer) ───
+
+gangsRouter.post("/:id/withdraw", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.id as string);
+    const { amount } = z.object({ amount: z.number().int().positive() }).parse(req.body);
+
+    const gang = getGang(gangId);
+    if (!gang) {
+      res.status(404).json({ error: "Gang not found" });
+      return;
+    }
+
+    const membership = db.select()
+      .from(schema.gangMembers)
+      .where(and(
+        eq(schema.gangMembers.userId, req.userId!),
+        eq(schema.gangMembers.gangId, gangId)
+      ))
+      .all()[0];
+
+    if (!membership || (membership.role !== "leader" && membership.role !== "enforcer")) {
+      res.status(403).json({ error: "Only the leader and enforcer can withdraw from the vault" });
+      return;
+    }
+
+    if (gang.vault < amount) {
+      res.status(400).json({ error: "Not enough in the vault" });
+      return;
+    }
+
+    db.update(schema.gangs)
+      .set({ vault: gang.vault - amount })
+      .where(eq(schema.gangs.id, gangId))
+      .run();
+
+    db.update(schema.users)
+      .set({ cash: sql`cash + ${amount}` })
+      .where(eq(schema.users.id, req.userId!))
+      .run();
+
+    logActivityEvent(req.userId!, "vault_withdrew",
+      `Withdrew $${amount.toLocaleString()} from the gang vault`,
+      { gangId, gangName: gang.name, gangTag: gang.tag, amount });
+
+    res.json({ vault: gang.vault - amount, amount });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Withdraw error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ─── POST /api/gangs/:id/pay/:userId — pay a member from the vault (leader/enforcer) ───
+
+gangsRouter.post("/:id/pay/:userId", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.id as string);
+    const targetId = parseInt(req.params.userId as string);
+    const { amount } = z.object({ amount: z.number().int().positive() }).parse(req.body);
+
+    const gang = getGang(gangId);
+    if (!gang) {
+      res.status(404).json({ error: "Gang not found" });
+      return;
+    }
+
+    const requesterMembership = db.select()
+      .from(schema.gangMembers)
+      .where(and(
+        eq(schema.gangMembers.userId, req.userId!),
+        eq(schema.gangMembers.gangId, gangId)
+      ))
+      .all()[0];
+
+    if (!requesterMembership || (requesterMembership.role !== "leader" && requesterMembership.role !== "enforcer")) {
+      res.status(403).json({ error: "Only the leader and enforcer can pay members from the vault" });
+      return;
+    }
+
+    if (req.userId === targetId) {
+      res.status(400).json({ error: "Use withdraw instead" });
+      return;
+    }
+
+    const targetMembership = db.select()
+      .from(schema.gangMembers)
+      .where(and(
+        eq(schema.gangMembers.userId, targetId),
+        eq(schema.gangMembers.gangId, gangId)
+      ))
+      .all()[0];
+
+    if (!targetMembership) {
+      res.status(404).json({ error: "User is not a member of this gang" });
+      return;
+    }
+
+    if (gang.vault < amount) {
+      res.status(400).json({ error: "Not enough in the vault" });
+      return;
+    }
+
+    const targetUser = db.select({ username: schema.users.username })
+      .from(schema.users)
+      .where(eq(schema.users.id, targetId))
+      .all()[0];
+
+    db.transaction(() => {
+      db.update(schema.gangs)
+        .set({ vault: gang.vault - amount })
+        .where(eq(schema.gangs.id, gangId))
+        .run();
+
+      db.update(schema.users)
+        .set({ cash: sql`cash + ${amount}` })
+        .where(eq(schema.users.id, targetId))
+        .run();
+    });
+
+    logActivityEvent(req.userId!, "vault_paid_member",
+      `Paid $${amount.toLocaleString()} from the vault to ${targetUser?.username ?? "member"}`,
+      { gangId, gangName: gang.name, gangTag: gang.tag, amount, targetId });
+
+    logActivityEvent(targetId, "vault_received_payment",
+      `Received $${amount.toLocaleString()} from the gang vault`,
+      { gangId, gangName: gang.name, gangTag: gang.tag, amount, paidBy: req.userId! });
+
+    res.json({ vault: gang.vault - amount, amount, targetUsername: targetUser?.username });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Pay member error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ─── POST /api/gangs/:id/accountant — hire/fire the accountant bot (leader only) ───
+
+gangsRouter.post("/:id/accountant", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.id as string);
+    const data = z.object({ hire: z.boolean() }).parse(req.body);
+
+    const gang = getGang(gangId);
+    if (!gang) {
+      res.status(404).json({ error: "Gang not found" });
+      return;
+    }
+
+    if (!isLeader(gang, req.userId!)) {
+      res.status(403).json({ error: "Only the gang leader can manage the accountant" });
+      return;
+    }
+
+    db.update(schema.gangs)
+      .set({
+        accountantId: data.hire ? 1 : null,
+        lastSalaryPayout: data.hire && !gang.lastSalaryPayout ? new Date().toISOString() : gang.lastSalaryPayout,
+      })
+      .where(eq(schema.gangs.id, gangId))
+      .run();
+
+    logActivityEvent(req.userId!, data.hire ? "accountant_hired" : "accountant_fired",
+      data.hire ? "Hired a gang accountant" : "Fired the gang accountant",
+      { gangId });
+
+    res.json({ success: true, hired: data.hire });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Set accountant error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ─── POST /api/gangs/:id/salary/:userId — set a member's salary (leader only) ───
+
+gangsRouter.post("/:id/salary/:userId", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.id as string);
+    const targetId = parseInt(req.params.userId as string);
+    const data = z.object({ amount: z.number().int().min(0).max(1000000) }).parse(req.body);
+
+    const gang = getGang(gangId);
+    if (!gang) {
+      res.status(404).json({ error: "Gang not found" });
+      return;
+    }
+
+    if (!isLeader(gang, req.userId!)) {
+      res.status(403).json({ error: "Only the gang leader can set salaries" });
+      return;
+    }
+
+    const targetMembership = db.select()
+      .from(schema.gangMembers)
+      .where(and(
+        eq(schema.gangMembers.userId, targetId),
+        eq(schema.gangMembers.gangId, gangId)
+      ))
+      .all()[0];
+
+    if (!targetMembership) {
+      res.status(404).json({ error: "User is not a member of this gang" });
+      return;
+    }
+
+    if (targetId === req.userId) {
+      res.status(400).json({ error: "The leader cannot set their own salary" });
+      return;
+    }
+
+    db.update(schema.gangMembers)
+      .set({ salary: data.amount })
+      .where(eq(schema.gangMembers.id, targetMembership.id))
+      .run();
+
+    const targetUser = db.select({ username: schema.users.username })
+      .from(schema.users)
+      .where(eq(schema.users.id, targetId))
+      .all()[0];
+
+    logActivityEvent(req.userId!, "salary_set",
+      `Set ${targetUser?.username ?? "member"}'s salary to $${data.amount}/day`,
+      { gangId, targetId, amount: data.amount });
+
+    res.json({ success: true, userId: targetId, salary: data.amount });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Set salary error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

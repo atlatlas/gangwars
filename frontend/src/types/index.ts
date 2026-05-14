@@ -211,6 +211,7 @@ export interface Gang {
   vault: number;
   createdAt: string;
   memberCount?: number;
+  bannerUrl?: string | null;
 }
 
 export interface GangMember {
@@ -221,6 +222,7 @@ export interface GangMember {
   joinedAt: string;
   respect: number;
   netWorth: number;
+  salary?: number;
 }
 
 export interface GangDetail extends Gang {
@@ -231,6 +233,7 @@ export interface GangDetail extends Gang {
   contract: GangContract | null;
   levelBenefits: GangLevelBenefits;
   pendingRequestCount?: number;
+  accountantId?: number | null;
 }
 
 export interface GangLevelBenefits {

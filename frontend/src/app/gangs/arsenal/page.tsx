@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import GameLayout from "@/components/GameLayout";
 import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { Swords, Shield, ArrowLeft, DollarSign, Wrench, Crosshair, Eye } from "lucide-react";
 
 interface ArsenalItem {
@@ -54,7 +54,7 @@ const TYPE_COLORS: Record<string, string> = {
 export default function ArsenalPage() {
   const router = useRouter();
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [data, setData] = useState<ArsenalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export default function ArsenalPage() {
       const result = await gangsApi.arsenal.list(gangId);
       setData(result);
     } catch (err: any) {
-      toast(err.message || "Failed to load arsenal", "error");
+      showNotification(err.message || "Failed to load arsenal", "error");
     }
     setLoading(false);
   };
@@ -86,11 +86,11 @@ export default function ArsenalPage() {
     setActionLoading(`buy-${name}`);
     try {
       await gangsApi.arsenal.buy(gangId, name);
-      toast(`Purchased ${name}!`, "success");
+      showNotification(`Purchased ${name}!`, "success");
       await refreshUser();
       loadArsenal();
     } catch (err: any) {
-      toast(err.message || "Failed to purchase", "error");
+      showNotification(err.message || "Failed to purchase", "error");
     }
     setActionLoading(null);
   };
@@ -100,10 +100,10 @@ export default function ArsenalPage() {
     setActionLoading(`equip-${arsenalId}`);
     try {
       await gangsApi.arsenal.equip(gangId, arsenalId);
-      toast("Item equipped!", "success");
+      showNotification("Item equipped!", "success");
       loadArsenal();
     } catch (err: any) {
-      toast(err.message || "Failed to equip", "error");
+      showNotification(err.message || "Failed to equip", "error");
     }
     setActionLoading(null);
   };
@@ -113,10 +113,10 @@ export default function ArsenalPage() {
     setActionLoading(`unequip-${arsenalId}`);
     try {
       await gangsApi.arsenal.unequip(gangId, arsenalId);
-      toast("Item unequipped!", "success");
+      showNotification("Item unequipped!", "success");
       loadArsenal();
     } catch (err: any) {
-      toast(err.message || "Failed to unequip", "error");
+      showNotification(err.message || "Failed to unequip", "error");
     }
     setActionLoading(null);
   };
@@ -126,11 +126,11 @@ export default function ArsenalPage() {
     setActionLoading(`repair-${arsenalId}`);
     try {
       await gangsApi.arsenal.repair(gangId, arsenalId);
-      toast("Item repaired!", "success");
+      showNotification("Item repaired!", "success");
       await refreshUser();
       loadArsenal();
     } catch (err: any) {
-      toast(err.message || "Failed to repair", "error");
+      showNotification(err.message || "Failed to repair", "error");
     }
     setActionLoading(null);
   };

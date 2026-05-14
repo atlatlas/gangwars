@@ -17,7 +17,7 @@ import {
   RotateCcw,
   Eye,
 } from "lucide-react";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 
 type FeedbackType = "suggestion" | "bug";
 type FeedbackStatus = "open" | "under-review" | "planned" | "completed" | "declined";
@@ -60,7 +60,7 @@ function saveFeedback(items: FeedbackItem[]) {
 }
 
 export default function FeedbackPage() {
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"all" | FeedbackType>("all");
@@ -105,7 +105,7 @@ export default function FeedbackPage() {
     setFormDesc("");
     setShowForm(false);
     setSubmitting(false);
-    toast("Feedback submitted!", "success");
+    showNotification("Feedback submitted!", "success");
   };
 
   const handleVote = (id: string) => {

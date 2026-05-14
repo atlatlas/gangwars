@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import GameLayout from "@/components/GameLayout";
 import { bank as bankApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { Building, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Shield } from "lucide-react";
 
 export default function BankPage() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [bankData, setBankData] = useState<{ bank: number; cash: number; totalNetworth: number } | null>(null);
   const [amount, setAmount] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -20,7 +20,7 @@ export default function BankPage() {
       const data = await bankApi.get();
       setBankData(data);
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -32,15 +32,15 @@ export default function BankPage() {
 
   const handleDeposit = async () => {
     const val = parseInt(amount);
-    if (!val || val <= 0) { toast("Enter a valid amount", "error"); return; }
+    if (!val || val <= 0) { showNotification("Enter a valid amount", "error"); return; }
     setProcessing(true);
     try {
       await bankApi.deposit(val);
       await Promise.all([fetchBank(), refreshUser()]);
       setAmount("");
-      toast("Deposited successfully!", "success");
+      showNotification("Deposited successfully!", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setProcessing(false);
     }
@@ -48,15 +48,15 @@ export default function BankPage() {
 
   const handleWithdraw = async () => {
     const val = parseInt(amount);
-    if (!val || val <= 0) { toast("Enter a valid amount", "error"); return; }
+    if (!val || val <= 0) { showNotification("Enter a valid amount", "error"); return; }
     setProcessing(true);
     try {
       await bankApi.withdraw(val);
       await Promise.all([fetchBank(), refreshUser()]);
       setAmount("");
-      toast("Withdrawn successfully!", "success");
+      showNotification("Withdrawn successfully!", "success");
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setProcessing(false);
     }

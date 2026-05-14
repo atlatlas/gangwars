@@ -147,6 +147,7 @@ gangOperationsRouter.get("/:id/operations", authMiddleware, (req: AuthRequest, r
         minLevel: r.minLevel,
         sortOrder: r.sortOrder,
         satisfied: memberEligibility.some(m => m.satisfiedReqs.includes(r.sortOrder)),
+        userLevel: userSkillBySkillId.get(r.skillId) ?? 0,
       }));
 
       return {
@@ -811,10 +812,9 @@ gangOperationsRouter.post("/:id/operations/collect", authMiddleware, jailCheck, 
       return;
     }
 
-    const today = getDateString();
     const incomeRate = getIncomeForLevel(def, activeOp.level);
 
-    // Count completions from assigned members only
+    // Count completions from assigned members since last payout
     const opAssignments = db.select({ userId: schema.gangOperationAssignments.userId })
       .from(schema.gangOperationAssignments)
       .where(eq(schema.gangOperationAssignments.activeOperationId, activeOp.id))
@@ -828,8 +828,8 @@ gangOperationsRouter.post("/:id/operations/collect", authMiddleware, jailCheck, 
         .where(and(
           eq(schema.gangDailyTasks.gangId, gangId),
           eq(schema.gangDailyTasks.operationDefId, def.id),
-          eq(schema.gangDailyTasks.taskDate, today),
           eq(schema.gangDailyTasks.completed, true),
+          sql`${schema.gangDailyTasks.verifiedAt} >= ${activeOp.lastPayoutAt}`,
           inArray(schema.gangDailyTasks.userId, assignedUserIds),
         ))
         .all()[0];
@@ -837,7 +837,7 @@ gangOperationsRouter.post("/:id/operations/collect", authMiddleware, jailCheck, 
     }
 
     if (completedCount === 0) {
-      res.status(400).json({ error: "No assigned members completed today's task. Nothing to collect." });
+      res.status(400).json({ error: "No assigned members completed their tasks since the last payout. Nothing to collect." });
       return;
     }
 

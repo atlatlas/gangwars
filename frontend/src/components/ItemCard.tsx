@@ -58,6 +58,7 @@ export default function ItemCard({
   const isDrug = item.type === "drug";
   const isWeapon = item.type === "arm";
   const isFootman = item.type === "footman";
+  const isPimp = item.type === "pimp";
   const owned = typeof item.owned === "number" ? item.owned : item.owned ? 1 : 0;
 
   const trendIcon = item.trend === "up" ? (
@@ -76,7 +77,7 @@ export default function ItemCard({
     <Users size={14} className="text-cyan-400" />
   );
 
-  const typeLabel = isWeapon ? "Weapon" : isDrug ? "Drug" : "Footman";
+  const typeLabel = isWeapon ? "Weapon" : isDrug ? "Drug" : isFootman ? "Footman" : "Pimp";
 
   const handleBuy = async () => {
     setBuying(true);
@@ -187,7 +188,7 @@ export default function ItemCard({
             <span className="text-[10px] font-mono text-emerald-400/60">
               {isWeapon
                 ? "Owned"
-                : isFootman
+                : isFootman || isPimp
                 ? `${owned} Hired`
                 : `${owned} owned`}
             </span>
@@ -201,9 +202,9 @@ export default function ItemCard({
         {!isLocked && (
           <div className="flex items-center gap-2 pt-1">
             {/* Buy section */}
-            {(!owned || isDrug) && (
+            {isWeapon && owned > 0 ? null : (
               <div className="flex items-center gap-1 flex-1">
-                {isDrug && (
+                {(isDrug || isFootman || isPimp) && (
                   <div className="flex items-center gap-1 mr-1">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -214,9 +215,9 @@ export default function ItemCard({
                     </button>
                     <span className="font-mono text-[11px] text-white/60 w-4 text-center">{quantity}</span>
                     <button
-                      onClick={() => setQuantity(Math.min(100, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(99, quantity + 1))}
                       className="p-0.5 rounded text-white/30 hover:text-white/60 transition-colors"
-                      disabled={quantity >= 100}
+                      disabled={quantity >= 99}
                     >
                       <Plus size={12} />
                     </button>
@@ -224,9 +225,9 @@ export default function ItemCard({
                 )}
                 <button
                   onClick={handleBuy}
-                  disabled={buying || !canAfford || (isWeapon && owned > 0) || (isFootman && owned > 0)}
+                  disabled={buying || !canAfford || (isWeapon && owned > 0)}
                   className={`flex-1 px-2 py-1.5 rounded-sm text-[11px] font-mono uppercase tracking-wider transition-all ${
-                    !canAfford || (isWeapon && owned > 0) || (isFootman && owned > 0)
+                    !canAfford || (isWeapon && owned > 0)
                       ? "bg-white/5 text-white/20 cursor-not-allowed"
                       : inventoryFull
                       ? "bg-yellow-500/10 text-yellow-400/60 border border-yellow-500/20 cursor-not-allowed"
@@ -241,9 +242,7 @@ export default function ItemCard({
                     ? "Can't Afford"
                     : isWeapon && owned > 0
                     ? "Owned"
-                    : isFootman && owned > 0
-                    ? "Hired"
-                    : `Buy${isDrug ? ` $${(price * quantity).toLocaleString()}` : ""}`}
+                    : `Buy $${((item.currentPrice ?? item.buyPrice) * quantity).toLocaleString()}`}
                 </button>
               </div>
             )}
@@ -263,8 +262,8 @@ export default function ItemCard({
               </button>
             )}
 
-            {/* Sell (drugs only, via inventory) */}
-            {isDrug && owned > 0 && inventoryId && onSell && (
+            {/* Sell (drugs, footmen, pimps) */}
+            {(isDrug || isFootman || isPimp) && owned > 0 && inventoryId && onSell && (
               <div className="flex items-center gap-1 flex-1">
                 <div className="flex items-center gap-1 mr-1">
                   <button
@@ -288,7 +287,7 @@ export default function ItemCard({
                   disabled={selling}
                   className="flex-1 px-2 py-1.5 rounded-sm text-[11px] font-mono uppercase tracking-wider transition-all bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20"
                 >
-                  {selling ? "..." : `Sell $${((item.currentPrice ?? item.buyPrice) * quantity).toLocaleString()}`}
+                  {selling ? "..." : `Sell $${((item.sellPrice ?? item.currentPrice ?? item.buyPrice) * quantity).toLocaleString()}`}
                 </button>
               </div>
             )}

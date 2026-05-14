@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import GameLayout from "@/components/GameLayout";
 import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { GangLeaderboardData, GangLeaderboardEntry, GangInvite } from "@/types";
 import { Shield, Medal, TrendingUp, DollarSign, Users, Map, Trophy, ChevronRight, Mail, Check, X as XIcon, Plus, X, Send, Search } from "lucide-react";
 
@@ -39,7 +39,7 @@ function getGangValue(entry: GangLeaderboardEntry, tab: string) {
 export default function GangsPage() {
   const router = useRouter();
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [activeTab, setActiveTab] = useState("level");
   const [data, setData] = useState<GangLeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,14 +81,14 @@ export default function GangsPage() {
     try {
       const data = await gangsApi.acceptInvite(inviteId);
       await refreshUser();
-      toast("Joined gang!", "success");
+      showNotification("Joined gang!", "success");
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
       loadLeaderboard();
       if (data.gangId) {
         router.push(`/gangs/${data.gangId}`);
       }
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setInviteLoading(false);
     }
@@ -98,10 +98,10 @@ export default function GangsPage() {
     setInviteLoading(true);
     try {
       await gangsApi.declineInvite(inviteId);
-      toast("Invite declined", "success");
+      showNotification("Invite declined", "success");
       setInvites((prev) => prev.filter((i) => i.id !== inviteId));
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setInviteLoading(false);
     }
@@ -113,12 +113,12 @@ export default function GangsPage() {
     try {
       await gangsApi.create(form);
       await refreshUser();
-      toast("Gang created!", "success");
+      showNotification("Gang created!", "success");
       setShowCreate(false);
       setForm({ name: "", tag: "", description: "" });
       loadLeaderboard();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setCreating(false);
     }
@@ -130,10 +130,10 @@ export default function GangsPage() {
       await gangsApi.join(gangId);
       await refreshUser();
       setRequestedGangs((prev) => new Set(prev).add(gangId));
-      toast("Join request sent to the gang leader!", "success");
+      showNotification("Join request sent to the gang leader!", "success");
       loadLeaderboard();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setJoining(null);
     }

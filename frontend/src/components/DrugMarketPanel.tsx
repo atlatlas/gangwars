@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { drugMarket as drugMarketApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import {
   AlertTriangle, TrendingUp, TrendingDown, Minus, Plus, DollarSign,
   Package, Newspaper, RefreshCw, Beaker, ChevronRight,
@@ -70,7 +70,7 @@ interface DrugMarketData {
 
 export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () => void }) {
   const { user } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [data, setData] = useState<DrugMarketData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,11 +102,11 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
     setActionId(itemId);
     try {
       await drugMarketApi.buy(itemId, qty);
-      toast(`Bought ${qty} units`, "success");
+      showNotification(`Bought ${qty} units`, "success");
       await loadData();
       onRefreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setActionId(null);
     }
@@ -118,14 +118,14 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
       const res = await drugMarketApi.sell(inventoryId, qty);
       const pnl = res.profitLoss;
       if (pnl !== 0) {
-        toast(`Sold! P&L: ${pnl >= 0 ? "+" : ""}$${pnl}`, pnl >= 0 ? "success" : "error");
+        showNotification(`Sold! P&L: ${pnl >= 0 ? "+" : ""}$${pnl}`, pnl >= 0 ? "success" : "error");
       } else {
-        toast("Sold!", "success");
+        showNotification("Sold!", "success");
       }
       await loadData();
       onRefreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setActionId(null);
     }
@@ -136,14 +136,14 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
     try {
       const res = await drugMarketApi.collect();
       if (res.totalCollected > 0) {
-        toast(`Collected ${res.totalCollected} units from dealers!`, "success");
+        showNotification(`Collected ${res.totalCollected} units from dealers!`, "success");
       } else {
-        toast("Nothing ready to collect yet", "info");
+        showNotification("Nothing ready to collect yet", "info");
       }
       await loadData();
       onRefreshUser();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setCollecting(false);
     }

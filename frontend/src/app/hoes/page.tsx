@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import GameLayout from "@/components/GameLayout";
 import { hoes as hoesApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
-import { useToast } from "@/components/Toast";
+import { useTopNotification } from "@/components/TopNotification";
 import { DollarSign, Users, Eye, TrendingUp, RefreshCw, Plus, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 
 interface Hoe {
@@ -38,13 +38,14 @@ interface HoeGroup {
 
 export default function HoesPage() {
   const { user, refreshUser } = useUser();
-  const { toast } = useToast();
+  const { showNotification } = useTopNotification();
   const [hoes, setHoes] = useState<Hoe[]>([]);
   const [available, setAvailable] = useState<AvailableHoe[]>([]);
   const [totalPending, setTotalPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const [collecting, setCollecting] = useState(false);
   const [buying, setBuying] = useState<number | null>(null);
+  const [firing, setFiring] = useState<number | null>(null);
   const [womensStudiesLevel, setWomensStudiesLevel] = useState(0);
   const [sexualEdLevel, setSexualEdLevel] = useState(0);
   const [pimpCount, setPimpCount] = useState(0);
@@ -64,7 +65,7 @@ export default function HoesPage() {
       setUnprotectedHoes(data.unprotectedHoes ?? 0);
       setProtectedCapacity(data.protectedCapacity ?? 0);
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setLoading(false);
     }
@@ -80,16 +81,16 @@ export default function HoesPage() {
       const data = await hoesApi.collect();
       if (data.kidnapped && data.kidnapped.length > 0) {
         setKidnapped(data.kidnapped);
-        toast(`Some hoes got kidnapped! You need more pimps.`, "error");
+        showNotification(`Some hoes got kidnapped! You need more pimps.`, "error");
       } else if (data.totalCollected > 0) {
-        toast(`Collected $${data.totalCollected.toLocaleString()} from your hoes!`, "success");
+        showNotification(`Collected $${data.totalCollected.toLocaleString()} from your hoes!`, "success");
       } else {
-        toast(data.message || "Nothing to collect yet", "info");
+        showNotification(data.message || "Nothing to collect yet", "info");
       }
       await refreshUser();
       await loadHoes();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setCollecting(false);
     }
@@ -99,13 +100,26 @@ export default function HoesPage() {
     setBuying(itemId);
     try {
       const data = await hoesApi.buy(itemId);
-      toast(`Recruited ${data.itemName}!`, "success");
+      showNotification(`Recruited ${data.itemName}!`, "success");
       await refreshUser();
       await loadHoes();
     } catch (err: any) {
-      toast(err.message, "error");
+      showNotification(err.message, "error");
     } finally {
       setBuying(null);
+    }
+  };
+
+  const handleFire = async (inventoryId: number, name: string) => {
+    setFiring(inventoryId);
+    try {
+      await hoesApi.fire(inventoryId);
+      showNotification(`Fired ${name}`, "success");
+      await loadHoes();
+    } catch (err: any) {
+      showNotification(err.message, "error");
+    } finally {
+      setFiring(null);
     }
   };
 
@@ -226,11 +240,24 @@ export default function HoesPage() {
                       ${group.totalIncome.toLocaleString()}/hr {group.count > 1 && `(${group.items[0].effectiveIncome.toLocaleString()} each)`}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono text-xs text-pink-300">${group.totalPending.toLocaleString()}</p>
-                    <p className="text-[10px] font-mono text-white/20">
-                      {group.count > 1 ? `${group.items.length} workers` : `${(group.items[0]?.hoursElapsed ?? 0).toFixed(1)}h`}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="font-mono text-xs text-pink-300">${group.totalPending.toLocaleString()}</p>
+                      <p className="text-[10px] font-mono text-white/20">
+                        {group.count > 1 ? `${group.items.length} workers` : `${(group.items[0]?.hoursElapsed ?? 0).toFixed(1)}h`}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleFire(group.items[group.items.length - 1].id, group.name)}
+                      disabled={firing !== null}
+                      className="font-mono text-[10px] uppercase text-red-400/50 hover:text-red-300 border border-red-400/10 hover:border-red-400/30 rounded-sm px-2 py-1 transition-all disabled:opacity-30"
+                    >
+                      {firing === group.items[group.items.length - 1].id ? (
+                        <div className="animate-spin h-2.5 w-2.5 border-2 border-red-400/30 border-t-red-400 rounded-full" />
+                      ) : (
+                        "Fire"
+                      )}
+                    </button>
                   </div>
                 </div>
               ))}
