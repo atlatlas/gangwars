@@ -985,15 +985,15 @@ gangsRouter.post("/:id/requests/:userId/accept", authMiddleware, jailCheck, hpCh
     const now = new Date().toISOString();
 
     // Atomic: add member + update request + notify
-    db.transaction((tx: any) => {
-      tx.insert(schema.gangMembers).values({
+    db.transaction(() => {
+      db.insert(schema.gangMembers).values({
         userId: targetId,
         gangId,
         role: "member",
         joinedAt: now,
       }).run();
 
-      tx.update(schema.gangJoinRequests)
+      db.update(schema.gangJoinRequests)
         .set({ status: "accepted" })
         .where(eq(schema.gangJoinRequests.id, request.id))
         .run();
@@ -1002,7 +1002,7 @@ gangsRouter.post("/:id/requests/:userId/accept", authMiddleware, jailCheck, hpCh
         `Joined [${gang.tag}] ${gang.name}`,
         { gangId, gangName: gang.name, gangTag: gang.tag });
 
-      tx.insert(schema.notifications).values({
+      db.insert(schema.notifications).values({
         userId: targetId,
         type: "gang_join_accepted",
         title: "Join Request Accepted",
@@ -1010,7 +1010,7 @@ gangsRouter.post("/:id/requests/:userId/accept", authMiddleware, jailCheck, hpCh
         read: false,
         createdAt: now,
       }).run();
-    })();
+    });
 
     res.json({ gangId, role: "member" });
   } catch (err) {

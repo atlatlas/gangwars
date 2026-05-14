@@ -23,11 +23,11 @@ export function addGangReputation(
     .run();
 
   if (contractType && contractAmount && contractAmount > 0) {
-    updateContractProgress(membership.gangId, userId, contractType, contractAmount);
+    updateContractProgress(membership.gangId, userId, contractType as "earn_cash" | "pvp_wins" | "vault_deposits" | "crimes", contractAmount);
   }
 }
 
-function updateContractProgress(gangId: number, userId: number, type: string, amount: number) {
+function updateContractProgress(gangId: number, userId: number, type: "earn_cash" | "pvp_wins" | "vault_deposits" | "crimes", amount: number) {
   const contract = db.select()
     .from(schema.gangContracts)
     .where(and(
