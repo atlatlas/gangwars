@@ -22,6 +22,8 @@ import { casinoRouter } from "./routes/casino";
 import { activityRouter } from "./routes/activity";
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
+import Database from "better-sqlite3";
+import path from "path";
 
 const app = express();
 const httpServer = createServer(app);
@@ -55,30 +57,33 @@ app.use("/api/activity", activityRouter);
 // TEMP: Cleanup demo user
 app.post("/api/cleanup-demo", async (_req, res) => {
   try {
-    const result = (db as any).session.all("SELECT id, username FROM users");
-    const demo = (db as any).session.get("SELECT id FROM users WHERE username = ?", "demo");
-    if (!demo) return res.json({ message: "No demo user found", users: result.map((u: any) => u.username) });
-    (db as any).session.run("DELETE FROM crime_log WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM skill_crime_log WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM player_stats WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM notifications WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM activity_events WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM user_inventory WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM user_skills WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM pvp_log WHERE attacker_id = ? OR defender_id = ?", demo.id, demo.id);
-    (db as any).session.run("DELETE FROM retaliation_log WHERE original_attacker_id = ? OR defender_id = ?", demo.id, demo.id);
-    (db as any).session.run("DELETE FROM gang_invites WHERE user_id = ? OR invited_by = ?", demo.id, demo.id);
-    (db as any).session.run("DELETE FROM gang_join_requests WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM gang_operation_assignments WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM gang_daily_tasks WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM gang_arsenal WHERE equipped_by = ?", demo.id);
-    (db as any).session.run("DELETE FROM gang_contract_contributors WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM gang_members WHERE user_id = ?", demo.id);
-    (db as any).session.run("DELETE FROM users WHERE id = ?", demo.id);
-    const remaining = (db as any).session.all("SELECT id, username FROM users");
+    const sqlite = new Database(path.join(__dirname, "..", "data", "gangwars.db"));
+    sqlite.pragma("journal_mode = WAL");
+    const users = sqlite.prepare("SELECT id, username FROM users").all();
+    const demo = sqlite.prepare("SELECT id FROM users WHERE username = ?").get("demo");
+    if (!demo) return res.json({ message: "No demo user found", users: users.map((u: any) => u.username) });
+    sqlite.prepare("DELETE FROM crime_log WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM skill_crime_log WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM player_stats WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM notifications WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM activity_events WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM user_inventory WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM user_skills WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM pvp_log WHERE attacker_id = ? OR defender_id = ?").run(demo.id, demo.id);
+    sqlite.prepare("DELETE FROM retaliation_log WHERE original_attacker_id = ? OR defender_id = ?").run(demo.id, demo.id);
+    sqlite.prepare("DELETE FROM gang_invites WHERE user_id = ? OR invited_by = ?").run(demo.id, demo.id);
+    sqlite.prepare("DELETE FROM gang_join_requests WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM gang_operation_assignments WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM gang_daily_tasks WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM gang_arsenal WHERE equipped_by = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM gang_contract_contributors WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM gang_members WHERE user_id = ?").run(demo.id);
+    sqlite.prepare("DELETE FROM users WHERE id = ?").run(demo.id);
+    const remaining = sqlite.prepare("SELECT id, username FROM users").all();
+    sqlite.close();
     res.json({ message: "Demo user deleted", remaining: remaining.map((u: any) => u.username) });
   } catch (e: any) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message, stack: e.stack });
   }
 });
 
