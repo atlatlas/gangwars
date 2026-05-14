@@ -19,7 +19,7 @@ interface GameLayoutProps {
 export default function GameLayout({ children }: GameLayoutProps) {
   const router = useRouter();
   const { user, loading, refreshUser } = useUser();
-  const { showNotification } = useTopNotification();
+  const { showNotification, showConfirm } = useTopNotification();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [healing, setHealing] = useState(false);
@@ -56,8 +56,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
     router.push("/login");
   };
 
-  const handleHeal = async (method: "cash" | "turns") => {
-    if (method === "turns" && !confirm("Sacrifice up to 10 turns at 5% HP per turn to heal?")) return;
+  const doHeal = async (method: "cash" | "turns") => {
     setHealing(true);
     try {
       await profileApi.heal(method);
@@ -73,6 +72,14 @@ export default function GameLayout({ children }: GameLayoutProps) {
     } finally {
       setHealing(false);
     }
+  };
+
+  const handleHeal = (method: "cash" | "turns") => {
+    if (method === "turns") {
+      showConfirm("Sacrifice up to 10 turns at 5% HP per turn to heal?", "warning", () => doHeal(method));
+      return;
+    }
+    doHeal(method);
   };
 
   if (loading || !user) {

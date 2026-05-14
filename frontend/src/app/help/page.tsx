@@ -208,11 +208,12 @@ const sections: Section[] = [
   {
     icon: Building,
     title: "Bank",
-    subtitle: "Store & protect your cash",
+    subtitle: "Store cash, earn interest & invest in gangs",
     page: PAGE.BANK,
     content: [
-      "Deposit cash into the bank to keep it safe. Cash on hand can be stolen in PvP attacks — bank money is protected. Withdraw anytime. Your total net worth is cash on hand plus bank balance. The bank doesn't pay interest, but it also never gets robbed.",
-      "Use the Dashboard to see your cash vs bank balance at a glance. A good rule: deposit everything except what you need for immediate spending. There's no fee for deposits or withdrawals, so use the bank freely.",
+      "Deposit cash into the bank to keep it safe from mugging and crime failure cash losses. Your bank balance earns 0.4% interest daily, paid automatically on each turn refresh. The 30-day interest projection chart on the bank page shows how your savings will grow. Your net worth is cash on hand plus bank balance plus respect value.",
+      "The bank also offers Gang Investments — a way to earn passive returns by investing cash in player-run gangs. Each gang can open investments and set their own investor share (10-50% of the gang's daily operation income). Browse all gangs open for investment on the bank page, search by name or tag, and sort by total invested or daily return.",
+      "When you invest in a gang, your cash goes into their vault to help them grow. In return, you earn a proportional share of their daily operation income — paid directly to your cash every 24 hours. Your principal is always withdrawable. The returns you've already earned are yours to keep regardless of withdrawal.",
     ],
     border: "border-emerald-500/20",
     glow: "shadow-emerald-500/5",
@@ -264,11 +265,12 @@ const sections: Section[] = [
   {
     icon: DollarSign,
     title: "Gangs — Vault & Economy",
-    subtitle: "Pool resources, pay members",
+    subtitle: "Pool resources, pay members, raise capital",
     page: PAGE.GANGS,
     content: [
       "The gang vault is a shared wallet. Any member can deposit cash. Leaders and Enforcers can withdraw cash or pay individual members directly. The vault is used to fund operations, turf claims, arsenal purchases, and level upgrades.",
       "If the leader hires an Accountant bot (from the Accountant tab), it handles automatic daily salary payouts. The leader sets individual salaries per member. Every 24 hours, the accountant pays everyone from the vault and takes a 2% overhead fee that is burnt. You can see last payout time and individual salary amounts on the Accountant tab.",
+      "Gangs can also raise capital by opening to external investments (Investments tab on the gang page). When a player invests, their cash is added directly to the gang vault — giving the gang more spending power. The leader sets the investor share percentage (10-50%), which determines how much of the gang's daily operation income is distributed to investors as returns.",
     ],
     border: "border-cyan-500/20",
     glow: "shadow-cyan-500/5",

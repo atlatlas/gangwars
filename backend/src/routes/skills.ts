@@ -32,13 +32,14 @@ skillsRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =>
       const xpNeeded = Math.floor(10 * (level + 1) * skill.difficulty);
       const statValue = user[skill.statUsed as keyof typeof user] as number;
       const xpPerTrain = skill.baseXpPerTrain + Math.floor(statValue * 0.5);
+      const currentTurnCost = getComputedTurnCost(skill.turnCost, level);
 
       return {
         id: skill.id,
         name: skill.name,
         description: skill.description,
         statUsed: skill.statUsed,
-        turnCost: skill.turnCost,
+        turnCost: currentTurnCost,
         maxLevel: skill.maxLevel,
         difficulty: skill.difficulty,
         level,
@@ -76,25 +77,13 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
       return;
     }
 
-    const refreshedTurns = refreshTurns(user);
-
-    // Check turns
-    if (refreshedTurns < skill.turnCost) {
-      res.status(400).json({ error: "Not enough turns" });
-      return;
-    }
-
-    // Deduct turns
-    db.update(schema.users)
-      .set({ turns: refreshedTurns - skill.turnCost })
-      .where(eq(schema.users.id, user.id))
-      .run();
-
-    // Get or create user_skill row
+    // Get or create user_skill row (needed to compute progressive turn cost)
     let userSkill = db.select()
       .from(schema.userSkills)
       .where(and(eq(schema.userSkills.userId, user.id), eq(schema.userSkills.skillId, skillId)))
       .all()[0];
+
+    const userSkillLevel = userSkill?.level ?? 0;
 
     if (!userSkill) {
       db.insert(schema.userSkills).values({
@@ -115,6 +104,21 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
       res.status(400).json({ error: "Skill already at max level" });
       return;
     }
+
+    const refreshedTurns = refreshTurns(user);
+    const turnCost = getComputedTurnCost(skill.turnCost, userSkillLevel);
+
+    // Check turns
+    if (refreshedTurns < turnCost) {
+      res.status(400).json({ error: "Not enough turns" });
+      return;
+    }
+
+    // Deduct turns
+    db.update(schema.users)
+      .set({ turns: refreshedTurns - turnCost })
+      .where(eq(schema.users.id, user.id))
+      .run();
 
     // Calculate XP gained
     const statValue = user[skill.statUsed as keyof typeof user] as number;
@@ -138,6 +142,12 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
           .where(eq(schema.users.id, user.id))
           .run();
       }
+
+      // +3 respect per skill level-up
+      db.update(schema.users)
+        .set({ respect: user.respect + 3 })
+        .where(eq(schema.users.id, user.id))
+        .run();
 
       if (newLevel === skill.maxLevel) {
         logActivityEvent(user.id, "skill_maxed", `Mastered ${skill.name} reaching level ${newLevel}!`, { skillName: skill.name, maxLevel: skill.maxLevel });
@@ -214,7 +224,8 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
       newLevel,
       xp: leveledUp ? remainingXp : newXp,
       xpNeeded: nextXpNeeded,
-      turnsLeft: refreshedTurns - skill.turnCost,
+      turnCost,
+      turnsLeft: refreshedTurns - turnCost,
       statPointGained: leveledUp && newLevel % 10 === 0,
     });
   } catch (err) {
@@ -222,6 +233,11 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
     res.status(500).json({ error: "Server error" });
   }
 });
+
+// Progressive turn cost: quadratic curve — barely increases early, ramps up fast at high levels
+function getComputedTurnCost(baseCost: number, level: number): number {
+  return Math.max(3, Math.floor(baseCost * (0.35 + 1.65 * Math.pow(level / 100, 2))));
+}
 
 function getTrainingEffect(skillName: string, nextLevel: number): string {
   switch (skillName) {
@@ -235,6 +251,14 @@ function getTrainingEffect(skillName: string, nextLevel: number): string {
       return `+${Math.min(25, Math.floor(nextLevel * 0.25))}% passive income`;
     case "Sexual Education":
       return `+${Math.min(30, Math.floor(nextLevel * 0.3))}% passive income`;
+    case "Lockpicking":
+      return `+${Math.min(40, Math.floor(nextLevel * 0.4))}% lockpicking hit window`;
+    case "Pickpocketing":
+      return `+${Math.min(40, Math.floor(nextLevel * 0.4))}% pickpocketing reveal time`;
+    case "Safe Cracking":
+      return `+${Math.min(10, Math.floor(nextLevel * 0.1))} safe cracking attempts`;
+    case "Hacking":
+      return `+${Math.min(10, Math.floor(nextLevel * 0.1))} data heist attempts`;
     default:
       return "";
   }

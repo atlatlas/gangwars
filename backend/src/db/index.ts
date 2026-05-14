@@ -34,6 +34,39 @@ try {
 } catch {
   // column already exists
 }
+try {
+  sqlite.exec("ALTER TABLE gangs ADD COLUMN investments_open INTEGER DEFAULT 0 NOT NULL");
+} catch {
+  // column already exists
+}
+try {
+  sqlite.exec("ALTER TABLE gangs ADD COLUMN investor_share INTEGER DEFAULT 30 NOT NULL");
+} catch {
+  // column already exists
+}
+try {
+  sqlite.exec("ALTER TABLE gangs ADD COLUMN total_investments INTEGER DEFAULT 0 NOT NULL");
+} catch {
+  // column already exists
+}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_investments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  amount INTEGER NOT NULL,
+  returns_earned INTEGER DEFAULT 0 NOT NULL,
+  invested_at TEXT NOT NULL
+)`);
+try {
+  sqlite.exec("CREATE UNIQUE INDEX IF NOT EXISTS inv_gang_user_unique ON gang_investments(gang_id, user_id)");
+} catch {}
+try {
+  sqlite.exec("CREATE INDEX IF NOT EXISTS inv_gang_idx ON gang_investments(gang_id)");
+} catch {}
+try {
+  sqlite.exec("CREATE INDEX IF NOT EXISTS inv_user_idx ON gang_investments(user_id)");
+} catch {}
 
 export const db = drizzle(sqlite, { schema });
 export { schema };

@@ -11,6 +11,7 @@ interface Props {
   crimeName: string;
   onResult: (accuracy: number) => void;
   onClose: () => void;
+  difficultyBonus?: number;
 }
 
 const LANE_COUNT = 4;
@@ -18,7 +19,11 @@ const LANE_KEYS = ["1", "2", "3", "4"];
 const LANE_KEY_CODES = ["Digit1", "Digit2", "Digit3", "Digit4"];
 const GAME_DURATION = 15;
 const LEAD_TIME = 2; // seconds from note appearing to reaching target
-const HIT_WINDOW = 0.25; // seconds before/after perfect hit time
+
+// Hit window widens with higher difficultyBonus (from stat + skill)
+function getHitWindow(bonus: number): number {
+  return 0.25 + (bonus / 100) * 0.2;
+}
 
 const LANE_COLORS = [
   { bg: "bg-rose-500/15", border: "border-rose-500/30", active: "bg-rose-500/30", note: "bg-rose-400", glow: "rgba(244,63,94,0.5)" },
@@ -96,7 +101,8 @@ function playMissSound() {
   osc.stop(ctx.currentTime + 0.15);
 }
 
-export default function TimingGame({ speed, rewardMin, rewardMax, crimeName, onResult, onClose }: Props) {
+export default function TimingGame({ speed, rewardMin, rewardMax, crimeName, onResult, onClose, difficultyBonus = 0 }: Props) {
+  const hitWindow = getHitWindow(difficultyBonus);
   const [phase, setPhase] = useState<"ready" | "playing" | "ended">("ready");
   const [notes, setNotes] = useState<Note[]>([]);
   const [currentTime, setCurrentTime] = useState(0);
@@ -132,7 +138,7 @@ export default function TimingGame({ speed, rewardMin, rewardMax, crimeName, onR
       // Check for missed notes (passed the hit window)
       let missed = false;
       notesRef.current.forEach((n) => {
-        if (!n.hit && !n.missed && elapsed > n.time + HIT_WINDOW) {
+        if (!n.hit && !n.missed && elapsed > n.time + hitWindow) {
           n.missed = true;
           missed = true;
           missCountRef.current++;
@@ -184,7 +190,7 @@ export default function TimingGame({ speed, rewardMin, rewardMax, crimeName, onR
     for (const n of notesRef.current) {
       if (n.lane !== lane || n.hit || n.missed) continue;
       const dist = Math.abs(elapsed - n.time);
-      if (dist < HIT_WINDOW && dist < bestDist) {
+      if (dist < hitWindow && dist < bestDist) {
         bestDist = dist;
         bestNote = n;
       }
@@ -196,7 +202,7 @@ export default function TimingGame({ speed, rewardMin, rewardMax, crimeName, onR
 
     if (bestNote) {
       bestNote.hit = true;
-      bestNote.accuracy = Math.max(0, Math.round((1 - bestDist / HIT_WINDOW) * 100));
+      bestNote.accuracy = Math.max(0, Math.round((1 - bestDist / hitWindow) * 100));
       hitCountRef.current++;
       setHitCount(hitCountRef.current);
       playPluck(LANE_FREQS[lane]);

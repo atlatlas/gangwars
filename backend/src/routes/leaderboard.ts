@@ -49,9 +49,10 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           level: schema.users.level,
           cash: schema.users.cash,
           bank: schema.users.bank,
+          respect: schema.users.respect,
         })
           .from(schema.users)
-          .orderBy(desc(sql`${schema.users.cash} + COALESCE(${schema.users.bank}, 0)`))
+          .orderBy(desc(sql`${schema.users.cash} + COALESCE(${schema.users.bank}, 0) + ${schema.users.respect} * 10`))
           .limit(limit)
           .all();
 
@@ -59,7 +60,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           id: r.id,
           username: r.username,
           level: r.level,
-          netWorth: r.cash + (r.bank ?? 0),
+          netWorth: r.cash + (r.bank ?? 0) + r.respect * 10,
         }));
         break;
       }

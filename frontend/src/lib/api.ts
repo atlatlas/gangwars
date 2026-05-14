@@ -315,6 +315,26 @@ export const gangs = {
     abandon: (gangId: number, districtId: number) =>
       request<any>(`/gangs/${gangId}/turf/abandon/${districtId}`, { method: "POST" }),
   },
+  // Investments
+  investments: {
+    info: (gangId: number) => request<any>(`/gangs/${gangId}/investments`),
+    toggle: (gangId: number) =>
+      request<any>(`/gangs/${gangId}/investments/toggle`, { method: "POST" }),
+    setShare: (gangId: number, share: number) =>
+      request<any>(`/gangs/${gangId}/investments/share`, {
+        method: "PUT",
+        body: JSON.stringify({ share }),
+      }),
+    invest: (gangId: number, amount: number) =>
+      request<any>(`/gangs/${gangId}/investments/invest`, {
+        method: "POST",
+        body: JSON.stringify({ amount }),
+      }),
+    withdraw: (gangId: number) =>
+      request<any>(`/gangs/${gangId}/investments/withdraw`, { method: "POST" }),
+    my: () => request<any>("/investments"),
+    open: () => request<any>("/investments/open"),
+  },
 };
 
 export const hoes = {

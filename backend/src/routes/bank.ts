@@ -18,7 +18,8 @@ bankRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) => {
     res.json({
       bank: user.bank,
       cash: user.cash,
-      totalNetworth: user.cash + user.bank,
+      totalNetworth: user.cash + user.bank + user.respect * 10,
+      totalInterestEarned: user.totalInterestEarned ?? 0,
     });
   } catch (err) {
     console.error("Bank balance error:", err);

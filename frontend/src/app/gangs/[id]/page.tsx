@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import GameLayout from "@/components/GameLayout";
 import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
+import { useTopNotification } from "@/components/TopNotification";
 import { GangDetail, GangMember, GangOperationsData, TurfDistrict, GangTurfEntry } from "@/types";
 import { Shield, Users, Crown, LogOut, Skull, ArrowLeft, Star, ChevronUp, ChevronDown, Plus, X, Check, Send, DollarSign, TrendingUp, Landmark, Map, Swords, Crosshair, Eye, Wrench, Trophy, Camera, Image as ImageIcon } from "lucide-react";
 
@@ -63,6 +64,7 @@ export default function GangDetailPage() {
   const [settingSalary, setSettingSalary] = useState<number | null>(null);
   const [salaryInput, setSalaryInput] = useState<Record<number, string>>({});
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const { showConfirm } = useTopNotification();
   const [opNotif, setOpNotif] = useState<{ id: number; title: string; message: string; type: string; exiting?: boolean } | null>(null);
   const opNotifKey = useRef(0);
   const [expandedOp, setExpandedOp] = useState<number | null>(null);
@@ -84,12 +86,20 @@ export default function GangDetailPage() {
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsActionLoading, setRequestsActionLoading] = useState<number | null>(null);
 
+  // Investment state
+  const [investData, setInvestData] = useState<any>(null);
+  const [investLoading, setInvestLoading] = useState(false);
+  const [withdrawingInvest, setWithdrawingInvest] = useState(false);
+  const [investShare, setInvestShare] = useState(30);
+  const [settingInvestShare, setSettingInvestShare] = useState(false);
+
   const gangId = parseInt(params.id as string);
 
   useEffect(() => {
     loadGang();
     loadPendingInvites();
     loadOperations();
+    loadInvestments();
   }, [gangId]);
 
   // Auto-dismiss operation notification
@@ -495,6 +505,86 @@ const handleInvite = async () => {
     } finally {
       setRequestsActionLoading(null);
     }
+  };
+
+  // ─── Investment handlers ───
+
+  const loadInvestments = async () => {
+    if (!gangId) return;
+    setInvestLoading(true);
+    try {
+      const data = await gangsApi.investments.info(gangId);
+      setInvestData(data);
+      setInvestShare(data.investorShare ?? 30);
+    } catch {}
+    setInvestLoading(false);
+  };
+
+  const handleToggleInvestments = async () => {
+    try {
+      const data = await gangsApi.investments.toggle(gangId);
+      setInvestData((prev: any) => prev ? { ...prev, investmentsOpen: data.investmentsOpen } : prev);
+      showNotif("Investments", data.investmentsOpen ? "Investments opened" : "Investments closed", "success");
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    }
+  };
+
+  const handleSetInvestShare = async () => {
+    if (investShare < 10 || investShare > 50) {
+      showNotif("Investments", "Share must be 10-50%", "error");
+      return;
+    }
+    setSettingInvestShare(true);
+    try {
+      const data = await gangsApi.investments.setShare(gangId, investShare);
+      setInvestData((prev: any) => prev ? { ...prev, investorShare: data.investorShare } : prev);
+      showNotif("Investments", `Investor share set to ${data.investorShare}%`, "success");
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setSettingInvestShare(false);
+    }
+  };
+
+  const handleInvest = async () => {
+    const amount = parseInt(investAmount);
+    if (isNaN(amount) || amount < 10000) {
+      showNotif("Invest", "Minimum investment is $10,000", "error");
+      return;
+    }
+    setInvesting(true);
+    try {
+      const data = await gangsApi.investments.invest(gangId, amount);
+      await refreshUser();
+      showNotif("Invest", `Invested $${data.amount.toLocaleString()}`, "success");
+      setInvestAmount("");
+      loadInvestments();
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setInvesting(false);
+    }
+  };
+
+  const handleWithdrawInvestment = () => {
+    showConfirm(
+      "Withdraw your full principal? Returns earned so far are yours to keep.",
+      "warning",
+      async () => {
+        setWithdrawingInvest(true);
+        try {
+          const data = await gangsApi.investments.withdraw(gangId);
+          await refreshUser();
+          showNotif("Investment", `Withdrew $${data.refunded.toLocaleString()} principal`, "success");
+          loadInvestments();
+        } catch (err: any) {
+          showNotif("Error", err.message, "error");
+        } finally {
+          setWithdrawingInvest(false);
+        }
+      }
+    );
   };
 
   const handleBuy = async (name: string) => {
@@ -1363,6 +1453,16 @@ const handleInvite = async () => {
                       )}
                     </button>
                   )}
+                  <button
+                    onClick={() => { setActiveTab("investments"); if (!investData) loadInvestments(); }}
+                    className={`px-2 md:px-4 py-2.5 text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                      activeTab === "investments"
+                        ? "text-pink-400 border-b-2 border-pink-400"
+                        : "text-white/30 hover:text-white/60 border-b-2 border-transparent"
+                    }`}
+                  >
+                    <DollarSign size={12} /> Investments
+                  </button>
                 </div>
 
                 {activeTab === "operations" && (
@@ -2224,6 +2324,109 @@ const handleInvite = async () => {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === "investments" && (
+                  <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mb-4">
+                    <div className="flex items-center gap-3 mb-4">
+                      <DollarSign size={16} className="text-cyan-400" />
+                      <div>
+                        <h2 className="text-sm font-mono text-white/90">Investments</h2>
+                        <p className="text-xs font-mono text-white/30">External players can invest in this gang for a share of operation income</p>
+                      </div>
+                    </div>
+
+                    {investLoading ? (
+                      <div className="flex justify-center py-8">
+                        <div className="animate-spin h-6 w-6 border-2 border-pink-400/30 border-t-pink-400 rounded-full" />
+                      </div>
+                    ) : (
+                      <>
+                        {isLeader && (
+                          <div className="bg-black/20 rounded-sm border border-white/5 p-3 mb-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono text-white/70">Accept Investments</span>
+                              <button
+                                onClick={handleToggleInvestments}
+                                className={`text-xs font-mono uppercase tracking-wider rounded-sm px-3 py-1.5 transition-all flex items-center gap-1.5 ${
+                                  investData?.investmentsOpen
+                                    ? "text-red-400/70 hover:text-red-300 border border-red-400/20 hover:border-red-400/40"
+                                    : "text-emerald-400/70 hover:text-emerald-300 border border-emerald-400/20 hover:border-emerald-400/40"
+                                }`}
+                              >
+                                {investData?.investmentsOpen ? "Close" : "Open"}
+                              </button>
+                            </div>
+
+                            {investData?.investmentsOpen && (
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-mono text-white/70">Investor Share:</span>
+                                <input
+                                  type="number"
+                                  min={10}
+                                  max={50}
+                                  value={investShare}
+                                  onChange={(e) => setInvestShare(Math.min(50, Math.max(10, parseInt(e.target.value) || 30)))}
+                                  className="w-20 bg-black/30 border border-white/5 rounded-sm px-2 py-1.5 text-sm font-mono text-white/80 text-center focus:outline-none focus:border-cyan-400/30"
+                                />
+                                <span className="text-xs font-mono text-white/30">% of operation income</span>
+                                <button
+                                  onClick={handleSetInvestShare}
+                                  disabled={settingInvestShare}
+                                  className="text-xs font-mono text-cyan-400/70 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 rounded-sm px-3 py-1.5 transition-all disabled:opacity-30"
+                                >
+                                  {settingInvestShare ? "..." : "Save"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                          <div className="bg-black/20 rounded-sm p-3 text-center border border-white/5">
+                            <p className="text-xl font-mono text-cyan-300">${(investData?.totalInvestments ?? 0).toLocaleString()}</p>
+                            <p className="text-[10px] font-mono text-white/30 mt-1">Total Invested</p>
+                          </div>
+                          <div className="bg-black/20 rounded-sm p-3 text-center border border-white/5">
+                            <p className="text-xl font-mono text-purple-300">{investData?.investorCount ?? 0}</p>
+                            <p className="text-[10px] font-mono text-white/30 mt-1">Investors</p>
+                          </div>
+                          <div className="bg-black/20 rounded-sm p-3 text-center border border-white/5">
+                            <p className="text-xl font-mono text-green-300">{investData?.investorShare ?? 30}%</p>
+                            <p className="text-[10px] font-mono text-white/30 mt-1">of Income</p>
+                          </div>
+                        </div>
+
+                        {investData?.myInvestment && (
+                          <div className="bg-black/30 rounded-sm border border-cyan-500/20 p-3">
+                            <p className="text-xs font-mono text-white/40 uppercase tracking-wider mb-2">Your Investment</p>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-sm font-mono text-white/80">Principal</span>
+                              <span className="text-sm font-mono text-cyan-300">${investData.myInvestment.amount.toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-mono text-white/80">Returns Earned</span>
+                              <span className="text-sm font-mono text-green-400">+${investData.myInvestment.returnsEarned.toLocaleString()}</span>
+                            </div>
+                            <button
+                              onClick={handleWithdrawInvestment}
+                              disabled={withdrawingInvest}
+                              className="w-full text-xs font-mono text-pink-400/70 border border-pink-400/20 rounded-sm px-3 py-1.5 hover:border-pink-400/40 transition-all disabled:opacity-30"
+                            >
+                              {withdrawingInvest ? "Withdrawing..." : "Withdraw Investment"}
+                            </button>
+                          </div>
+                        )}
+
+                        {!investData?.investmentsOpen && (
+                          <div className="text-center py-6">
+                            <DollarSign size={24} className="mx-auto text-white/10 mb-2" />
+                            <p className="text-xs font-mono text-white/30">Investments are currently closed</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

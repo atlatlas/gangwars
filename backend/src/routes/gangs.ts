@@ -462,11 +462,39 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
             .all()[0]?.count ?? 0;
           if (completedCount > 0) {
             const totalIncome = completedCount * incomeRate;
+            const investorSharePct = gang.investorShare ?? 30;
+            const investorPortion = Math.floor(totalIncome * investorSharePct / 100);
+            const vaultPortion = totalIncome - investorPortion;
+
+            // Pay investors proportionally
+            if (investorPortion > 0 && (gang.totalInvestments ?? 0) > 0) {
+              const investors = db.select()
+                .from(schema.gangInvestments)
+                .where(and(
+                  eq(schema.gangInvestments.gangId, gangId),
+                  sql`${schema.gangInvestments.amount} > 0`,
+                ))
+                .all();
+              for (const inv of investors) {
+                const share = Math.floor(investorPortion * inv.amount / gang.totalInvestments!);
+                if (share > 0) {
+                  db.update(schema.gangInvestments)
+                    .set({ returnsEarned: sql`${schema.gangInvestments.returnsEarned} + ${share}` })
+                    .where(eq(schema.gangInvestments.id, inv.id))
+                    .run();
+                  db.update(schema.users)
+                    .set({ cash: sql`cash + ${share}` })
+                    .where(eq(schema.users.id, inv.userId))
+                    .run();
+                }
+              }
+            }
+
             db.update(schema.gangs)
-              .set({ vault: sql`vault + ${totalIncome}` })
+              .set({ vault: sql`vault + ${vaultPortion}` })
               .where(eq(schema.gangs.id, gangId))
               .run();
-            // Record payout history
+            // Record payout history (total income, not just vault portion)
             db.insert(schema.gangOperationPayouts).values({
               gangId,
               operationDefId: def.id,
@@ -733,6 +761,15 @@ gangsRouter.post("/:id/deposit", authMiddleware, jailCheck, hpCheck, (req: AuthR
     const repGain = Math.floor(amount / 500);
     if (repGain > 0) {
       addGangReputation(req.userId!, repGain, "vault_deposits", amount);
+    }
+
+    // Grant personal respect (1 per $500 deposited)
+    const personalRespect = Math.floor(amount / 500);
+    if (personalRespect > 0) {
+      db.update(schema.users)
+        .set({ respect: user.respect + personalRespect })
+        .where(eq(schema.users.id, req.userId!))
+        .run();
     }
 
     res.json({ vault: gang.vault + amount, amount });

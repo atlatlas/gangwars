@@ -20,10 +20,11 @@ const baseFields = {
   memberCount: memberCountSubquery,
   totalRespect: totalRespectSubquery,
   turfCount: turfCountSubquery,
+  investmentsOpen: schema.gangs.investmentsOpen,
 };
 
 // GET /api/gangs/leaderboard/:type
-// Types: level, vault, members, respect, turf
+// Types: level, vault, members, respect, turf, rank
 gangLeaderboardRouter.get("/leaderboard/:type", authMiddleware, (req: AuthRequest, res: Response) => {
   try {
     const type = req.params.type;
@@ -72,8 +73,51 @@ gangLeaderboardRouter.get("/leaderboard/:type", authMiddleware, (req: AuthReques
           .all();
         break;
       }
+      case "rank": {
+        // Composite rank score
+        const allGangs = db.select(baseFields)
+          .from(schema.gangs)
+          .all();
+
+        rows = allGangs.map(gang => {
+          // Compute operation income contribution
+          const activeOp = db.select()
+            .from(schema.gangActiveOperations)
+            .where(eq(schema.gangActiveOperations.gangId, gang.id))
+            .all()[0];
+          let opScore = 0;
+          if (activeOp) {
+            const def = db.select()
+              .from(schema.gangOperationDefs)
+              .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
+              .all()[0];
+            if (def) {
+              const members = gang.memberCount;
+              if (activeOp.level === 3) {
+                opScore = def.incomePerMemberL3 * members * 4;
+              } else if (activeOp.level === 2) {
+                opScore = def.incomePerMemberL2 * members * 2;
+              } else {
+                opScore = def.incomePerMemberL1 * members;
+              }
+            }
+          }
+
+          const rankScore = gang.level * 10000
+            + gang.turfCount * 80000
+            + Math.floor(gang.vault / 2000)
+            + gang.memberCount * 3000
+            + Math.floor(opScore / 5000);
+
+          return { ...gang, rankScore: Math.floor(rankScore) };
+        });
+
+        rows.sort((a, b) => b.rankScore - a.rankScore);
+        rows = rows.slice(0, limit);
+        break;
+      }
       default: {
-        res.status(400).json({ error: "Invalid leaderboard type. Use: level, vault, members, respect, turf" });
+        res.status(400).json({ error: "Invalid leaderboard type. Use: level, vault, members, respect, turf, rank" });
         return;
       }
     }

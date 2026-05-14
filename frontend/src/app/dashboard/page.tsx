@@ -38,7 +38,7 @@ import {
 
 export default function DashboardPage() {
   const { user, refreshUser } = useUser();
-  const { showNotification } = useTopNotification();
+  const { showNotification, showConfirm } = useTopNotification();
   const [crimeResult, setCrimeResult] = useState<CrimeResult | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [assigning, setAssigning] = useState<Record<string, boolean>>({});
@@ -93,10 +93,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleHeal = async (method: "cash" | "turns" = "cash") => {
-    if (method === "turns") {
-      if (!confirm(`Sacrifice up to 10 turns at 5% HP per turn to heal? You'll use ${Math.min(user?.turns ?? 0, 10)} turns.`)) return;
-    }
+  const doHeal = async (method: "cash" | "turns") => {
     setHealing(true);
     try {
       await profileApi.heal(method);
@@ -112,6 +109,18 @@ export default function DashboardPage() {
     } finally {
       setHealing(false);
     }
+  };
+
+  const handleHeal = (method: "cash" | "turns" = "cash") => {
+    if (method === "turns") {
+      showConfirm(
+        `Sacrifice up to 10 turns at 5% HP per turn to heal? You'll use ${Math.min(user?.turns ?? 0, 10)} turns.`,
+        "warning",
+        () => doHeal(method)
+      );
+      return;
+    }
+    doHeal(method);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

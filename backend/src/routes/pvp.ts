@@ -437,7 +437,7 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
       damageTaken = Math.floor(Math.random() * 10);
 
       if (attackType === "mug") {
-        lootCash = Math.min(Math.floor(defender.cash * 0.1), 500);
+        lootCash = Math.min(Math.floor(defender.cash * 0.1), Math.max(500, defender.level * 50));
         db.update(schema.users)
           .set({ cash: Math.max(0, defender.cash - lootCash) })
           .where(eq(schema.users.id, defender.id))
@@ -453,16 +453,18 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
         respectChange = Math.round(respectChange * Math.max(0.5, Math.min(3, respectRatio)));
         // Bonus if target has more respect (+50%)
         if (defender.respect > attacker.respect) respectChange = Math.round(respectChange * 1.5);
+        const ambushBaseRespect = 2; // base respect created on ambush win
         db.update(schema.users)
           .set({ respect: Math.max(0, defender.respect - respectChange) })
           .where(eq(schema.users.id, defender.id))
           .run();
         db.update(schema.users)
-          .set({ respect: attacker.respect + respectChange })
+          .set({ respect: attacker.respect + respectChange + ambushBaseRespect })
           .where(eq(schema.users.id, attacker.id))
           .run();
+        respectChange += ambushBaseRespect;
       } else if (attackType === "rob") {
-        lootCash = Math.min(Math.floor(defender.cash * 0.15), 1000);
+        lootCash = Math.min(Math.floor(defender.cash * 0.15), Math.max(1000, defender.level * 100));
         db.update(schema.users)
           .set({ cash: Math.max(0, defender.cash - lootCash) })
           .where(eq(schema.users.id, defender.id))
@@ -477,17 +479,19 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
         const hitRatio = defender.respect / Math.max(1, attacker.respect);
         respectChange = Math.round(respectChange * Math.max(0.5, Math.min(3, hitRatio)));
         if (defender.respect > attacker.respect) respectChange = Math.round(respectChange * 1.5);
+        const hitBaseRespect = 3; // base respect created on hit win
         db.update(schema.users)
           .set({ respect: Math.max(0, defender.respect - respectChange) })
           .where(eq(schema.users.id, defender.id))
           .run();
         db.update(schema.users)
-          .set({ respect: attacker.respect + respectChange })
+          .set({ respect: attacker.respect + respectChange + hitBaseRespect })
           .where(eq(schema.users.id, attacker.id))
           .run();
+        respectChange += hitBaseRespect;
       } else if (attackType === "house_raid") {
-        // Steal 30% carried cash (max 5000)
-        lootCash = Math.min(Math.floor(defender.cash * 0.3), 5000);
+        // Steal 30% carried cash (max 5000 or level*500)
+        lootCash = Math.min(Math.floor(defender.cash * 0.3), Math.max(5000, defender.level * 500));
         db.update(schema.users)
           .set({ cash: Math.max(0, defender.cash - lootCash) })
           .where(eq(schema.users.id, defender.id))

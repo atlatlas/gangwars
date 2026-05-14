@@ -6,6 +6,9 @@ import GameLayout from "@/components/GameLayout";
 import CrimeCard from "@/components/CrimeCard";
 import SkillCrimeCard from "@/components/SkillCrimeCard";
 import TimingGame from "@/components/TimingGame";
+import ShellGame from "@/components/ShellGame";
+import MastermindGame from "@/components/MastermindGame";
+import TerminalHackGame from "@/components/TerminalHackGame";
 import { crimes as crimesApi, skillCrimes as skillCrimesApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { Crime, SkillCrimeDefinition } from "@/types";
@@ -118,7 +121,9 @@ export default function CrimesPage() {
       setNotif({
         id: notifKey.current,
         title: `${res.crimeName} — ${res.result}`,
-        message: `+$${res.reward} cash, +${res.xpGained} XP (${res.accuracy}% accuracy)`,
+        message: res.success
+          ? `+$${res.reward} cash, +${res.xpGained} XP (${res.accuracy}% accuracy)`
+          : `Failed (${res.accuracy}% accuracy)`,
         type: res.success ? (res.accuracy >= 80 ? "agility" : "success") : "error",
       });
       setPlaying(null);
@@ -168,17 +173,26 @@ export default function CrimesPage() {
           document.body
         )}
 
-        {/* Timing game modal */}
-        {playing && (
-          <TimingGame
-            speed={playing.timingSpeed}
-            rewardMin={playing.rewardMin}
-            rewardMax={playing.rewardMax}
-            crimeName={playing.name}
-            onResult={handleTimingResult}
-            onClose={() => setPlaying(null)}
-          />
-        )}
+        {/* Game modals — dispatch by crime ID */}
+        {playing && (() => {
+          const difficultyBonus = (playing.statValue / 10) + playing.skillLevel;
+          const props = {
+            speed: playing.timingSpeed,
+            rewardMin: playing.rewardMin,
+            rewardMax: playing.rewardMax,
+            crimeName: playing.name,
+            onResult: handleTimingResult,
+            onClose: () => setPlaying(null),
+            difficultyBonus,
+          };
+          switch (playing.id) {
+            case 1: return <TimingGame {...props} />;
+            case 2: return <ShellGame {...props} />;
+            case 3: return <MastermindGame {...props} />;
+            case 4: return <TerminalHackGame {...props} />;
+            default: return null;
+          }
+        })()}
 
         <div className="flex items-center justify-between mb-5 reveal">
           <div>
@@ -267,7 +281,7 @@ export default function CrimesPage() {
           ) : (
             <div className="space-y-2.5 reveal reveal-delay-1">
               <p className="text-[11px] font-mono text-white/30 mb-3">
-                Skill crimes require <span className="text-cyan-400">timing and precision</span>. Stop the marker in the sweet spot for maximum rewards!
+                Each skill crime requires a <span className="text-cyan-400">different approach</span>. Master them all for maximum rewards!
               </p>
 
               {skillCrimes.map((crime) => (

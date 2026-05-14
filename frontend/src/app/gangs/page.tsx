@@ -10,6 +10,7 @@ import { GangLeaderboardData, GangLeaderboardEntry, GangInvite } from "@/types";
 import { Shield, Medal, TrendingUp, DollarSign, Users, Map, Trophy, ChevronRight, Mail, Check, X as XIcon, Plus, X, Send, Search } from "lucide-react";
 
 const tabs = [
+  { key: "rank", label: "Rank", icon: Trophy },
   { key: "level", label: "Level", icon: TrendingUp },
   { key: "vault", label: "Vault", icon: DollarSign },
   { key: "members", label: "Members", icon: Users },
@@ -21,6 +22,8 @@ const rankMedals = ["text-yellow-400", "text-white/40", "text-yellow-500"];
 
 function getGangValue(entry: GangLeaderboardEntry, tab: string) {
   switch (tab) {
+    case "rank":
+      return `${entry.rankScore?.toLocaleString() ?? 0} pts`;
     case "level":
       return `Lv.${entry.level}`;
     case "vault":
@@ -177,6 +180,11 @@ export default function GangsPage() {
               [{entry.tag}]
             </span>
             {isMyGang && <span className="text-pink-400/60 text-sm ml-1">(you)</span>}
+            {entry.investmentsOpen && !isMyGang && (
+              <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded-sm" title="Open for investment">
+                <DollarSign size={9} className="inline" />
+              </span>
+            )}
           </p>
           <p className="text-xs font-mono text-white/25">{entry.memberCount} members</p>
         </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import GameLayout from "@/components/GameLayout";
 import { Skill, TrainResult } from "@/types";
 import { skills as skillsApi } from "@/lib/api";
-import { BookOpen, Zap, Loader2, ChevronRight, TrendingUp, Brain, Eye, Users, Heart, AlertCircle } from "lucide-react";
+import { BookOpen, Zap, Loader2, ChevronRight, TrendingUp, Brain, Eye, Users, Heart, AlertCircle, Lock, User, Shield, Terminal } from "lucide-react";
 
 const statIcons: Record<string, React.ReactNode> = {
   strength: <Zap size={14} className="text-neon-red" />,
@@ -19,6 +19,10 @@ const skillIcons: Record<string, React.ReactNode> = {
   "Sixth Sense": <Eye size={18} className="text-neon-cyan" />,
   "Women's Studies": <Users size={18} className="text-neon-pink" />,
   "Sexual Education": <Heart size={18} className="text-purple-400" />,
+  Lockpicking: <Lock size={18} className="text-amber-400" />,
+  Pickpocketing: <User size={18} className="text-emerald-400" />,
+  "Safe Cracking": <Shield size={18} className="text-cyan-400" />,
+  Hacking: <Terminal size={18} className="text-rose-400" />,
 };
 
 export default function SkillsPage() {

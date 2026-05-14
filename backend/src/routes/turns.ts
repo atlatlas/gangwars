@@ -32,12 +32,17 @@ export function refreshTurns(user: typeof schema.users.$inferSelect): number {
   const seLevel = sexualEd?.user_skills.level ?? 0;
   passiveIncome = Math.floor(wsLevel * 2.5 + seLevel * 3) * ticks;
 
+  // Bank interest: 0.4% daily, pro-rated by ticks (288 ticks per day)
+  const bankInterest = Math.floor(user.bank * 0.004 * ticks / 288);
+
   // Atomic update — use SQL increment for cash to avoid race conditions
   db.run(sql`
     UPDATE ${schema.users}
     SET turns = ${newTurns},
         hp = ${newHp},
         cash = cash + ${passiveIncome},
+        bank = bank + ${bankInterest},
+        total_interest_earned = total_interest_earned + ${bankInterest},
         last_turn_regen = ${newLastRegen.toISOString()}
     WHERE id = ${user.id}
   `);

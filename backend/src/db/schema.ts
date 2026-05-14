@@ -28,6 +28,7 @@ export const users = sqliteTable("users", {
   lastActive: text("last_active").notNull(),
   avatarUrl: text("avatar_url"),
   highestNetWorth: integer("highest_net_worth").default(0).notNull(),
+  totalInterestEarned: integer("total_interest_earned").default(0).notNull(),
 });
 
 export const crimeDefinitions = sqliteTable("crime_definitions", {
@@ -168,6 +169,9 @@ export const gangs = sqliteTable("gangs", {
   bannerUrl: text("banner_url"),
   accountantId: integer("accountant_id"),
   lastSalaryPayout: text("last_salary_payout"),
+  investmentsOpen: integer("investments_open").default(0).notNull(),
+  investorShare: integer("investor_share").default(30).notNull(),
+  totalInvestments: integer("total_investments").default(0).notNull(),
 });
 
 export const gangMembers = sqliteTable("gang_members", {
@@ -204,6 +208,19 @@ export const gangJoinRequests = sqliteTable("gang_join_requests", {
   joinReqGangIdx: index("join_req_gang_idx").on(table.gangId),
   joinReqUserIdx: index("join_req_user_idx").on(table.userId),
   joinReqUnique: uniqueIndex("join_req_unique").on(table.gangId, table.userId, table.status),
+}));
+
+export const gangInvestments = sqliteTable("gang_investments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  gangId: integer("gang_id").notNull().references(() => gangs.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  amount: integer("amount").notNull(),
+  returnsEarned: integer("returns_earned").default(0).notNull(),
+  investedAt: text("invested_at").notNull(),
+}, (table) => ({
+  invGangIdx: index("inv_gang_idx").on(table.gangId),
+  invUserIdx: index("inv_user_idx").on(table.userId),
+  invGangUserUnique: uniqueIndex("inv_gang_user_unique").on(table.gangId, table.userId),
 }));
 
 export const gangOperationDefs = sqliteTable("gang_operation_defs", {

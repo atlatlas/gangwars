@@ -235,6 +235,9 @@ export interface GangDetail extends Gang {
   pendingRequestCount?: number;
   accountantId?: number | null;
   lastSalaryPayout?: string | null;
+  investmentsOpen?: number;
+  investorShare?: number;
+  totalInvestments?: number;
 }
 
 export interface GangLevelBenefits {
@@ -432,6 +435,8 @@ export interface GangLeaderboardEntry {
   memberCount: number;
   totalRespect: number;
   turfCount: number;
+  rankScore?: number;
+  investmentsOpen?: number;
 }
 
 export interface GangLeaderboardData {
@@ -439,6 +444,23 @@ export interface GangLeaderboardData {
   rows: GangLeaderboardEntry[];
   myRank: number | null;
   myGangId: number | null;
+}
+
+export interface GangInvestment {
+  gangId: number;
+  gangName: string;
+  gangTag: string;
+  amount: number;
+  returnsEarned: number;
+  investedAt: string;
+}
+
+export interface GangInvestmentsInfo {
+  investmentsOpen: boolean;
+  investorShare: number;
+  totalInvestments: number;
+  investorCount: number;
+  myInvestment: { amount: number; returnsEarned: number } | null;
 }
 
 export interface SkillCrimeDefinition {
@@ -450,6 +472,9 @@ export interface SkillCrimeDefinition {
   rewardMin: number;
   rewardMax: number;
   timingSpeed: number;
+  statUsed: "agility" | "intelligence";
+  skillLevel: number;
+  statValue: number;
 }
 
 export interface SkillCrimeResult {
