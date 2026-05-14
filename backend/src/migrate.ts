@@ -28,7 +28,15 @@ if (fs.existsSync(migrationsDir)) {
     for (const stmt of statements) {
       const trimmed = stmt.trim();
       if (trimmed) {
-        sqlite.exec(trimmed);
+        try {
+          sqlite.exec(trimmed);
+        } catch (e: any) {
+          if (e?.code === "SQLITE_ERROR" && String(e?.message).includes("already exists")) {
+            // Table/index already exists — safe to skip on re-runs
+          } else {
+            throw e;
+          }
+        }
       }
     }
     console.log(`  ✓ ${file}`);
