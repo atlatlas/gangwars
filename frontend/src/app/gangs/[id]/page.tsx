@@ -1268,10 +1268,10 @@ const handleWithdrawInvestment = () => {
                           <img
                             src={member.avatarUrl}
                             alt=""
-                            className="w-10 h-10 rounded-sm object-cover bg-black/30"
+                            className="w-10 h-10 rounded-full object-cover bg-black/30"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-sm bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center">
                             <span className="text-sm font-mono text-white/30">
                               {member.username?.charAt(0).toUpperCase()}
                             </span>
