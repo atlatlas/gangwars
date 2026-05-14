@@ -37,4 +37,3 @@ try {
 
 export const db = drizzle(sqlite, { schema });
 export { schema };
-export const rawDb = sqlite as any;
