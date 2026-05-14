@@ -1,0 +1,8 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerBuildArgs": {
+      "API_URL": "https://backend-production-d050.up.railway.app"
+    }
+  }
+}
