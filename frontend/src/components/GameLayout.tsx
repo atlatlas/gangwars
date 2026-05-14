@@ -149,7 +149,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
           </button>
 
           <div className="flex items-center gap-1.5 md:gap-5 flex-1 overflow-x-auto justify-end">
-            <div className="flex items-center gap-1 shrink-0" title="HP">
+            <div className="flex items-center gap-1 shrink-0 relative" title="HP">
               <Heart size={12} className="text-neon-red drop-shadow-[0_0_4px_rgba(248,113,113,0.3)]" />
               <AnimatedValue value={`${user.hp}/${user.maxHp}`} format="hp" className="font-mono text-[11px] md:text-xs text-pink-300" />
               {user.hp < user.maxHp && user.hp > 0 && (
@@ -193,7 +193,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
               {showHealDropdown && user.hp > 0 && user.hp < user.maxHp && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowHealDropdown(false)} />
-                  <div className="absolute top-full left-0 mt-1 z-50 min-w-[160px] rounded-sm border border-white/5 bg-bg-dark p-1 shadow-lg">
+                  <div className="absolute top-full right-0 mt-1 z-50 min-w-[160px] rounded-sm border border-white/5 bg-bg-dark p-1 shadow-lg">
                     <button
                       onClick={() => handleHeal("cash")}
                       disabled={healing}
