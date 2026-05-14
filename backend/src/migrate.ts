@@ -31,8 +31,8 @@ if (fs.existsSync(migrationsDir)) {
         try {
           sqlite.exec(trimmed);
         } catch (e: any) {
-          if (e?.code === "SQLITE_ERROR" && String(e?.message).includes("already exists")) {
-            // Table/index already exists — safe to skip on re-runs
+          if (e?.code === "SQLITE_ERROR" && (String(e?.message).includes("already exists") || String(e?.message).includes("duplicate column"))) {
+            // Object already exists — safe to skip on re-runs
           } else {
             throw e;
           }
