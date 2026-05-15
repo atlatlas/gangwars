@@ -189,6 +189,18 @@ hoesRouter.post("/collect", authMiddleware, jailCheck, hpCheck, async (req: Auth
       .where(eq(schema.users.id, user.id))
       .run();
 
+    // Track passive income
+    const hStats = await db.query.playerStats.findFirst({ where: eq(schema.playerStats.userId, user.id) });
+    if (hStats) {
+      db.update(schema.playerStats)
+        .set({
+          earnedHoes: hStats.earnedHoes + totalCollected,
+          totalMoneyEarned: hStats.totalMoneyEarned + totalCollected,
+        })
+        .where(eq(schema.playerStats.userId, user.id))
+        .run();
+    }
+
     if (totalCollected >= 5000) {
       logActivityEvent(user.id, "hoe_collected",
         `Collected $${totalCollected.toLocaleString()} from passive income`,

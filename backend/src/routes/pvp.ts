@@ -693,6 +693,8 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
           pvpWins: atkStats.pvpWins + (attackerWins ? 1 : 0),
           pvpLosses: atkStats.pvpLosses + (attackerWins ? 0 : 1),
           totalMoneyEarned: atkStats.totalMoneyEarned + (lootCash || 0),
+          earnedPvp: atkStats.earnedPvp + (lootCash || 0),
+          respectPvp: atkStats.respectPvp + respectChange,
         })
         .where(eq(schema.playerStats.userId, attacker.id))
         .run();

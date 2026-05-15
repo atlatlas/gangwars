@@ -153,6 +153,17 @@ export const playerStats = sqliteTable("player_stats", {
   totalMoneyEarned: integer("total_money_earned").default(0).notNull(),
   totalMoneyLost: integer("total_money_lost").default(0).notNull(),
   timesArrested: integer("times_arrested").default(0).notNull(),
+  earnedCrimes: integer("earned_crimes").default(0).notNull(),
+  earnedPvp: integer("earned_pvp").default(0).notNull(),
+  earnedDrugs: integer("earned_drugs").default(0).notNull(),
+  earnedHoes: integer("earned_hoes").default(0).notNull(),
+  earnedCasino: integer("earned_casino").default(0).notNull(),
+  earnedGang: integer("earned_gang").default(0).notNull(),
+  respectCrimes: integer("respect_crimes").default(0).notNull(),
+  respectPvp: integer("respect_pvp").default(0).notNull(),
+  respectMilestones: integer("respect_milestones").default(0).notNull(),
+  respectGang: integer("respect_gang").default(0).notNull(),
+  respectSkills: integer("respect_skills").default(0).notNull(),
 });
 
 export const gangs = sqliteTable("gangs", {

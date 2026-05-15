@@ -203,6 +203,7 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
     let totalXpGained = 0;
     let totalHpLost = 0;
     let totalArrests = 0;
+    let totalRespectGained = 0;
     let drugsConfiscatedFinal: { name: string; quantity: number } | null = null;
 
     for (let i = 0; i < times; i++) {
@@ -232,6 +233,7 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
         else if (crime.riskLevel === "medium") respectGained = 3 + Math.floor(Math.random() * 6);
         else respectGained = 8 + Math.floor(Math.random() * 8);
         respectGained += Math.floor(currentUser.level / 10);
+        totalRespectGained += respectGained;
 
         db.update(schema.users)
           .set({
@@ -366,6 +368,8 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
           crimesCommitted: pStats.crimesCommitted + totalSuccesses + totalFailures,
           totalMoneyEarned: pStats.totalMoneyEarned + totalReward,
           timesArrested: pStats.timesArrested + totalArrests,
+          earnedCrimes: pStats.earnedCrimes + totalReward,
+          respectCrimes: pStats.respectCrimes + totalRespectGained,
         })
         .where(eq(schema.playerStats.userId, user.id))
         .run();

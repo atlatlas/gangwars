@@ -55,6 +55,19 @@ try {
   // column already exists
 }
 
+// Earnings & respect breakdown columns
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_crimes INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_pvp INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_drugs INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_hoes INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_casino INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN earned_gang INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN respect_crimes INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN respect_pvp INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN respect_milestones INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN respect_gang INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE player_stats ADD COLUMN respect_skills INTEGER DEFAULT 0 NOT NULL"); } catch {}
+
 sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_investments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   gang_id INTEGER NOT NULL REFERENCES gangs(id),

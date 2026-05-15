@@ -499,6 +499,19 @@ drugMarketRouter.post("/sell/:inventoryId", authMiddleware, jailCheck, hpCheck, 
       .where(eq(schema.users.id, user.id))
       .run();
 
+    // Track drug earnings
+    const dStats = await db.query.playerStats.findFirst({ where: eq(schema.playerStats.userId, user.id) });
+    if (dStats) {
+      db.update(schema.playerStats)
+        .set({
+          earnedDrugs: dStats.earnedDrugs + cashAwarded,
+          totalMoneyEarned: dStats.totalMoneyEarned + cashAwarded,
+          respectCrimes: dStats.respectCrimes + respectGained,
+        })
+        .where(eq(schema.playerStats.userId, user.id))
+        .run();
+    }
+
     res.json({
       success: true,
       itemName: item.name,

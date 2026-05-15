@@ -43,6 +43,17 @@ export interface PlayerStats {
   totalMoneyEarned: number;
   totalMoneyLost: number;
   timesArrested: number;
+  earnedCrimes?: number;
+  earnedPvp?: number;
+  earnedDrugs?: number;
+  earnedHoes?: number;
+  earnedCasino?: number;
+  earnedGang?: number;
+  respectCrimes?: number;
+  respectPvp?: number;
+  respectMilestones?: number;
+  respectGang?: number;
+  respectSkills?: number;
 }
 
 export interface Crime {

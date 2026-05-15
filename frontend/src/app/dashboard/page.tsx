@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [assigning, setAssigning] = useState<Record<string, boolean>>({});
   const [healing, setHealing] = useState(false);
-  const [bankData, setBankData] = useState<{ bank: number; cash: number } | null>(null);
+  const [bankData, setBankData] = useState<{ bank: number; cash: number; totalInterestEarned: number } | null>(null);
   const [warfare, setWarfare] = useState<{ thug: number; dealer: number; pimp: number; highest: number } | null>(null);
   const [showSpecPicker, setShowSpecPicker] = useState(false);
   const [choosingSpec, setChoosingSpec] = useState(false);
@@ -396,7 +396,7 @@ export default function DashboardPage() {
       <div className="max-w-5xl mx-auto px-4 py-6">
 
       {/* Quick Stats — 80s neon resource cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
 
         {/* Turns — action economy with cooldown bar + Net Worth */}
         <div className="reveal reveal-delay-1">
@@ -445,6 +445,29 @@ export default function DashboardPage() {
             <div className="h-1 rounded-full bg-white/5 overflow-hidden shadow-[inset_0_0_4px_rgba(0,0,0,0.3)]">
               <div className="h-full rounded-full bg-gradient-to-r from-pink-500/30 to-pink-300/40 shadow-[0_0_6px_rgba(244,114,182,0.15)] transition-all duration-700" />
             </div>
+            {/* Top 3 income sources */}
+            {user.stats && (user.stats.earnedCrimes || user.stats.earnedPvp || user.stats.earnedHoes || user.stats.earnedDrugs) && (
+              <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+                <span className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Top Sources</span>
+                {([
+                  { label: "Crimes", value: user.stats.earnedCrimes ?? 0, icon: Swords },
+                  { label: "PvP", value: user.stats.earnedPvp ?? 0, icon: Crosshair },
+                  { label: "Hoes", value: user.stats.earnedHoes ?? 0, icon: Heart },
+                  { label: "Drugs", value: user.stats.earnedDrugs ?? 0, icon: Activity },
+                ] as const)
+                  .filter(s => s.value > 0)
+                  .sort((a, b) => b.value - a.value)
+                  .slice(0, 3)
+                  .map(s => (
+                    <div key={s.label} className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-white/35 flex items-center gap-1">
+                        <s.icon size={8} className="text-pink-400/60" /> {s.label}
+                      </span>
+                      <span className="text-[10px] font-mono text-white/60">${s.value.toLocaleString()}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -470,6 +493,53 @@ export default function DashboardPage() {
                 className="h-full rounded-full bg-gradient-to-r from-cyan-500/50 to-cyan-300/60 shadow-[0_0_6px_rgba(34,211,238,0.3)] transition-all duration-700"
                 style={{ width: `${user.respectProgress?.percent ?? 100}%` }}
               />
+            </div>
+            {/* Top 3 respect gainers */}
+            {user.stats && (user.stats.respectCrimes || user.stats.respectPvp || user.stats.respectMilestones || user.stats.respectSkills) && (
+              <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+                <span className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Top Sources</span>
+                {([
+                  { label: "Crimes", value: user.stats.respectCrimes ?? 0, icon: Swords },
+                  { label: "PvP", value: user.stats.respectPvp ?? 0, icon: Crosshair },
+                  { label: "Milestones", value: user.stats.respectMilestones ?? 0, icon: TrendingUp },
+                  { label: "Skills", value: user.stats.respectSkills ?? 0, icon: BookOpen },
+                ] as const)
+                  .filter(s => s.value > 0)
+                  .sort((a, b) => b.value - a.value)
+                  .slice(0, 3)
+                  .map(s => (
+                    <div key={s.label} className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-white/35 flex items-center gap-1">
+                        <s.icon size={8} className="text-cyan-400/60" /> {s.label}
+                      </span>
+                      <span className="text-[10px] font-mono text-white/60">{s.value.toLocaleString()}</span>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bank — savings with interest info */}
+        <div className="reveal reveal-delay-4">
+          <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 border-l-[3px] border-l-emerald-400/40 shadow-[inset_3px_0_8px_-4px_rgba(52,211,153,0.2)] h-full">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-mono text-white/35 uppercase tracking-wider">Bank</span>
+              <TrendingUp size={12} className="text-emerald-400/60 drop-shadow-[0_0_4px_rgba(52,211,153,0.3)]" />
+            </div>
+            <div className="flex items-baseline gap-0.5 mb-2.5">
+              <span className="text-base font-mono text-emerald-400/70 font-semibold drop-shadow-[0_0_4px_rgba(52,211,153,0.2)]">$</span>
+              <span className="text-2xl font-mono font-bold text-white tracking-tight drop-shadow-[0_0_6px_rgba(52,211,153,0.25)]">{(bankData?.bank ?? 0).toLocaleString()}</span>
+            </div>
+            <div className="mt-2 pt-2 border-t border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Interest Rate</span>
+                <span className="text-[10px] font-mono text-emerald-400/70">0.4% daily</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-white/25 uppercase tracking-wider">Total Earned</span>
+                <span className="text-[10px] font-mono text-emerald-400/60">${(bankData?.totalInterestEarned ?? 0).toLocaleString()}</span>
+              </div>
             </div>
           </div>
         </div>

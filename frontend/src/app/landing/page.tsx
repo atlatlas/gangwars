@@ -305,7 +305,7 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
             <Image src="/logo.png" alt="Gang Wars" width={60} height={21} className="h-5 w-auto opacity-80" />
             <div className="flex items-center gap-4">
-              <Link href="/login" className="text-xs text-text-muted/60 hover:text-text-secondary transition-colors">Log in</Link>
+              <Link href="/login" className="text-xs text-white/70 hover:text-white transition-colors">Log in</Link>
               <Link href="/register" className="text-xs px-3.5 py-1.5 rounded border border-neon-cyan/30 text-neon-cyan/80 hover:bg-neon-cyan/10 hover:border-neon-cyan/50 transition-all">Sign up</Link>
             </div>
           </div>
@@ -334,15 +334,15 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-12 items-center">
               {/* Left — text */}
               <div className="max-w-xl">
-                <div className="text-[10px] tracking-[0.25em] uppercase text-text-muted/70 font-mono mb-5">
+                <div className="text-[10px] tracking-[0.25em] uppercase text-white/60 font-mono mb-5">
                   Browser-based crime strategy
                 </div>
                 <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[1.0] tracking-[-0.02em] mb-5">
-                  <span className="text-text-muted/60">From nothing</span>
+                  <span className="text-white/50">From nothing</span>
                   <br />
                   <span>to kingpin.</span>
                 </h1>
-                <p className="text-sm sm:text-base text-text-muted/80 leading-relaxed mb-8 max-w-md font-mono">
+                <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-8 max-w-md font-mono">
                   A turn-based crime game with a real-time economy.
                   Fifteen crimes, player-driven market, gang warfare — all in your browser.
                 </p>
@@ -355,7 +355,7 @@ export default function LandingPage() {
                   </Link>
                   <Link
                     href="/login"
-                    className="px-5 py-2.5 rounded text-sm text-text-muted/80 border border-white/5 hover:text-text-secondary hover:border-white/10 transition-all"
+                    className="px-5 py-2.5 rounded text-sm text-white/70 border border-white/20 hover:text-white hover:border-white/40 transition-all"
                   >
                     Log in
                   </Link>
@@ -380,8 +380,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6">
             <ScrollReveal>
               <div className="max-w-lg mb-16">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/70 font-mono mb-3">What it actually is</h2>
-                <p className="text-sm text-text-muted/80 leading-relaxed font-mono">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-text-secondary/70 font-mono mb-3">What it actually is</h2>
+                <p className="text-sm text-text-secondary/80 leading-relaxed font-mono">
                   No pay-to-win. No idle grind. Every action costs a turn.
                   The economy runs whether you are logged in or not.
                 </p>
@@ -394,7 +394,7 @@ export default function LandingPage() {
                   <div className="bg-bg-deep p-6 h-full">
                     <f.icon size={16} className="text-neon-cyan/50 mb-3" />
                     <h3 className="text-sm font-medium text-text-secondary mb-2">{f.title}</h3>
-                    <p className="text-xs text-text-muted/80 leading-relaxed font-mono">{f.description}</p>
+                    <p className="text-xs text-text-secondary/80 leading-relaxed font-mono">{f.description}</p>
                   </div>
                 </ScrollReveal>
               ))}
@@ -407,8 +407,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6">
             <ScrollReveal>
               <div className="max-w-lg mb-12">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/70 font-mono mb-3">Choose your path</h2>
-                <p className="text-sm text-text-muted/80 leading-relaxed font-mono">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-text-secondary/70 font-mono mb-3">Choose your path</h2>
+                <p className="text-sm text-text-secondary/80 leading-relaxed font-mono">
                   Eight character archetypes. Your stats, your skills, your reputation.
                 </p>
               </div>
@@ -427,7 +427,7 @@ export default function LandingPage() {
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300"
                       />
                     </div>
-                    <p className="text-xs font-mono text-text-muted/70 mt-2 tracking-wider group-hover:text-text-secondary transition-colors">{p.name}</p>
+                    <p className="text-xs font-mono text-text-secondary/70 mt-2 tracking-wider group-hover:text-text-secondary transition-colors">{p.name}</p>
                   </div>
                 </ScrollReveal>
               ))}
@@ -456,7 +456,7 @@ export default function LandingPage() {
                     </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-[9px] font-mono text-text-muted/60">Influence</span>
-                      <span className="text-[9px] font-mono text-text-muted/80">70%</span>
+                      <span className="text-[9px] font-mono text-text-secondary/80">70%</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -475,13 +475,13 @@ export default function LandingPage() {
                 <div className="order-1 md:order-2">
                   <h2 className="text-xs tracking-[0.2em] uppercase text-neon-cyan/50 font-mono mb-3">Gangs</h2>
                   <h3 className="text-lg text-text-secondary font-medium mb-3">Lead your crew</h3>
-                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-secondary/80 leading-relaxed font-mono mb-4">
                     Claim turf districts for stat bonuses. Each territory has an influence meter that grows with daily operations.
                   </p>
-                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-secondary/80 leading-relaxed font-mono mb-4">
                     The Arsenal provides defensive and offensive upgrades that degrade and need repair. Upgrade operations from Lv.1 to Lv.3 for higher per-member payouts.
                   </p>
-                  <p className="text-sm text-text-muted/70 leading-relaxed font-mono">
+                  <p className="text-sm text-text-secondary/70 leading-relaxed font-mono">
                     Daily operations generate vault income based on member skill levels. The leaderboard tracks which gang truly runs the city.
                   </p>
                 </div>
@@ -496,7 +496,7 @@ export default function LandingPage() {
           <div className="relative max-w-xl mx-auto px-6 text-center">
             <ScrollReveal>
               <h2 className="text-sm text-text-secondary font-medium mb-3">Start your empire today</h2>
-              <p className="text-sm text-text-muted/80 mb-10 max-w-sm mx-auto leading-relaxed font-mono">
+              <p className="text-sm text-text-secondary/80 mb-10 max-w-sm mx-auto leading-relaxed font-mono">
                 No pay-to-win. No downloads. Fifteen crimes, a living economy, and a city that needs a kingpin.
               </p>
               <Link
@@ -515,8 +515,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
             <span className="text-[9px] tracking-[0.2em] uppercase text-text-muted/20 font-mono">Gang Wars &copy; 2026</span>
             <div className="flex items-center gap-5">
-              <Link href="/login" className="text-[10px] text-text-muted/60 hover:text-text-secondary transition-colors">Log in</Link>
-              <Link href="/register" className="text-[10px] text-text-muted/60 hover:text-text-secondary transition-colors">Sign up</Link>
+              <Link href="/login" className="text-[10px] text-text-muted/70 hover:text-text-secondary transition-colors">Log in</Link>
+              <Link href="/register" className="text-[10px] text-text-muted/70 hover:text-text-secondary transition-colors">Sign up</Link>
             </div>
           </div>
         </footer>

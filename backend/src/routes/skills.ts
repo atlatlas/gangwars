@@ -148,6 +148,13 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
         .set({ respect: user.respect + 3 })
         .where(eq(schema.users.id, user.id))
         .run();
+      const skStats = await db.query.playerStats.findFirst({ where: eq(schema.playerStats.userId, user.id) });
+      if (skStats) {
+        db.update(schema.playerStats)
+          .set({ respectSkills: skStats.respectSkills + 3 })
+          .where(eq(schema.playerStats.userId, user.id))
+          .run();
+      }
 
       if (newLevel === skill.maxLevel) {
         logActivityEvent(user.id, "skill_maxed", `Mastered ${skill.name} reaching level ${newLevel}!`, { skillName: skill.name, maxLevel: skill.maxLevel });

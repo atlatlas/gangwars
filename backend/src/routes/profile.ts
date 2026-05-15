@@ -203,6 +203,14 @@ profileRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =
 
       if (newRespectAward > 0) {
         user.respect += newRespectAward;
+        // Track milestone respect
+        const mStats = await db.query.playerStats.findFirst({ where: eq(schema.playerStats.userId, user.id) });
+        if (mStats) {
+          db.update(schema.playerStats)
+            .set({ respectMilestones: mStats.respectMilestones + newRespectAward })
+            .where(eq(schema.playerStats.userId, user.id))
+            .run();
+        }
       }
     }
 
