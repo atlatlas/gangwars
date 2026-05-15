@@ -2,81 +2,99 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { Swords, Crosshair, TrendingUp, Shield, Building, Dices, Eye, ChevronRight } from "lucide-react";
 
-const FEATURES = [
+const PRICE_TICKER = [
+  ["WEED", "$191", "+1.8%", true],
+  ["COKE", "$3,080", "-2.4%", false],
+  ["BTG", "$47,900", "+6.2%", true],
+  ["AK47", "$35,200", "-0.8%", false],
+  ["LAMBO", "$398,000", "+1.2%", true],
+  ["GNG1", "$10,050", "+0.3%", true],
+];
+
+const FEATURE_ROWS = [
   {
-    title: "Crime system",
-    items: [
-      "15 crimes from Shoplifting to Armed Heist, each with stat checks, jail risk, and escalating rewards.",
-      "Skill-based mini-games on higher-tier crimes — Pickpocket, Mastermind, Timing Game.",
-      "Reputation track unlocks better contracts and affects PvP intimidation.",
-    ],
+    icon: Swords,
+    label: "Crimes",
+    detail: "15 types — Shoplifting to Armed Heist. Stat checks, mini-games, jail risk.",
   },
   {
-    title: "Combat",
-    items: [
-      "Full PvP with 5 attack types based on your primary stat. Gear, footmen, and respect all factor into outcomes.",
-      "Retaliation system — attack a player who just hit you without spending a turn.",
-      "Hospital system: hit 0 HP and you are out of action. Heal with cash or turns.",
-    ],
+    icon: Crosshair,
+    label: "PvP",
+    detail: "5 attack types. Gear, footmen, respect factor in. Retaliation system.",
   },
   {
-    title: "Economy",
-    items: [
-      "15 tradable assets in the Terminal: drugs, weapons, luxury goods, crypto, gang bonds, contraband. Each ticks every 5 seconds with mean-reverting prices.",
-      "Black Market with fluctuating buy/sell spreads on 40+ items. Drug prices drift hourly.",
-      "Bank pays interest. Gang investments pay a cut of operation revenue. Capital is separate from pocket cash.",
-    ],
+    icon: TrendingUp,
+    label: "Terminal",
+    detail: "15 assets. Mean-reverting prices. Limit/stop orders. 5s ticks.",
   },
   {
-    title: "Gangs",
-    items: [
-      "Claim turf districts for stat bonuses. Assign heavy weapons from the Arsenal to defend them.",
-      "Run daily operations. Members complete tasks, generate vault income. Upgrade ops to Lv3 for higher payouts.",
-      "Leaderboard tracks gang dominance by vault, turf, respect, and member count.",
-    ],
+    icon: Shield,
+    label: "Gangs",
+    detail: "Turf, arsenal, daily operations. Leaderboard tracks dominance.",
   },
   {
-    title: "Skills & progression",
-    items: [
-      "7 skill trees: Pickpocket, Lockpicking, Hacking, Strength, Agility, Intelligence, Charisma.",
-      "Each skill unlocks higher-tier crimes and gang operation eligibility.",
-      "Stat points on level-up let you specialize (Enforcer, Dealer, Hacker).",
-    ],
+    icon: Building,
+    label: "Economy",
+    detail: "Bank interest, gang investments, black market spreads.",
   },
   {
-    title: "Casino & extras",
-    items: [
-      "Blackjack, Slots, Ride the Bus — all playable with in-game cash. Straight odds, no rigging.",
-      "Hoes generate passive income. Collect every 30 minutes.",
-      "Feedback system with voting and comments. Suggestions直接影响 roadmap.",
-    ],
+    icon: Eye,
+    label: "Passive",
+    detail: "Hoes, operations, investments — income while offline.",
+  },
+  {
+    icon: Dices,
+    label: "Casino",
+    detail: "Blackjack, slots, Ride the Bus. Straight odds.",
   },
 ];
 
-const ASSETS = [
-  ["WEED", "$191", "+1.8%"],
-  ["COKE", "$3,080", "-2.4%"],
-  ["BTG", "$47,900", "+6.2%"],
-  ["AK47", "$35,200", "-0.8%"],
-  ["LAMBO", "$398,000", "+1.2%"],
-  ["GNG1", "$10,050", "+0.3%"],
+const DETAIL_SECTIONS = [
+  {
+    title: "Crime & Combat",
+    items: [
+      "15 crimes from Shoplifting (Lv.1, low risk) to Armed Heist (Lv.25, high risk). Each has stat requirements, jail chances, and reward tiers.",
+      "Skill-based mini-games on pickpocket and lockpicking crimes — accuracy and timing determine success.",
+      "PvP uses a damage formula that factors strength, agility, equipped weapon, footmen, and respect differential.",
+      "Retaliation: attack someone who just hit you without spending a turn. Hospitalized players can be looted.",
+    ],
+  },
+  {
+    title: "Economy & Trading",
+    items: [
+      "Black Market has 40+ items with fluctuating buy/sell spreads. Drug prices drift hourly via simulated supply.",
+      "Trading Terminal: 15 assets in 6 categories. Price model is a mean-reverting random walk with volatility bands. Market, limit, stop-loss, and take-profit order types.",
+      "Bank pays interest on deposits. Gang investments pay a percentage of operation revenue. Each capital pool is separate from pocket cash.",
+      "Price history is stored in 1m/5m/15m/1h OHLCV candles. The frontend renders candlestick charts via lightweight-charts.",
+    ],
+  },
+  {
+    title: "Gangs & Progression",
+    items: [
+      "7 skill trees (Pickpocket, Lockpicking, Hacking, Strength, Agility, Intelligence, Charisma). Each unlocks higher-tier crimes and gang operation eligibility.",
+      "Gangs claim turf districts for stat bonuses. The Arsenal provides defensive and offensive upgrades that degrade and need repair.",
+      "Daily operations generate vault income based on member skill levels. Upgrade operations from Lv.1 to Lv.3 for higher per-member payouts.",
+      "Stat points on level-up. Specialization at Lv.10: Enforcer (combat), Dealer (economy), or Hacker (skill crimes).",
+    ],
+  },
 ];
 
 export default function LandingPage() {
   return (
-    <div className="bg-[#07070a] text-white font-sans antialiased selection:bg-white/10">
-      {/* ─── Nav ─── */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-white/[0.04] bg-[#07070a]/95 backdrop-blur-md">
+    <div className="min-h-screen bg-bg-deep text-text-primary">
+      {/* ─── Fixed header ─── */}
+      <header className="fixed top-0 left-0 right-0 z-50 h-12 border-b border-white/5 bg-bg-dark/95 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
-          <Image src="/logo.png" alt="" width={80} height={28} className="h-5 w-auto opacity-80" />
-          <div className="flex items-center gap-5">
-            <Link href="/login" className="text-xs text-white/30 hover:text-white/70 transition-colors">
+          <Image src="/logo.png" alt="Gang Wars" width={80} height={28} className="h-5 w-auto opacity-80" />
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-xs text-text-muted/60 hover:text-text-secondary transition-colors">
               Log in
             </Link>
             <Link
               href="/register"
-              className="text-xs px-3.5 py-1.5 rounded-md bg-white/5 text-white/80 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all"
+              className="text-xs px-3.5 py-1.5 rounded border border-neon-cyan/30 text-neon-cyan/80 hover:bg-neon-cyan/10 hover:border-neon-cyan/50 transition-all"
             >
               Sign up
             </Link>
@@ -85,50 +103,71 @@ export default function LandingPage() {
       </header>
 
       {/* ─── Hero ─── */}
-      <section className="min-h-screen flex items-center pt-12 relative overflow-hidden">
-        {/* Background — dark, no photo */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#07070a] via-[#0a0a12] to-[#07070a]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-br from-white/[0.03] to-transparent rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+      <section className="relative min-h-screen flex items-center pt-12 overflow-hidden">
+        {/* Background layers — matches game aesthetic */}
+        <div className="absolute inset-0 bg-gradient-to-b from-bg-deep via-bg-dark/50 to-bg-deep" />
+        <div
+          className="absolute inset-0 opacity-[0.02]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(6,182,212,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(147,51,234,0.3) 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)",
+          }}
+        />
+
+        {/* Gradient accent */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-neon-navy/5 blur-3xl" />
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-cyan/20 to-transparent" />
 
         <div className="relative z-10 max-w-6xl mx-auto px-6 w-full">
           <div className="max-w-2xl">
-            <h1 className="text-[clamp(2.5rem,6vw,4.5rem)] font-bold leading-[1.04] tracking-tight mb-5">
+            <div className="text-[10px] tracking-[0.25em] uppercase text-text-muted/30 font-mono mb-6">
+              Browser-based crime strategy
+            </div>
+            <h1 className="text-[clamp(2.2rem,5.5vw,4rem)] font-bold leading-[1.05] tracking-tight mb-5">
               A criminal empire,
               <br />
-              <span className="text-white/20">one turn at a time.</span>
+              <span className="text-text-muted/40">one turn at a time.</span>
             </h1>
-            <p className="text-sm md:text-base text-white/20 leading-relaxed max-w-md mb-10">
+            <p className="text-sm text-text-muted/50 leading-relaxed max-w-md mb-10 font-mono">
               Turn-based crime strategy with a real-time economy.
-              No downloads, no pay-to-win, no grinding.
+              No downloads. No pay-to-win. No grinding.
             </p>
             <div className="flex items-center gap-3">
               <Link
                 href="/register"
-                className="px-5 py-2.5 rounded-lg bg-white text-[#07070a] text-sm font-medium hover:bg-white/90 transition-all"
+                className="group relative px-5 py-2.5 rounded bg-neon-gradient text-white text-sm font-medium transition-all hover:shadow-[0_0_12px_rgba(37,99,235,0.3)]"
               >
-                Play now
+                <span className="relative z-10">Play now</span>
               </Link>
               <Link
                 href="/login"
-                className="px-5 py-2.5 rounded-lg text-sm text-white/30 border border-white/[0.08] hover:text-white/60 hover:border-white/[0.15] transition-all"
+                className="px-5 py-2.5 rounded text-sm text-text-muted/50 border border-white/5 hover:text-text-secondary hover:border-white/10 transition-all"
               >
                 Log in
               </Link>
             </div>
           </div>
 
-          {/* Price ticker — bottom right area */}
-          <div className="mt-20 md:mt-0 md:absolute md:right-6 md:bottom-16 md:max-w-[280px] w-full">
-            <div className="text-[10px] tracking-widest uppercase text-white/[0.08] font-mono mb-3">Live assets &bull; 5s tick</div>
-            <div className="space-y-1">
-              {ASSETS.map(([sym, price, chg]) => (
-                <div key={sym} className="flex items-center justify-between py-1 border-b border-white/[0.02] last:border-0">
-                  <span className="text-xs font-mono text-white/40">{sym}</span>
+          {/* Price ticker — bottom-right */}
+          <div className="mt-20 md:mt-0 md:absolute md:right-6 md:bottom-16 md:w-[260px]">
+            <div className="text-[9px] tracking-[0.2em] uppercase text-text-muted/20 font-mono mb-3">Live prices &middot; 5s tick</div>
+            <div className="rounded border border-white/5 bg-bg-dark/50 overflow-hidden">
+              {PRICE_TICKER.map(([sym, price, chg, up]) => (
+                <div
+                  key={sym as string}
+                  className="flex items-center justify-between px-4 py-2 border-b border-white/[0.03] last:border-0"
+                >
+                  <span className="text-xs font-mono text-text-secondary">{sym as string}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono text-white/25">{price}</span>
-                    <span className={`text-[10px] font-mono w-12 text-right ${chg.startsWith("+") ? "text-green-500/50" : "text-red-500/50"}`}>
-                      {chg}
+                    <span className="text-xs font-mono text-text-muted/60">{price as string}</span>
+                    <span className={`text-[10px] font-mono w-12 text-right ${up ? "text-neon-green/60" : "text-neon-red/60"}`}>
+                      {chg as string}
                     </span>
                   </div>
                 </div>
@@ -138,106 +177,77 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Features ─── */}
-      <section className="py-24 md:py-32">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="max-w-lg mb-16">
-            <h2 className="text-sm text-white/90 font-medium mb-3">What the game actually is</h2>
-            <p className="text-sm text-white/20 leading-relaxed">
-              Criminally short description in five paragraphs indeed. Turn-based means you play on your
-              own time. The economy runs 24/7. Every action has a cost, a risk, and a reward.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-x-12 gap-y-16">
-            {FEATURES.map((section) => (
-              <div key={section.title}>
-                <h3 className="text-xs tracking-widest uppercase text-white/40 font-mono mb-4">
-                  {section.title}
-                </h3>
-                <ul className="space-y-3">
-                  {section.items.map((item) => (
-                    <li key={item.slice(0, 20)} className="text-sm text-white/20 leading-relaxed pl-4 border-l border-white/[0.06]">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
+      {/* ─── Feature pills ─── */}
+      <section className="relative z-10 -mt-16 pb-20">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="flex flex-wrap gap-2 justify-center">
+            {FEATURE_ROWS.map((f) => (
+              <div
+                key={f.label}
+                className="group flex items-center gap-2 px-3.5 py-2 rounded border border-white/5 bg-bg-dark/30 hover:bg-bg-dark/60 hover:border-white/10 transition-all"
+              >
+                <f.icon size={13} className="text-neon-cyan/50 group-hover:text-neon-cyan/80" />
+                <span className="text-xs font-mono text-text-muted/50 group-hover:text-text-secondary">{f.label}</span>
+                <span className="text-[10px] text-text-muted/20 hidden sm:inline">— {f.detail}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── Economic engine ─── */}
-      <section className="py-24 md:py-32 border-t border-white/[0.04]">
+      {/* ─── Detail sections ─── */}
+      <section className="py-24 md:py-32">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div className="max-w-sm">
-              <h2 className="text-sm text-white/90 font-medium mb-4">What runs under the hood</h2>
-              <div className="space-y-4 text-sm text-white/20 leading-relaxed">
-                <p>
-                  Prices follow a mean-reverting random walk. Every asset has a base price, a volatility
-                  factor, and min/max bounds. The engine ticks every 5 seconds, writes to
-                  <code className="text-white/40 mx-1 text-xs">trading_price_history</code>,
-                  and broadcasts via WebSocket.
-                </p>
-                <p>
-                  Orders execute against the live price feed: market fills immediately, limit orders sit
-                  in the book until crossed, stop-loss and take-profit trigger on condition. Positions
-                  track average entry cost and unrealized P&amp;L per tick.
-                </p>
-                <p>
-                  Gang vault income accrues from member operation tasks. Collect manually — no automatic
-                  payouts. Turf bonuses apply to crime success and PvP stats. Arsenal items degrade
-                  and need repair.
-                </p>
-              </div>
-            </div>
+          <div className="max-w-lg mb-16">
+            <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/40 font-mono mb-3">What it actually is</h2>
+            <p className="text-sm text-text-muted/50 leading-relaxed">
+              A turn-based crime game with a real-time economy. Every action costs a turn.
+              The market runs 24/7. What you earn depends on strategy, not time spent.
+            </p>
+          </div>
 
-            {/* SQL snippet */}
-            <div className="rounded-lg border border-white/[0.06] bg-white/[0.015] overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/[0.04] flex items-center justify-between">
-                <span className="text-[10px] font-mono text-white/20">trading_price_history &mdash; schema</span>
-                <span className="text-[10px] font-mono text-white/[0.06]">5 columns</span>
+          <div className="space-y-20">
+            {DETAIL_SECTIONS.map((section) => (
+              <div key={section.title}>
+                <h3 className="text-xs tracking-[0.2em] uppercase text-neon-cyan/50 font-mono mb-6">{section.title}</h3>
+                <div className="grid md:grid-cols-2 gap-x-12 gap-y-6">
+                  {section.items.map((item) => (
+                    <div key={item.slice(0, 30)} className="text-sm text-text-muted/50 leading-relaxed pl-4 border-l border-neon-cyan/10">
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <pre className="px-5 py-4 text-xs font-mono leading-relaxed text-white/15 overflow-x-auto">
-{`id          INTEGER   PRIMARY KEY
-asset_id    INTEGER   NOT NULL  → trading_assets
-price       INTEGER   NOT NULL
-volume      INTEGER   DEFAULT 0
-recorded_at TEXT      NOT NULL  → INDEX`}
-              </pre>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="py-28">
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <h2 className="text-sm text-white/90 font-medium mb-3">No tricks. Just turns.</h2>
-          <p className="text-sm text-white/20 mb-10 leading-relaxed max-w-sm mx-auto">
-            Gang Wars is free, browser-based, and turn-gated. Play when you want, as much as you want.
+      <section className="py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neon-navy/[0.02] to-transparent" />
+        <div className="relative z-10 max-w-xl mx-auto px-6 text-center">
+          <h2 className="text-sm text-text-secondary font-medium mb-3">No pay-to-win. No downloads. No grind.</h2>
+          <p className="text-sm text-text-muted/50 mb-10 leading-relaxed max-w-sm mx-auto font-mono">
+            Play when you want, as much as you want. The economy runs whether you are logged in or not.
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center px-5 py-2.5 rounded-lg bg-white text-[#07070a] text-sm font-medium hover:bg-white/90 transition-all"
+            className="group inline-flex items-center gap-2 px-5 py-2.5 rounded bg-neon-gradient text-white text-sm font-medium transition-all hover:shadow-[0_0_12px_rgba(37,99,235,0.3)]"
           >
             Create account
-            <svg className="ml-2 w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="border-t border-white/[0.04] py-6">
+      <footer className="border-t border-white/5 py-6">
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-          <span className="text-[10px] text-white/[0.06] font-mono tracking-widest uppercase">Gang Wars &copy; 2026</span>
+          <span className="text-[9px] tracking-[0.2em] uppercase text-text-muted/20 font-mono">Gang Wars &copy; 2026</span>
           <div className="flex items-center gap-5">
-            <Link href="/login" className="text-[10px] text-white/20 hover:text-white/50 transition-colors">Log in</Link>
-            <Link href="/register" className="text-[10px] text-white/20 hover:text-white/50 transition-colors">Sign up</Link>
+            <Link href="/login" className="text-[10px] text-text-muted/30 hover:text-text-secondary transition-colors">Log in</Link>
+            <Link href="/register" className="text-[10px] text-text-muted/30 hover:text-text-secondary transition-colors">Sign up</Link>
           </div>
         </div>
       </footer>
