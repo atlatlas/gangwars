@@ -337,10 +337,8 @@ export default function LandingPage() {
                 <div className="text-[10px] tracking-[0.25em] uppercase text-white/60 font-mono mb-5">
                   Browser-based crime strategy
                 </div>
-                <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[1.0] tracking-[-0.02em] mb-5">
-                  <span className="text-white/50">From nothing</span>
-                  <br />
-                  <span>to kingpin.</span>
+                <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[1.0] tracking-[-0.02em] mb-5 text-white">
+                  Have fun.
                 </h1>
                 <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-8 max-w-md font-mono">
                   A turn-based crime game with a real-time economy.
