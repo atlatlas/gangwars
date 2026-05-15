@@ -244,8 +244,8 @@ export default function DashboardPage() {
         {/* Dark gradient overlay so text is readable */}
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-bg-deep/30 to-transparent" />
 
-        {/* Logo — 1/3 from top, centered */}
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+        {/* Logo — right on mobile, centered on desktop */}
+        <div className="absolute top-1/3 right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2 z-10">
           <img
             src="/logo.png"
             alt="Gang Wars"
