@@ -342,7 +342,7 @@ export default function LandingPage() {
                 </h1>
                 <p className="text-sm sm:text-base text-white/80 leading-relaxed mb-8 max-w-md font-mono">
                   A turn-based crime game with a real-time economy.
-                  Fifteen crimes, player-driven market, gang warfare — all in your browser.
+                  Crimes, player-driven market, gang warfare — all in your browser.
                 </p>
                 <div className="flex items-center gap-3">
                   <Link
