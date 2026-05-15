@@ -51,6 +51,7 @@ export default function DashboardPage() {
   const [choosingSpec, setChoosingSpec] = useState(false);
   const [showStatTip, setShowStatTip] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+const [hoveredStat, setHoveredStat] = useState<string | null>(null);
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -226,7 +227,7 @@ export default function DashboardPage() {
   return (
     <GameLayout>
       {/* Hero Section — full viewport width, direct child of main */}
-      <div className="relative mb-0 overflow-hidden">
+      <div className="relative mb-0">
 
         <div
           className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5"
@@ -345,7 +346,14 @@ export default function DashboardPage() {
               {/* Attributes — larger font row */}
               <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-white/10">
                 {stats.map((stat) => (
-                  <Tooltip key={stat.key} content={stat.tooltip} className="flex flex-1">
+                  <div
+                    key={stat.key}
+                    className={`flex flex-1 cursor-default transition-all duration-150 ${
+                      hoveredStat && hoveredStat !== stat.key ? "opacity-40" : ""
+                    }`}
+                    onMouseEnter={() => setHoveredStat(stat.key)}
+                    onMouseLeave={() => setHoveredStat(null)}
+                  >
                     <div className="flex items-center gap-1 flex-1">
                       <span className="text-xs font-mono text-white/30 uppercase drop-shadow-lg">{stat.label.substring(0, 3)}</span>
                       <div className="flex-1 h-1.5 bg-black/30 rounded-full overflow-hidden">
@@ -381,7 +389,7 @@ export default function DashboardPage() {
                         </button>
                       )}
                     </div>
-                  </Tooltip>
+                  </div>
                 ))}
               </div>
             </div>
@@ -391,6 +399,41 @@ export default function DashboardPage() {
         {/* Gradient blend at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-bg-deep via-bg-deep/50 to-transparent pointer-events-none" />
       </div>
+
+      {/* Stat info panel — between hero and dashboard, no clipping */}
+      {hoveredStat && (() => {
+        const stat = stats.find(s => s.key === hoveredStat);
+        if (!stat) return null;
+        const colorMap: Record<string, { bar: string; bg: string; text: string; border: string }> = {
+          strength: { bar: "bg-pink-400", bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-400/20" },
+          agility: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
+          intelligence: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
+          charisma: { bar: "bg-yellow-400", bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-400/20" },
+          endurance: { bar: "bg-purple-400", bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-400/20" },
+        };
+        const c = colorMap[stat.key];
+        return (
+          <div className="animate-slide-up border-b border-white/5">
+            <div className="max-w-5xl mx-auto px-4 py-3">
+              <div className={`rounded-sm border ${c.border} ${c.bg} backdrop-blur-sm`}>
+                <div className={`h-0.5 w-full rounded-t-sm ${c.bar}`} />
+                <div className="p-3 flex items-start gap-3">
+                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center shrink-0 ${c.bg} ${c.text}`}>
+                    <stat.icon size={14} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`text-xs font-mono font-semibold tracking-wider uppercase ${c.text}`}>{stat.label}</span>
+                      <span className="text-[11px] font-mono text-white/50">{stat.value} pts</span>
+                    </div>
+                    <p className="text-xs font-mono text-white/60 leading-relaxed">{stat.tooltip}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Dashboard content — constrained width */}
       <div className="max-w-5xl mx-auto px-4 py-6">

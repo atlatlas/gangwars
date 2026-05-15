@@ -1,47 +1,59 @@
 "use client";
 
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 interface TooltipProps {
   children: ReactNode;
-  content: string;
+  content: ReactNode;
   className?: string;
+  position?: "top" | "bottom";
 }
 
-export default function Tooltip({ children, content, className = "" }: TooltipProps) {
+export default function Tooltip({ children, content, className = "", position = "top" }: TooltipProps) {
   const [show, setShow] = useState(false);
   const [alignRight, setAlignRight] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   const handleMouseEnter = () => {
-    setShow(true);
-    if (wrapRef.current) {
-      const rect = wrapRef.current.getBoundingClientRect();
-      const tooltipWidth = Math.min(content.length * 7.5, 420);
-      const spaceRight = window.innerWidth - rect.left;
-      const spaceLeft = rect.right;
-      setAlignRight(tooltipWidth > spaceLeft && spaceRight > spaceLeft);
-    }
+    timerRef.current = setTimeout(() => {
+      setShow(true);
+      if (wrapRef.current) {
+        const rect = wrapRef.current.getBoundingClientRect();
+        const tooltipWidth = 240;
+        const spaceRight = window.innerWidth - rect.left;
+        const spaceLeft = rect.right;
+        setAlignRight(tooltipWidth > spaceLeft && spaceRight > spaceLeft);
+      }
+    }, 300);
   };
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setShow(false);
+  };
+
+  const isBottom = position === "bottom";
 
   return (
     <div
       ref={wrapRef}
       className={`relative ${className}`}
       onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setShow(false)}
+      onMouseLeave={handleMouseLeave}
     >
       {children}
       {show && (
-        <div className={`absolute z-50 mb-2 px-3 py-1.5 rounded-sm bg-bg-dark border border-white/10 shadow-lg pointer-events-none whitespace-nowrap ${
+        <div className={`absolute z-50 pointer-events-none ${
           alignRight ? "right-0" : "left-1/2 -translate-x-1/2"
-        } bottom-full`}>
-          <p className="text-[11px] font-mono text-white/70 leading-relaxed">{content}</p>
-          <div className={`absolute top-full border-4 border-transparent ${
-            alignRight
-              ? "right-2 border-t-white/10"
-              : "left-1/2 -translate-x-1/2 border-t-white/10"
-          }`} />
+        } ${isBottom ? "top-full mt-2" : "bottom-full mb-2"}`}>
+          <div className={`animate-${isBottom ? "slide-up" : "slide-down"}`}>
+            {content}
+          </div>
         </div>
       )}
     </div>
