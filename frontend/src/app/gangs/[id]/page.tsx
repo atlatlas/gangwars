@@ -1317,9 +1317,6 @@ const handleWithdrawInvestment = () => {
                       <div className="flex items-center gap-2 text-xs font-mono text-white/20">
                         <span className="flex items-center gap-0.5"><DollarSign size={9} />{member.netWorth?.toLocaleString() ?? 0}</span>
                         <span className="flex items-center gap-0.5"><TrendingUp size={9} />{member.respect ?? 0}</span>
-                        {(member.salary ?? 0) > 0 && (
-                          <span className="flex items-center gap-0.5 text-emerald-400/60"><DollarSign size={9} />{member.salary}/d</span>
-                        )}
                       </div>
                       <div className="flex items-center gap-1 pt-1 border-t border-white/5 min-h-[20px]">
                         {isLeader && !isMemberLeader && member.userId !== user?.id && (
@@ -1359,50 +1356,6 @@ const handleWithdrawInvestment = () => {
                               <button onClick={() => setConfirming(`kick-${member.userId}`)} className="text-[10px] font-mono text-red-400/50 hover:text-red-400" title="Kick"><LogOut size={10} /></button>
                             )}
                           </>
-                        )}
-                        {/* Salary set — leader only */}
-                        {isLeader && member.userId !== user?.id && (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              value={salaryInput[member.userId] ?? (member.salary ?? 0).toString()}
-                              onChange={(e) => setSalaryInput((prev) => ({ ...prev, [member.userId]: e.target.value }))}
-                              onKeyDown={(e) => e.key === "Enter" && handleSetSalary(member.userId)}
-                              placeholder="$"
-                              min={0}
-                              max={1000000}
-                              className="w-14 bg-black/30 border border-white/5 rounded-sm px-1.5 py-0.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-emerald-400/30 transition-all text-right"
-                            />
-                            <button
-                              onClick={() => handleSetSalary(member.userId)}
-                              disabled={settingSalary === member.userId}
-                              className="text-[10px] font-mono text-emerald-400/60 hover:text-emerald-300 transition-colors disabled:opacity-30"
-                            >
-                              {settingSalary === member.userId ? "..." : "Sal"}
-                            </button>
-                          </div>
-                        )}
-                        {/* Pay member — leader/enforcer only */}
-                        {canManageVault && member.userId !== user?.id && (
-                          <div className="flex items-center gap-1 ml-auto">
-                            <input
-                              type="number"
-                              value={payAmount[member.userId] ?? ""}
-                              onChange={(e) => setPayAmount((prev) => ({ ...prev, [member.userId]: e.target.value }))}
-                              onKeyDown={(e) => e.key === "Enter" && handlePayMember(member.userId, member.username)}
-                              placeholder="Pay $"
-                              min={1}
-                              max={gang?.vault ?? 0}
-                              className="w-14 bg-black/30 border border-white/5 rounded-sm px-1.5 py-0.5 text-[10px] font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/30 transition-all text-right"
-                            />
-                            <button
-                              onClick={() => handlePayMember(member.userId, member.username)}
-                              disabled={paying === member.userId || !payAmount[member.userId] || parseInt(payAmount[member.userId] ?? "0") <= 0}
-                              className="text-[10px] font-mono text-cyan-400/60 hover:text-cyan-300 transition-colors disabled:opacity-30"
-                            >
-                              {paying === member.userId ? "..." : "Pay"}
-                            </button>
-                          </div>
                         )}
                       </div>
                       </div>
@@ -2212,7 +2165,10 @@ const handleWithdrawInvestment = () => {
                     <div className="space-y-1">
                       <div className="flex items-center justify-between px-1 py-1.5 border-b border-white/5 mb-1">
                         <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Member</span>
-                        <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Daily Salary</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Daily Salary</span>
+                          {canManageVault && <span className="text-[10px] font-mono text-white/20 uppercase tracking-wider">Pay</span>}
+                        </div>
                       </div>
                       {gang?.members.map((m) => (
                         <div key={m.userId} className="flex items-center justify-between px-2 py-2 rounded-sm hover:bg-white/[0.02] transition-colors">
@@ -2221,7 +2177,7 @@ const handleWithdrawInvestment = () => {
                             {m.role === "leader" && <Crown size={10} className="text-yellow-500" />}
                             <span className="text-[10px] font-mono text-white/20">Lv.{m.level}</span>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             {isLeader ? (
                               <>
                                 <div className="flex items-center gap-1">
@@ -2251,6 +2207,28 @@ const handleWithdrawInvestment = () => {
                               <span className={`text-xs font-mono ${m.salary && m.salary > 0 ? "text-emerald-400/70" : "text-white/20"}`}>
                                 {m.salary && m.salary > 0 ? `$${m.salary.toLocaleString()}/d` : "—"}
                               </span>
+                            )}
+                            {/* Pay from vault */}
+                            {canManageVault && m.userId !== user?.id && (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  value={payAmount[m.userId] ?? ""}
+                                  onChange={(e) => setPayAmount((prev) => ({ ...prev, [m.userId]: e.target.value }))}
+                                  onKeyDown={(e) => e.key === "Enter" && handlePayMember(m.userId, m.username)}
+                                  placeholder="$"
+                                  min={1}
+                                  max={gang?.vault ?? 0}
+                                  className="w-16 bg-black/30 border border-white/5 rounded-sm px-1.5 py-1 text-[10px] font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-cyan-400/30 transition-all text-right"
+                                />
+                                <button
+                                  onClick={() => handlePayMember(m.userId, m.username)}
+                                  disabled={paying === m.userId || !payAmount[m.userId] || parseInt(payAmount[m.userId] ?? "0") <= 0}
+                                  className="text-[10px] font-mono text-cyan-400/60 hover:text-cyan-300 transition-colors disabled:opacity-30"
+                                >
+                                  {paying === m.userId ? "..." : "Pay"}
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
