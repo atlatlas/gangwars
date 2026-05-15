@@ -111,6 +111,11 @@ try {
   sqlite.exec("CREATE INDEX IF NOT EXISTS idx_comment_votes_comment ON feedback_comment_votes(comment_id)");
 } catch {}
 
+// Turf influence system
+try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN influence INTEGER DEFAULT 0 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN level INTEGER DEFAULT 1 NOT NULL"); } catch {}
+try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN last_influence_tick TEXT"); } catch {}
+
 // ─── Cleanup: remove test feedback entries ───
 try {
   const testRows = sqlite.prepare("SELECT id FROM feedback WHERE title = ? OR title LIKE ?")

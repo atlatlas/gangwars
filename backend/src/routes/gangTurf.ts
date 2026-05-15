@@ -1,8 +1,9 @@
 import { Router, Response } from "express";
 import { z } from "zod";
 import { db, schema } from "../db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
+import { TurfEngine } from "../engine/turfEngine";
 
 export const gangTurfRouter = Router();
 
@@ -45,6 +46,7 @@ gangTurfRouter.get("/:gangId/turf", authMiddleware, (req: AuthRequest, res: Resp
         // Defense power from arsenal items assigned to this district
         const defenseItems = allArsenal.filter((a) => a.assignedTurfId === d.id);
         const defensePower = defenseItems.reduce((sum, a) => sum + a.pvpPower, 0);
+        const bonusMult = TurfEngine.getBonusMultiplier(turf.level);
         owner = {
           districtId: d.id,
           districtName: d.name,
@@ -56,6 +58,13 @@ gangTurfRouter.get("/:gangId/turf", authMiddleware, (req: AuthRequest, res: Resp
           challengedByGangName: challengerGang?.name ?? null,
           challengeExpiresAt: turf.challengeExpiresAt,
           defensePower,
+          influence: turf.influence,
+          level: turf.level,
+          bonusMultiplier: bonusMult,
+          effectiveCrimeBonus: Math.round(d.crimeBonus * bonusMult * 10) / 10,
+          effectivePvpBonus: Math.round(d.pvpBonus * bonusMult * 10) / 10,
+          effectiveIncomeBonus: Math.round(d.incomeBonus * bonusMult * 10) / 10,
+          assignedArsenalCount: defenseItems.length,
         };
       }
       return { ...d, owner };
@@ -302,6 +311,77 @@ gangTurfRouter.post("/:gangId/turf/abandon/:districtId", authMiddleware, jailChe
     res.json({ message: `Abandoned ${district.name}. Refunded $${refund.toLocaleString()} to vault.`, vault: gang.vault + refund });
   } catch (err) {
     console.error("Turf abandon error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// GET /api/gangs/:gangId/turf/overview — summary data for the territory overview card
+gangTurfRouter.get("/:gangId/turf/overview", authMiddleware, (req: AuthRequest, res: Response) => {
+  try {
+    const gangId = parseInt(req.params.gangId as string);
+    const gang = db.select().from(schema.gangs).where(eq(schema.gangs.id, gangId)).all()[0];
+    if (!gang) { res.status(404).json({ error: "Gang not found" }); return; }
+    const membership = db.select()
+      .from(schema.gangMembers)
+      .where(and(eq(schema.gangMembers.userId, req.userId!), eq(schema.gangMembers.gangId, gangId)))
+      .all()[0];
+    if (!membership) { res.status(403).json({ error: "You're not a member of this gang" }); return; }
+
+    // Owned territories with influence/level
+    const myTurfs = db.select()
+      .from(schema.gangTurf)
+      .where(eq(schema.gangTurf.gangId, gangId))
+      .all();
+    const districtIds = myTurfs.map(t => t.districtId);
+    const districts = districtIds.length > 0
+      ? db.select().from(schema.turfDistricts).where(inArray(schema.turfDistricts.id, districtIds)).all()
+      : [];
+    const districtMap = new Map(districts.map(d => [d.id, d]));
+
+    const territories = myTurfs.map(t => {
+      const d = districtMap.get(t.districtId);
+      const bonusMult = TurfEngine.getBonusMultiplier(t.level);
+      const levelInfo = TurfEngine.getNextLevelInfo(t.influence);
+      return {
+        districtId: t.districtId,
+        name: d?.name ?? "Unknown",
+        description: d?.description ?? "",
+        claimCost: d?.claimCost ?? 0,
+        influence: t.influence,
+        level: t.level,
+        bonusMultiplier: bonusMult,
+        crimeBonus: Math.round((d?.crimeBonus ?? 0) * bonusMult * 10) / 10,
+        pvpBonus: Math.round((d?.pvpBonus ?? 0) * bonusMult * 10) / 10,
+        incomeBonus: Math.round((d?.incomeBonus ?? 0) * bonusMult * 10) / 10,
+        nextLevel: levelInfo,
+      };
+    });
+
+    // Member count
+    const memberCount = db.select({ count: sql<number>`COUNT(*)` })
+      .from(schema.gangMembers)
+      .where(eq(schema.gangMembers.gangId, gangId))
+      .all()[0]?.count ?? 0;
+    const maxMembers = gang.maxMembers;
+
+    // Arsenal items assignable to turfs
+    const arsenal = db.select({
+      id: schema.gangArsenal.id,
+      name: schema.gangArsenal.name,
+      type: schema.gangArsenal.type,
+      pvpPower: schema.gangArsenal.pvpPower,
+      crimeBonus: schema.gangArsenal.crimeBonus,
+      durability: schema.gangArsenal.durability,
+      maxDurability: schema.gangArsenal.maxDurability,
+      assignedTurfId: schema.gangArsenal.assignedTurfId,
+    })
+      .from(schema.gangArsenal)
+      .where(eq(schema.gangArsenal.gangId, gangId))
+      .all();
+
+    res.json({ territories, memberCount, maxMembers, arsenal, vault: gang.vault });
+  } catch (err) {
+    console.error("Turf overview error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

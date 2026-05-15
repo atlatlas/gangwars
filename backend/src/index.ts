@@ -25,6 +25,7 @@ import { feedbackRouter } from "./routes/feedback";
 import { feedbackCommentsRouter } from "./routes/feedbackComments";
 import { tradingRouter } from "./routes/trading";
 import { TradingEngine } from "./engine/tradingEngine";
+import { TurfEngine } from "./engine/turfEngine";
 import { db, schema } from "./db";
 
 const app = express();
@@ -79,9 +80,11 @@ io.on("connection", (socket) => {
   });
 });
 
-// Start trading engine
+// Start engines
 const tradingEngine = new TradingEngine(io);
 tradingEngine.start();
+const turfEngine = new TurfEngine();
+turfEngine.start();
 
 export { io };
 

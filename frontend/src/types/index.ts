@@ -430,10 +430,55 @@ export interface GangTurfEntry {
   challengedBy: number | null;
   challengedByGangName: string | null;
   challengeExpiresAt: string | null;
+  defensePower?: number;
+  influence?: number;
+  level?: number;
+  bonusMultiplier?: number;
+  effectiveCrimeBonus?: number;
+  effectivePvpBonus?: number;
+  effectiveIncomeBonus?: number;
+  assignedArsenalCount?: number;
 }
 
 export interface TurfData {
   districts: (TurfDistrict & { owner: GangTurfEntry | null })[];
+  vault: number;
+}
+
+export interface TurfTerritory {
+  districtId: number;
+  name: string;
+  description: string;
+  claimCost: number;
+  influence: number;
+  level: number;
+  bonusMultiplier: number;
+  crimeBonus: number;
+  pvpBonus: number;
+  incomeBonus: number;
+  nextLevel: {
+    currentLevel: number;
+    nextLevel: number;
+    currentThreshold: number;
+    nextThreshold: number;
+    progress: number;
+  };
+}
+
+export interface TurfOverviewData {
+  territories: TurfTerritory[];
+  memberCount: number;
+  maxMembers: number;
+  arsenal: {
+    id: number;
+    name: string;
+    type: string;
+    pvpPower: number;
+    crimeBonus: number;
+    durability: number;
+    maxDurability: number;
+    assignedTurfId: number | null;
+  }[];
   vault: number;
 }
 

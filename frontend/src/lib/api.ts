@@ -308,6 +308,7 @@ export const gangs = {
   // Turf
   turf: {
     list: (gangId: number) => request<any>(`/gangs/${gangId}/turf`),
+    overview: (gangId: number) => request<any>(`/gangs/${gangId}/turf/overview`),
     claim: (gangId: number, districtId: number) =>
       request<any>(`/gangs/${gangId}/turf/claim/${districtId}`, { method: "POST" }),
     challenge: (gangId: number, districtId: number) =>
