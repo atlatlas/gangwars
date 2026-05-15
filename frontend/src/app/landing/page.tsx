@@ -124,7 +124,7 @@ function DashboardPreview() {
           style={{ backgroundImage: "url(/lvl1_hereo.png)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-bg-deep/30 to-transparent" />
-        <div className="absolute top-1/2 right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <img
             src="/logo.png"
             alt="Gang Wars"
