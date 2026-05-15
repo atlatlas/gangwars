@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Swords, Crosshair, Crown, Medal, BookOpen, Activity, Heart, DollarSign } from "lucide-react";
+import { Swords, Crosshair, Crown, Medal, BookOpen, Activity, Heart, DollarSign } from "lucide-react";
 
 // ─── Ambient background orbs ───
 function AmbientOrbs() {
@@ -272,21 +272,6 @@ export default function LandingPage() {
             <div className="mt-10 md:hidden max-w-sm mx-auto">
               <DashboardPreview />
             </div>
-          </div>
-        </section>
-
-        {/* ─── CTA ─── */}
-        <section className="py-28 border-t border-white/5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neon-navy/[0.02] to-transparent" />
-          <div className="relative max-w-xl mx-auto px-6 text-center">
-            <h2 className="text-sm text-text-secondary font-medium mb-3">Start Havin fun. Today.</h2>
-            <Link
-              href="/register"
-              className="group inline-flex items-center gap-2 px-5 py-2.5 rounded bg-neon-gradient text-white text-sm font-medium transition-all hover:shadow-[0_0_12px_rgba(37,99,235,0.3)] active:scale-[0.97]"
-            >
-              Create account
-              <ChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
           </div>
         </section>
 
