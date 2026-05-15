@@ -463,3 +463,90 @@ export const feedback = sqliteTable("feedback", {
   status: text("status", { enum: ["open", "under-review", "planned", "completed", "declined"] }).default("open").notNull(),
   createdAt: text("created_at").notNull(),
 });
+
+// ─── Trading Terminal ───────────────────────────────────────────
+
+export const tradingAccounts = sqliteTable("trading_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").unique().notNull().references(() => users.id),
+  balance: integer("balance").default(0).notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  tradingAccUserIdIdx: uniqueIndex("trading_acc_user_idx").on(table.userId),
+}));
+
+export const tradingAssets = sqliteTable("trading_assets", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  symbol: text("symbol").unique().notNull(),
+  name: text("name").notNull(),
+  category: text("category", { enum: ["drug", "weapon", "luxury", "crypto", "gang_stock", "contraband"] }).notNull(),
+  basePrice: integer("base_price").notNull(),
+  currentPrice: integer("current_price").notNull(),
+  previousPrice: integer("previous_price"),
+  priceVolatility: real("price_volatility").default(0.3).notNull(),
+  lastTickAt: text("last_tick_at").notNull(),
+  minPrice: integer("min_price").default(1).notNull(),
+  maxPrice: integer("max_price"),
+  itemId: integer("item_id").references(() => items.id),
+  tickSize: real("tick_size").default(1).notNull(),
+  lotSize: integer("lot_size").default(1).notNull(),
+});
+
+export const tradingPositions = sqliteTable("trading_positions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  assetId: integer("asset_id").notNull().references(() => tradingAssets.id),
+  quantity: integer("quantity").notNull(),
+  avgEntryPrice: integer("avg_entry_price").notNull(),
+  unrealizedPnl: integer("unrealized_pnl").default(0).notNull(),
+  openedAt: text("opened_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+}, (table) => ({
+  tPosUserAssetIdx: uniqueIndex("t_pos_user_asset_idx").on(table.userId, table.assetId),
+}));
+
+export const tradingOrders = sqliteTable("trading_orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull().references(() => users.id),
+  assetId: integer("asset_id").notNull().references(() => tradingAssets.id),
+  type: text("type", { enum: ["market", "limit", "stop_loss", "take_profit"] }).notNull(),
+  side: text("side", { enum: ["buy", "sell"] }).notNull(),
+  status: text("status", { enum: ["open", "filled", "cancelled", "expired", "triggered"] }).notNull(),
+  quantity: integer("quantity").notNull(),
+  filledQuantity: integer("filled_quantity").default(0).notNull(),
+  price: integer("price"),
+  stopPrice: integer("stop_price"),
+  filledAt: text("filled_at"),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  tOrdUserIdIdx: index("t_ord_user_idx").on(table.userId),
+  tOrdAssetStatusIdx: index("t_ord_asset_status_idx").on(table.assetId, table.status),
+}));
+
+export const tradingFills = sqliteTable("trading_fills", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  orderId: integer("order_id").notNull().references(() => tradingOrders.id),
+  userId: integer("user_id").notNull().references(() => users.id),
+  assetId: integer("asset_id").notNull().references(() => tradingAssets.id),
+  side: text("side", { enum: ["buy", "sell"] }).notNull(),
+  quantity: integer("quantity").notNull(),
+  price: integer("price").notNull(),
+  total: integer("total").notNull(),
+  pnl: integer("pnl").default(0).notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  tFillUserIdIdx: index("t_fill_user_idx").on(table.userId),
+  tFillAssetIdIdx: index("t_fill_asset_idx").on(table.assetId),
+  tFillOrderIdIdx: index("t_fill_order_idx").on(table.orderId),
+}));
+
+export const tradingPriceHistory = sqliteTable("trading_price_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  assetId: integer("asset_id").notNull().references(() => tradingAssets.id),
+  price: integer("price").notNull(),
+  volume: integer("volume").default(0).notNull(),
+  recordedAt: text("recorded_at").notNull(),
+}, (table) => ({
+  tphAssetIdx: index("tph_asset_idx").on(table.assetId),
+  tphTimeIdx: index("tph_time_idx").on(table.recordedAt),
+}));

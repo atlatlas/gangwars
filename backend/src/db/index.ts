@@ -114,5 +114,86 @@ try {
   console.log("Feedback cleanup skipped:", e.message);
 }
 
+// ─── trading terminal tables ───
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE REFERENCES users(id),
+  balance INTEGER DEFAULT 0 NOT NULL,
+  created_at TEXT NOT NULL
+)`);
+try { sqlite.exec("CREATE UNIQUE INDEX IF NOT EXISTS trading_acc_user_idx ON trading_accounts(user_id)"); } catch {}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_assets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  symbol TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('drug','weapon','luxury','crypto','gang_stock','contraband')),
+  base_price INTEGER NOT NULL,
+  current_price INTEGER NOT NULL,
+  previous_price INTEGER,
+  price_volatility REAL DEFAULT 0.3 NOT NULL,
+  last_tick_at TEXT NOT NULL,
+  min_price INTEGER DEFAULT 1 NOT NULL,
+  max_price INTEGER,
+  item_id INTEGER REFERENCES items(id),
+  tick_size REAL DEFAULT 1 NOT NULL,
+  lot_size INTEGER DEFAULT 1 NOT NULL
+)`);
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_positions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  asset_id INTEGER NOT NULL REFERENCES trading_assets(id),
+  quantity INTEGER NOT NULL,
+  avg_entry_price INTEGER NOT NULL,
+  unrealized_pnl INTEGER DEFAULT 0 NOT NULL,
+  opened_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`);
+try { sqlite.exec("CREATE UNIQUE INDEX IF NOT EXISTS t_pos_user_asset_idx ON trading_positions(user_id, asset_id)"); } catch {}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  asset_id INTEGER NOT NULL REFERENCES trading_assets(id),
+  type TEXT NOT NULL CHECK(type IN ('market','limit','stop_loss','take_profit')),
+  side TEXT NOT NULL CHECK(side IN ('buy','sell')),
+  status TEXT NOT NULL CHECK(status IN ('open','filled','cancelled','expired','triggered')),
+  quantity INTEGER NOT NULL,
+  filled_quantity INTEGER DEFAULT 0 NOT NULL,
+  price INTEGER,
+  stop_price INTEGER,
+  filled_at TEXT,
+  created_at TEXT NOT NULL
+)`);
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS t_ord_user_idx ON trading_orders(user_id)"); } catch {}
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS t_ord_asset_status_idx ON trading_orders(asset_id, status)"); } catch {}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_fills (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_id INTEGER NOT NULL REFERENCES trading_orders(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  asset_id INTEGER NOT NULL REFERENCES trading_assets(id),
+  side TEXT NOT NULL CHECK(side IN ('buy','sell')),
+  quantity INTEGER NOT NULL,
+  price INTEGER NOT NULL,
+  total INTEGER NOT NULL,
+  pnl INTEGER DEFAULT 0 NOT NULL,
+  created_at TEXT NOT NULL
+)`);
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS t_fill_user_idx ON trading_fills(user_id)"); } catch {}
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS t_fill_asset_idx ON trading_fills(asset_id)"); } catch {}
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS t_fill_order_idx ON trading_fills(order_id)"); } catch {}
+
+sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_price_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_id INTEGER NOT NULL REFERENCES trading_assets(id),
+  price INTEGER NOT NULL,
+  volume INTEGER DEFAULT 0 NOT NULL,
+  recorded_at TEXT NOT NULL
+)`);
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS tph_asset_idx ON trading_price_history(asset_id)"); } catch {}
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS tph_time_idx ON trading_price_history(recorded_at)"); } catch {}
+
 export const db = drizzle(sqlite, { schema });
 export { schema };

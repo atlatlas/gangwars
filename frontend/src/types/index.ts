@@ -489,3 +489,102 @@ export interface SkillCrimeResult {
   newLevel: number;
   turnsLeft: number;
 }
+
+// ─── Trading Terminal ───
+
+export interface TradingAsset {
+  id: number;
+  symbol: string;
+  name: string;
+  category: "drug" | "weapon" | "luxury" | "crypto" | "gang_stock" | "contraband";
+  basePrice: number;
+  currentPrice: number;
+  previousPrice: number | null;
+  priceVolatility: number;
+  minPrice: number;
+  maxPrice: number | null;
+  tickSize: number;
+  lotSize: number;
+}
+
+export interface TradingAccount {
+  id: number;
+  userId: number;
+  balance: number;
+  equity: number;
+  unrealizedPnl: number;
+  createdAt: string;
+}
+
+export interface TradingPosition {
+  id: number;
+  assetId: number;
+  symbol: string;
+  name: string;
+  quantity: number;
+  avgEntryPrice: number;
+  currentPrice: number;
+  unrealizedPnl: number;
+  pnlPercent: number;
+  openedAt: string;
+}
+
+export interface TradingOrder {
+  id: number;
+  userId: number;
+  assetId: number;
+  symbol: string;
+  name: string;
+  type: "market" | "limit" | "stop_loss" | "take_profit";
+  side: "buy" | "sell";
+  status: "open" | "filled" | "cancelled" | "expired";
+  quantity: number;
+  filledQuantity: number;
+  price: number | null;
+  stopPrice: number | null;
+  createdAt: string;
+  filledAt: string | null;
+}
+
+export interface TradingFill {
+  id: number;
+  orderId: number;
+  assetId: number;
+  symbol: string;
+  name: string;
+  side: "buy" | "sell";
+  quantity: number;
+  price: number;
+  total: number;
+  pnl: number;
+  createdAt: string;
+}
+
+export interface OhlcvCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface MarketTicker {
+  id: number;
+  symbol: string;
+  name: string;
+  category: string;
+  price: number;
+  previousPrice: number;
+  change: number;
+  volume: number;
+  timestamp: string;
+}
+
+export interface PriceTick {
+  price: number;
+  previousPrice: number;
+  change: number;
+  volume: number;
+  timestamp: string;
+}

@@ -23,6 +23,8 @@ import { casinoRouter } from "./routes/casino";
 import { activityRouter } from "./routes/activity";
 import { feedbackRouter } from "./routes/feedback";
 import { feedbackCommentsRouter } from "./routes/feedbackComments";
+import { tradingRouter } from "./routes/trading";
+import { TradingEngine } from "./engine/tradingEngine";
 import { db, schema } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -58,6 +60,7 @@ app.use("/api/casino", casinoRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/feedback", feedbackCommentsRouter);
+app.use("/api/trading", tradingRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {
@@ -77,6 +80,10 @@ io.on("connection", (socket) => {
     console.log("Player disconnected:", socket.id);
   });
 });
+
+// Start trading engine
+const tradingEngine = new TradingEngine(io);
+tradingEngine.start();
 
 export { io };
 
