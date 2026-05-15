@@ -6,6 +6,7 @@ import { TopNotificationProvider } from "@/components/TopNotification";
 export const metadata: Metadata = {
   title: "Gang Wars",
   description: "A modern turn-based crime strategy game",
+  icons: [{ rel: "icon", url: "/logo.png" }],
 };
 
 export default function RootLayout({
