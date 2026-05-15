@@ -382,15 +382,15 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 gap-12 items-center">
               {/* Left — text */}
               <div className="max-w-xl">
-                <div className="text-[10px] tracking-[0.25em] uppercase text-text-muted/40 font-mono mb-5">
+                <div className="text-[10px] tracking-[0.25em] uppercase text-text-muted/70 font-mono mb-5">
                   Browser-based crime strategy
                 </div>
                 <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[1.0] tracking-[-0.02em] mb-5">
                   From nothing
                   <br />
-                  <span className="text-text-muted/30">to kingpin.</span>
+                  <span className="text-text-muted/60">to kingpin.</span>
                 </h1>
-                <p className="text-sm sm:text-base text-text-muted/50 leading-relaxed mb-8 max-w-md font-mono">
+                <p className="text-sm sm:text-base text-text-muted/80 leading-relaxed mb-8 max-w-md font-mono">
                   A turn-based crime game with a real-time economy.
                   Fifteen crimes, player-driven market, gang warfare — all in your browser.
                 </p>
@@ -403,7 +403,7 @@ export default function LandingPage() {
                   </Link>
                   <Link
                     href="/login"
-                    className="px-5 py-2.5 rounded text-sm text-text-muted/50 border border-white/5 hover:text-text-secondary hover:border-white/10 transition-all"
+                    className="px-5 py-2.5 rounded text-sm text-text-muted/80 border border-white/5 hover:text-text-secondary hover:border-white/10 transition-all"
                   >
                     Log in
                   </Link>
@@ -428,8 +428,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6">
             <ScrollReveal>
               <div className="max-w-lg mb-16">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/40 font-mono mb-3">What it actually is</h2>
-                <p className="text-sm text-text-muted/50 leading-relaxed font-mono">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/70 font-mono mb-3">What it actually is</h2>
+                <p className="text-sm text-text-muted/80 leading-relaxed font-mono">
                   No pay-to-win. No idle grind. Every action costs a turn.
                   The economy runs whether you are logged in or not.
                 </p>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                   <div className="bg-bg-deep p-6 h-full">
                     <f.icon size={16} className="text-neon-cyan/50 mb-3" />
                     <h3 className="text-sm font-medium text-text-secondary mb-2">{f.title}</h3>
-                    <p className="text-xs text-text-muted/50 leading-relaxed font-mono">{f.description}</p>
+                    <p className="text-xs text-text-muted/80 leading-relaxed font-mono">{f.description}</p>
                   </div>
                 </ScrollReveal>
               ))}
@@ -455,8 +455,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6">
             <ScrollReveal>
               <div className="max-w-lg mb-12">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/40 font-mono mb-3">Choose your path</h2>
-                <p className="text-sm text-text-muted/50 leading-relaxed font-mono">
+                <h2 className="text-xs tracking-[0.2em] uppercase text-text-muted/70 font-mono mb-3">Choose your path</h2>
+                <p className="text-sm text-text-muted/80 leading-relaxed font-mono">
                   Eight character archetypes. Your stats, your skills, your reputation.
                 </p>
               </div>
@@ -475,7 +475,7 @@ export default function LandingPage() {
                         className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300"
                       />
                     </div>
-                    <p className="text-xs font-mono text-text-muted/40 mt-2 tracking-wider group-hover:text-text-secondary transition-colors">{p.name}</p>
+                    <p className="text-xs font-mono text-text-muted/70 mt-2 tracking-wider group-hover:text-text-secondary transition-colors">{p.name}</p>
                   </div>
                 </ScrollReveal>
               ))}
@@ -491,15 +491,15 @@ export default function LandingPage() {
                 <div>
                   <h2 className="text-xs tracking-[0.2em] uppercase text-neon-cyan/50 font-mono mb-3">Trading Terminal</h2>
                   <h3 className="text-lg text-text-secondary font-medium mb-3">Command the market</h3>
-                  <p className="text-sm text-text-muted/50 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
                     15 assets across 6 categories — drugs, weapons, luxury goods, crypto, gang stock, contraband.
                     Prices follow a mean-reverting random walk with volatility bands.
                   </p>
-                  <p className="text-sm text-text-muted/50 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
                     Market, limit, stop-loss, and take-profit order types. Real-time candlestick charts with 1m/5m/15m/1h resolutions.
                     Price history stored in OHLCV candles.
                   </p>
-                  <p className="text-sm text-text-muted/40 leading-relaxed font-mono">
+                  <p className="text-sm text-text-muted/70 leading-relaxed font-mono">
                     Your trading capital is separate from pocket cash. Deposit and withdraw at will.
                   </p>
                 </div>
@@ -508,7 +508,7 @@ export default function LandingPage() {
                 <div className="rounded-sm border border-white/5 bg-bg-dark/50 p-3">
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_4px_rgba(34,197,94,0.5)]" />
-                    <span className="text-[10px] font-mono text-text-muted/40">BTG/USD &middot; 5m chart</span>
+                    <span className="text-[10px] font-mono text-text-muted/70">BTG/USD &middot; 5m chart</span>
                   </div>
                   <MiniChartPreview />
                 </div>
@@ -526,7 +526,7 @@ export default function LandingPage() {
                   {/* Territory card mockup */}
                   <div className="flex items-center gap-2 mb-3">
                     <Shield size={14} className="text-neon-cyan/60" />
-                    <span className="text-[10px] font-mono text-text-muted/30 uppercase tracking-wider">Active territory</span>
+                    <span className="text-[10px] font-mono text-text-muted/60 uppercase tracking-wider">Active territory</span>
                   </div>
                   <div className="rounded-sm border border-white/5 bg-bg-deep/60 p-3 mb-2">
                     <div className="flex items-center justify-between mb-1">
@@ -537,17 +537,17 @@ export default function LandingPage() {
                       <div className="h-full rounded-full bg-gradient-to-r from-neon-navy/50 to-neon-cyan/60 shadow-[0_0_4px_rgba(6,182,212,0.2)]" style={{ width: "70%" }} />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-[9px] font-mono text-text-muted/30">Influence</span>
-                      <span className="text-[9px] font-mono text-text-muted/50">70%</span>
+                      <span className="text-[9px] font-mono text-text-muted/60">Influence</span>
+                      <span className="text-[9px] font-mono text-text-muted/80">70%</span>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-sm border border-white/5 bg-bg-deep/60 p-2">
-                      <span className="text-[9px] font-mono text-text-muted/30">Arsenal</span>
+                      <span className="text-[9px] font-mono text-text-muted/60">Arsenal</span>
                       <p className="text-xs font-mono text-text-muted/60">AK-47 &middot; Armor</p>
                     </div>
                     <div className="rounded-sm border border-white/5 bg-bg-deep/60 p-2">
-                      <span className="text-[9px] font-mono text-text-muted/30">Members</span>
+                      <span className="text-[9px] font-mono text-text-muted/60">Members</span>
                       <p className="text-xs font-mono text-text-muted/60">12 / 20</p>
                     </div>
                   </div>
@@ -557,13 +557,13 @@ export default function LandingPage() {
                 <div className="order-1 md:order-2">
                   <h2 className="text-xs tracking-[0.2em] uppercase text-neon-cyan/50 font-mono mb-3">Gangs</h2>
                   <h3 className="text-lg text-text-secondary font-medium mb-3">Lead your crew</h3>
-                  <p className="text-sm text-text-muted/50 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
                     Claim turf districts for stat bonuses. Each territory has an influence meter that grows with daily operations.
                   </p>
-                  <p className="text-sm text-text-muted/50 leading-relaxed font-mono mb-4">
+                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
                     The Arsenal provides defensive and offensive upgrades that degrade and need repair. Upgrade operations from Lv.1 to Lv.3 for higher per-member payouts.
                   </p>
-                  <p className="text-sm text-text-muted/40 leading-relaxed font-mono">
+                  <p className="text-sm text-text-muted/70 leading-relaxed font-mono">
                     Daily operations generate vault income based on member skill levels. The leaderboard tracks which gang truly runs the city.
                   </p>
                 </div>
@@ -578,7 +578,7 @@ export default function LandingPage() {
           <div className="relative max-w-xl mx-auto px-6 text-center">
             <ScrollReveal>
               <h2 className="text-sm text-text-secondary font-medium mb-3">Start your empire today</h2>
-              <p className="text-sm text-text-muted/50 mb-10 max-w-sm mx-auto leading-relaxed font-mono">
+              <p className="text-sm text-text-muted/80 mb-10 max-w-sm mx-auto leading-relaxed font-mono">
                 No pay-to-win. No downloads. Fifteen crimes, a living economy, and a city that needs a kingpin.
               </p>
               <Link
@@ -597,8 +597,8 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
             <span className="text-[9px] tracking-[0.2em] uppercase text-text-muted/20 font-mono">Gang Wars &copy; 2026</span>
             <div className="flex items-center gap-5">
-              <Link href="/login" className="text-[10px] text-text-muted/30 hover:text-text-secondary transition-colors">Log in</Link>
-              <Link href="/register" className="text-[10px] text-text-muted/30 hover:text-text-secondary transition-colors">Sign up</Link>
+              <Link href="/login" className="text-[10px] text-text-muted/60 hover:text-text-secondary transition-colors">Log in</Link>
+              <Link href="/register" className="text-[10px] text-text-muted/60 hover:text-text-secondary transition-colors">Sign up</Link>
             </div>
           </div>
         </footer>
