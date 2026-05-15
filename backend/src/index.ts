@@ -26,7 +26,7 @@ import { feedbackCommentsRouter } from "./routes/feedbackComments";
 import { tradingRouter } from "./routes/trading";
 import { TradingEngine } from "./engine/tradingEngine";
 import { db, schema } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 const app = express();
 const httpServer = createServer(app);
@@ -65,6 +65,25 @@ app.use("/api/trading", tradingRouter);
 // Health check
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// ⚠️ TEMPORARY: cleanup test users
+app.post("/api/cleanup", async (_req, res) => {
+  try {
+    const names = ["gacheck1778794242", "testinvest"];
+    const users = db.select().from(schema.users).where(inArray(schema.users.username, names)).all();
+    const ids = users.map(u => u.id);
+    if (ids.length === 0) { res.json({ removed: [] }); return; }
+    for (const id of ids) {
+      db.delete(schema.playerStats).where(eq(schema.playerStats.userId, id)).run();
+      db.delete(schema.activityEvents).where(eq(schema.activityEvents.userId, id)).run();
+      db.delete(schema.userInventory).where(eq(schema.userInventory.userId, id)).run();
+    }
+    db.delete(schema.users).where(inArray(schema.users.id, ids)).run();
+    res.json({ removed: users.map(u => u.username) });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 
