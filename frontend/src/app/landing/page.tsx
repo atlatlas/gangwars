@@ -85,8 +85,8 @@ const FEATURES = [
   },
   {
     icon: TrendingUp,
-    title: "Trading Terminal",
-    description: "15 assets with mean-reverting prices, limit and stop orders, candlestick charts, and 5-second ticks. The market runs 24/7 whether you are logged in or not.",
+    title: "Economy",
+    description: "Bank interest, black market spreads, gang investments, and a dynamic drug economy. The market moves whether you are logged in or not.",
   },
   {
     icon: Shield,
@@ -96,7 +96,7 @@ const FEATURES = [
   {
     icon: Building,
     title: "Living Economy",
-    description: "Bank interest, black market spreads, gang investments, and a separate trading capital pool. Drug prices drift via simulated supply and demand.",
+    description: "Every action ripples through the underworld. Prices fluctuate based on supply and demand. Smart players time their moves.",
   },
   {
     icon: Dices,
@@ -110,7 +110,7 @@ const FEATURES = [
   },
 ];
 
-const NAV_PILLS = ["CRIMES", "PvP", "TRADING", "GANG", "CASINO"];
+const NAV_PILLS = ["CRIMES", "PvP", "GANG", "CASINO", "ECONOMY"];
 
 // ─── Dashboard Preview — faithful to the actual game UI ───
 function DashboardPreview() {
@@ -338,9 +338,9 @@ export default function LandingPage() {
                   Browser-based crime strategy
                 </div>
                 <h1 className="text-[clamp(2.4rem,6vw,4.5rem)] font-bold leading-[1.0] tracking-[-0.02em] mb-5">
-                  From nothing
+                  <span className="text-text-muted/60">From nothing</span>
                   <br />
-                  <span className="text-text-muted/60">to kingpin.</span>
+                  <span>to kingpin.</span>
                 </h1>
                 <p className="text-sm sm:text-base text-text-muted/80 leading-relaxed mb-8 max-w-md font-mono">
                   A turn-based crime game with a real-time economy.
