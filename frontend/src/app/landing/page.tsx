@@ -64,18 +64,6 @@ function ScrollReveal({ children, className = "", delay = 0 }: { children: React
   );
 }
 
-// ─── Character profiles data ───
-const PROFILES = [
-  { src: "/profiles/profile1.png", name: "The Street Kid" },
-  { src: "/profiles/profile2.png", name: "The Enforcer" },
-  { src: "/profiles/profile3.png", name: "The Fixer" },
-  { src: "/profiles/profile4.png", name: "The Kingpin" },
-  { src: "/profiles/profile5.png", name: "The Hacker" },
-  { src: "/profiles/profile6.png", name: "The Dealer" },
-  { src: "/profiles/profile7.png", name: "The Muscle" },
-  { src: "/profiles/profile8.png", name: "The Ghost" },
-];
-
 // ─── Feature data ───
 const FEATURES = [
   {
@@ -399,38 +387,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* ─── Character Showcase ─── */}
-        <section className="py-24 border-t border-white/5">
-          <div className="max-w-6xl mx-auto px-6">
-            <ScrollReveal>
-              <div className="max-w-lg mb-12">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-secondary/70 font-mono mb-3">Choose your path</h2>
-                <p className="text-sm text-text-secondary/80 leading-relaxed font-mono">
-                  Eight character archetypes. Your stats, your skills, your reputation.
-                </p>
-              </div>
-            </ScrollReveal>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {PROFILES.map((p, i) => (
-                <ScrollReveal key={p.name} delay={i * 60}>
-                  <div className="group cursor-default">
-                    <div className="relative rounded-sm border border-white/5 bg-bg-dark/50 overflow-hidden aspect-[3/4] transition-all duration-300 group-hover:border-neon-cyan/30 group-hover:shadow-[0_0_16px_rgba(6,182,212,0.08)]">
-                      <Image
-                        src={p.src}
-                        alt={p.name}
-                        width={300}
-                        height={400}
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-300"
-                      />
-                    </div>
-                    <p className="text-xs font-mono text-text-secondary/70 mt-2 tracking-wider group-hover:text-text-secondary transition-colors">{p.name}</p>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* ─── Feature deep-dive — Gangs ─── */}
         <section className="py-24 border-t border-white/5">
