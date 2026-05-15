@@ -378,10 +378,9 @@ export default function LandingPage() {
           <div className="max-w-6xl mx-auto px-6">
             <ScrollReveal>
               <div className="max-w-lg mb-16">
-                <h2 className="text-xs tracking-[0.2em] uppercase text-text-secondary/70 font-mono mb-3">What it actually is</h2>
+                <h2 className="text-xs tracking-[0.2em] uppercase text-text-secondary/70 font-mono mb-3">Every turn counts</h2>
                 <p className="text-sm text-text-secondary/80 leading-relaxed font-mono">
-                  No pay-to-win. No idle grind. Every action costs a turn.
-                  The economy runs whether you are logged in or not.
+                  The economy moves whether you are online or off. Every action costs a turn — make it count.
                 </p>
               </div>
             </ScrollReveal>
