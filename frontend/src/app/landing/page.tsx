@@ -136,7 +136,7 @@ function DashboardPreview() {
         <div className="absolute bottom-0 left-0 right-0 px-4 pb-2">
           <div className="flex items-end gap-3">
             <div className="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden bg-bg-card shrink-0">
-              <img src="/profile.png" className="w-full h-full object-cover" />
+              <img src="/profiles/profile1.png" className="w-full h-full object-cover" />
             </div>
             <div className="pb-0.5 flex-1 min-w-0">
               <div className="flex items-center gap-1.5 text-xs">
@@ -281,54 +281,6 @@ function DashboardPreview() {
       </div>
     </div>
   );
-}
-
-// ─── Mini Trading Chart Preview ───
-function MiniChartPreview() {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const run = async () => {
-      try {
-        const { createChart, CandlestickSeries } = await import("lightweight-charts");
-        const chart = createChart(containerRef.current!, {
-          width: containerRef.current!.clientWidth,
-          height: 260,
-          layout: { background: { color: "transparent" }, textColor: "#64748b" },
-          grid: { vertLines: { color: "rgba(148,163,184,0.04)" }, horzLines: { color: "rgba(148,163,184,0.04)" } },
-          timeScale: { visible: false },
-          rightPriceScale: { visible: false },
-          crosshair: { mode: 0 },
-        });
-        const series = chart.addSeries(CandlestickSeries, {
-          upColor: "#22c55e",
-          downColor: "#ef4444",
-          borderUpColor: "#22c55e",
-          borderDownColor: "#ef4444",
-          wickUpColor: "#22c55e",
-          wickDownColor: "#ef4444",
-        });
-        const now = Math.floor(Date.now() / 1000);
-        const data = [];
-        let price = 45000;
-        for (let i = 120; i >= 0; i--) {
-          const change = price * (Math.random() - 0.48) * 0.008;
-          const open = price;
-          const close = price + change;
-          const high = Math.max(open, close) * (1 + Math.random() * 0.004);
-          const low = Math.min(open, close) * (1 - Math.random() * 0.004);
-          data.push({ time: (now - i * 300) as any, open, high, low, close });
-          price = close;
-        }
-        series.setData(data);
-        chart.timeScale().fitContent();
-      } catch {}
-    };
-    run();
-  }, []);
-
-  return <div ref={containerRef} className="w-full h-[260px]" />;
 }
 
 export default function LandingPage() {
@@ -479,40 +431,6 @@ export default function LandingPage() {
                   </div>
                 </ScrollReveal>
               ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── Feature deep-dive — Trading ─── */}
-        <section className="py-24 border-t border-white/5">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <ScrollReveal>
-                <div>
-                  <h2 className="text-xs tracking-[0.2em] uppercase text-neon-cyan/50 font-mono mb-3">Trading Terminal</h2>
-                  <h3 className="text-lg text-text-secondary font-medium mb-3">Command the market</h3>
-                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
-                    15 assets across 6 categories — drugs, weapons, luxury goods, crypto, gang stock, contraband.
-                    Prices follow a mean-reverting random walk with volatility bands.
-                  </p>
-                  <p className="text-sm text-text-muted/80 leading-relaxed font-mono mb-4">
-                    Market, limit, stop-loss, and take-profit order types. Real-time candlestick charts with 1m/5m/15m/1h resolutions.
-                    Price history stored in OHLCV candles.
-                  </p>
-                  <p className="text-sm text-text-muted/70 leading-relaxed font-mono">
-                    Your trading capital is separate from pocket cash. Deposit and withdraw at will.
-                  </p>
-                </div>
-              </ScrollReveal>
-              <ScrollReveal delay={100}>
-                <div className="rounded-sm border border-white/5 bg-bg-dark/50 p-3">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_4px_rgba(34,197,94,0.5)]" />
-                    <span className="text-[10px] font-mono text-text-muted/70">BTG/USD &middot; 5m chart</span>
-                  </div>
-                  <MiniChartPreview />
-                </div>
-              </ScrollReveal>
             </div>
           </div>
         </section>
