@@ -280,9 +280,6 @@ export default function LandingPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-neon-navy/[0.02] to-transparent" />
           <div className="relative max-w-xl mx-auto px-6 text-center">
             <h2 className="text-sm text-text-secondary font-medium mb-3">Start your empire today</h2>
-            <p className="text-sm text-text-secondary/80 mb-10 max-w-sm mx-auto leading-relaxed font-mono">
-              No pay-to-win. No downloads. A city that needs a kingpin.
-            </p>
             <Link
               href="/register"
               className="group inline-flex items-center gap-2 px-5 py-2.5 rounded bg-neon-gradient text-white text-sm font-medium transition-all hover:shadow-[0_0_12px_rgba(37,99,235,0.3)] active:scale-[0.97]"
