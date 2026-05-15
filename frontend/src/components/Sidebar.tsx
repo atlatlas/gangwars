@@ -28,7 +28,6 @@ const navItems = [
   { href: "/fight", label: "Fight", icon: Map },
   { href: "/hoes", label: "Hoes", icon: Eye },
   { href: "/bank", label: "Bank", icon: Building },
-  { href: "/trading", label: "Trading", icon: TrendingUp },
   { href: "/casino", label: "Casino", icon: Dices },
   { href: "/leaderboard", label: "Ranks", icon: Users },
   { href: "/gangs", label: "Gangs", icon: Shield },

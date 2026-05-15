@@ -525,6 +525,7 @@ export interface TradingPosition {
   avgEntryPrice: number;
   currentPrice: number;
   unrealizedPnl: number;
+  unrealizedPnlPercent: number;
   pnlPercent: number;
   openedAt: string;
 }

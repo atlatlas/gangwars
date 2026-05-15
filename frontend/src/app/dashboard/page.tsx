@@ -8,7 +8,9 @@ import GameLayout from "@/components/GameLayout";
 import { useUser } from "@/lib/UserContext";
 import { crimes as crimesApi, profile as profileApi, bank as bankApi, profileExt, activity as activityApi, FeedEntry } from "@/lib/api";
 import { useTopNotification } from "@/components/TopNotification";
+import { compressImage } from "@/lib/imageUtils";
 import Tooltip from "@/components/Tooltip";
+import AvatarPicker from "@/components/AvatarPicker";
 import { CrimeResult } from "@/types";
 import {
   Zap,
@@ -48,6 +50,7 @@ export default function DashboardPage() {
   const [showSpecPicker, setShowSpecPicker] = useState(false);
   const [choosingSpec, setChoosingSpec] = useState(false);
   const [showStatTip, setShowStatTip] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -140,36 +143,6 @@ export default function DashboardPage() {
       setUploadingAvatar(false);
     }
   };
-
-  /** Resize & compress an image file to a max dimension, returns base64 data URL */
-  function compressImage(file: File, maxDim: number, quality: number): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new window.Image();
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > height && width > maxDim) {
-            height = (height / width) * maxDim;
-            width = maxDim;
-          } else if (height > maxDim) {
-            width = (width / height) * maxDim;
-            height = maxDim;
-          }
-          const canvas = document.createElement("canvas");
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext("2d")!;
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL("image/jpeg", quality));
-        };
-        img.onerror = () => reject(new Error("Failed to decode image"));
-        img.src = reader.result as string;
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-  }
 
   const handleRemoveAvatar = async () => {
     setUploadingAvatar(true);
@@ -301,10 +274,10 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* Upload overlay */}
+              {/* Change photo — opens picker */}
               <div
                 className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowPicker(true)}
               >
                 {uploadingAvatar ? (
                   <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
@@ -818,6 +791,14 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {showPicker && (
+        <AvatarPicker
+          currentAvatar={user.avatarUrl ?? null}
+          onUpdate={() => { refreshUser(); setShowPicker(false); }}
+          onClose={() => setShowPicker(false)}
+        />
       )}
 
     </GameLayout>

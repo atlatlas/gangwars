@@ -92,7 +92,7 @@ export default function CrimesPage() {
         if (res.hpLost > 0) msg += ` | -${res.hpLost} HP`;
         if (res.totalArrests > 0) msg += ` | ARRESTED`;
         if (res.leveledUp) msg += ` | LEVEL UP! LV.${res.newLevel}`;
-        setNotif({ id: notifKey.current, title: `${res.crimeName} x${res.totalSuccesses + res.totalFailures}`, message: msg, type: crime?.statUsed ?? "success" as any });
+        setNotif({ id: notifKey.current, title: `${res.crimeName} x${res.totalSuccesses + res.totalFailures}`, message: msg, type: "success" });
       } else if (res.arrested) {
         setNotif({ id: notifKey.current, title: res.crimeName, message: "You got arrested!", type: "error" });
       } else {
@@ -124,7 +124,7 @@ export default function CrimesPage() {
         message: res.success
           ? `+$${res.reward} cash, +${res.xpGained} XP (${res.accuracy}% accuracy)`
           : `Failed (${res.accuracy}% accuracy)`,
-        type: res.success ? (res.accuracy >= 80 ? "agility" : "success") : "error",
+        type: res.success ? "success" : "error",
       });
       setPlaying(null);
       loadSkillCrimes();

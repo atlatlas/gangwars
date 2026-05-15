@@ -66,14 +66,14 @@ function ScrollReveal({ children, className = "", delay = 0 }: { children: React
 
 // ─── Character profiles data ───
 const PROFILES = [
-  { src: "/profile.png", name: "The Street Kid" },
-  { src: "/profile2.png", name: "The Enforcer" },
-  { src: "/profile3.png", name: "The Fixer" },
-  { src: "/profile4.png", name: "The Kingpin" },
-  { src: "/profile5.png", name: "The Hacker" },
-  { src: "/profile6.png", name: "The Dealer" },
-  { src: "/profile7.png", name: "The Muscle" },
-  { src: "/profile8.png", name: "The Ghost" },
+  { src: "/profiles/profile1.png", name: "The Street Kid" },
+  { src: "/profiles/profile2.png", name: "The Enforcer" },
+  { src: "/profiles/profile3.png", name: "The Fixer" },
+  { src: "/profiles/profile4.png", name: "The Kingpin" },
+  { src: "/profiles/profile5.png", name: "The Hacker" },
+  { src: "/profiles/profile6.png", name: "The Dealer" },
+  { src: "/profiles/profile7.png", name: "The Muscle" },
+  { src: "/profiles/profile8.png", name: "The Ghost" },
 ];
 
 // ─── Feature data ───
@@ -124,7 +124,7 @@ function DashboardPreview() {
           style={{ backgroundImage: "url(/lvl1_hereo.png)" }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-bg-deep/30 to-transparent" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute top-1/2 right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2">
           <img
             src="/logo.png"
             alt="Gang Wars"
