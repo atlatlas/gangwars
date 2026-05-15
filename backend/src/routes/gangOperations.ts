@@ -214,14 +214,8 @@ gangOperationsRouter.get("/:id/operations", authMiddleware, (req: AuthRequest, r
 
       const completedCount = assignedMembers.filter(m => m.completed).length;
 
-      // Calculate pending payout
-      let pendingPayout = 0;
-      if (activeOp.lastPayoutAt) {
-        const elapsedHours = (Date.now() - new Date(activeOp.lastPayoutAt).getTime()) / 3600000;
-        if (elapsedHours >= 24) {
-          pendingPayout = completedCount * incomeRate;
-        }
-      }
+      // Calculate pending payout (tasks completed since last payout)
+      const pendingPayout = completedCount * incomeRate;
 
       return {
         id: activeOp.id,
@@ -795,14 +789,7 @@ gangOperationsRouter.post("/:id/operations/collect", authMiddleware, jailCheck, 
     }
 
     if (!activeOp.lastPayoutAt) {
-      res.status(400).json({ error: "No payout history yet. Wait until the operation has been running 24h." });
-      return;
-    }
-
-    const elapsedHours = (Date.now() - new Date(activeOp.lastPayoutAt).getTime()) / 3600000;
-    if (elapsedHours < 24) {
-      const hoursLeft = Math.ceil(24 - elapsedHours);
-      res.status(400).json({ error: `Payout not ready yet. Come back in ~${hoursLeft}h.` });
+      res.status(400).json({ error: "No payout history yet." });
       return;
     }
 
