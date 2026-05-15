@@ -1,271 +1,250 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  Swords, ShoppingBag, Users, Shield, Building, Dices,
-  TrendingUp, Eye, Skull, Zap, ArrowRight, Star, Crosshair,
-  ChevronDown, Server, UsersRound, Trophy
-} from "lucide-react";
 
 const FEATURES = [
   {
-    icon: Swords,
-    title: "Street Crimes",
-    desc: "Rob, steal, and fight your way up from the bottom. Every crime earns respect and cash.",
-    color: "text-pink-400",
+    title: "15 crime types — each with risk-reward tiers",
+    desc: "Petty theft, armed robbery, drug deals, and heists. Higher risk pays more. Every crime costs turns and can land you in jail.",
   },
   {
-    icon: Crosshair,
-    title: "PvP Combat",
-    desc: "Battle other players for cash, items, and dominance. Intimidation wins wars.",
-    color: "text-red-400",
+    title: "Real-time player-vs-player combat",
+    desc: "Attack other players based on strength, agility, endurance, and gear. Win cash, steal items, earn respect. Full PvP log tracks every fight.",
   },
   {
-    icon: ShoppingBag,
-    title: "Black Market",
-    desc: "Buy and sell weapons, drugs, and contraband. Prices fluctuate with supply and demand.",
-    color: "text-green-400",
+    title: "Black market with dynamic pricing",
+    desc: "Drugs, weapons, footmen, pimps, and hoes. Prices fluctuate hourly based on simulated supply chains. Buy low, sell high, or hold.",
   },
   {
-    icon: TrendingUp,
-    title: "Trading Terminal",
-    desc: "Real-time simulated market with crypto, luxury goods, and gang bonds. Candlestick charts, limit orders, live P&L.",
-    color: "text-cyan-400",
+    title: "Skill system with 7 training trees",
+    desc: "Each skill unlocks higher-tier crimes and gang operations. Train to level up — stat points let you customize your build.",
   },
   {
-    icon: Shield,
-    title: "Gangs",
-    desc: "Form or join a crew. Claim turf, run operations, build arsenals, and dominate the city.",
-    color: "text-purple-400",
+    title: "Gangs with turf, arsenals, and operations",
+    desc: "Form or join a crew. Claim districts, assign heavy weapons, run daily operations for passive vault income. Leaderboard tracks dominance.",
   },
   {
-    icon: Building,
-    title: "Banking & Economy",
-    desc: "Park cash at the bank for interest, invest in gangs, and hustle every dime.",
-    color: "text-yellow-400",
+    title: "Trading terminal — simulated market",
+    desc: "15 tradeable assets across 6 categories. Mean-reverting prices, limit orders, stop-losses, candlestick charts. Live P&L tracking via WebSocket.",
   },
   {
-    icon: Dices,
-    title: "Casino",
-    desc: "Blackjack, slots, and Ride the Bus. Gamble your way to riches — or ruin.",
-    color: "text-orange-400",
+    title: "Banking, interest, and gang investments",
+    desc: "Deposit cash for interest, invest in other gangs for a share of their income, or withdraw at any time. Capital pool is separate from pocket.",
   },
   {
-    icon: Eye,
-    title: "Hoes & Hustle",
-    desc: "Build your empire from the streets up. Passive income streams for the smart player.",
-    color: "text-pink-300",
+    title: "Casino with 3 game modes",
+    desc: "Blackjack, slots, and Ride the Bus. Each win pays out in cash. No house edge manipulation — straight odds.",
   },
   {
-    icon: UsersRound,
-    title: "Community",
-    desc: "Feedback boards, leaderboards, and activity feeds. Every move is tracked.",
-    color: "text-blue-400",
+    title: "Full feedback system with voting",
+    desc: "Feature requests and bug reports. Upvote, comment, and track status. Development is driven by player input.",
   },
 ];
 
-const STATS = [
-  { icon: Trophy, value: "15+", label: "Crime Types" },
-  { icon: Server, value: "Live", label: "Real-Time Economy" },
-  { icon: UsersRound, value: "Gangs", label: "Full Clan System" },
-  { icon: TrendingUp, value: "24/7", label: "Active Market" },
+const MILESTONES = [
+  { value: "15", label: "crime types" },
+  { value: "7", label: "skill trees" },
+  { value: "15", label: "tradable assets" },
+  { value: "3", label: "casino games" },
 ];
 
 export default function LandingPage() {
-  const [scrolled, setScrolled] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const opacity = Math.max(0, 1 - scrolled / 600);
-
   return (
-    <div className="bg-bg-deep text-white overflow-hidden">
-      {/* ─── Hero ─── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110"
-            style={{
-              backgroundImage: "url(/login.png)",
-              filter: "brightness(0.3) saturate(1.2)",
-              transform: `scale(${1 + scrolled * 0.0003})`,
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-purple-950/60 via-transparent to-bg-deep" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(147,51,234,0.15),transparent_70%)]" />
-        </div>
-
-        {/* Floating orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDuration: "6s" }} />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-[100px] animate-pulse" style={{ animationDuration: "8s", animationDelay: "2s" }} />
-
-        {/* Content */}
-        <div className="relative z-10 text-center px-4 max-w-4xl mx-auto" style={{ opacity }}>
-          <div className="mb-8 flex justify-center">
-            <Image
-              src="/logo.png"
-              alt="Gang Wars"
-              width={400}
-              height={140}
-              className="h-auto drop-shadow-[0_0_40px_rgba(147,51,234,0.6)]"
-              priority
-            />
+    <div className="bg-[#0a0a0f] text-white">
+      {/* ─── Navigation ─── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 h-14 border-b border-white/[0.04] bg-[#0a0a0f]/90 backdrop-blur-lg">
+        <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Gang Wars" width={90} height={32} className="h-6 w-auto opacity-90" />
           </div>
-
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-4 tracking-tight">
-            <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
-              Rise Through the Ranks
-            </span>
-          </h1>
-
-          <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 font-mono tracking-wide">
-            Build your empire. Dominate the streets. Crush your rivals.
-            <br className="hidden md:block" />
-            The underground awaits.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/register"
-              className="group relative px-8 py-4 rounded-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.4)]"
-            >
-              <span className="relative z-10">Play Now</span>
-              <div className="absolute inset-0 rounded-sm bg-gradient-to-r from-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 blur-xl transition-opacity" />
-            </Link>
+          <div className="flex items-center gap-4">
             <Link
               href="/login"
-              className="px-8 py-4 rounded-sm border border-white/10 text-white/70 hover:text-white hover:border-white/30 font-mono text-sm tracking-widest uppercase transition-all duration-300"
+              className="text-[13px] text-white/40 hover:text-white/80 transition-colors"
             >
-              Login
+              Log in
+            </Link>
+            <Link
+              href="/register"
+              className="text-[13px] px-4 py-1.5 rounded-md bg-white text-[#0a0a0f] font-medium hover:bg-white/90 transition-colors"
+            >
+              Sign up
             </Link>
           </div>
+        </div>
+      </nav>
 
-          {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-            <ChevronDown size={24} className="text-white/20" />
+      {/* ─── Hero ─── */}
+      <section className="relative min-h-screen flex items-center pt-14">
+        <div className="absolute inset-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: "url(/login.png)", filter: "brightness(0.25) saturate(0.8)" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f]/70 via-transparent to-[#0a0a0f]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(120,80,255,0.08),transparent_60%)]" />
+        </div>
+
+        <div className="relative z-10 max-w-6xl mx-auto px-6 w-full">
+          <div className="max-w-2xl">
+            <div className="mb-4">
+              <span className="text-[11px] tracking-[0.2em] uppercase text-white/20 font-mono">
+                Browser-based crime strategy
+              </span>
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold leading-[1.05] tracking-tight mb-6">
+              <span className="text-white">Build a criminal empire</span>
+              <br />
+              <span className="text-white/30">from a browser tab.</span>
+            </h1>
+            <p className="text-base md:text-lg text-white/30 leading-relaxed max-w-lg mb-10">
+              No download. No pay-to-win. Turn-based strategy with a living economy,
+              gang warfare, and a simulated trading market — all in real time.
+            </p>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/register"
+                className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-[#0a0a0f] text-sm font-semibold hover:bg-white/90 transition-all"
+              >
+                Start playing
+                <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+              <Link
+                href="/login"
+                className="px-6 py-3 rounded-lg text-sm text-white/30 hover:text-white/60 border border-white/10 hover:border-white/20 transition-all"
+              >
+                Log in
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── Stats bar ─── */}
-      <section className="relative z-10 -mt-20 pb-20">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {STATS.map((stat) => (
-              <div
-                key={stat.label}
-                className="backdrop-blur-md bg-white/[0.03] border border-white/5 rounded-sm px-6 py-6 text-center"
-              >
-                <stat.icon size={20} className="text-purple-400/60 mx-auto mb-2" />
-                <div className="text-2xl font-bold font-mono text-white/90">{stat.value}</div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-white/30 mt-1">{stat.label}</div>
+      {/* ─── Milestones ─── */}
+      <section className="relative z-10 -mt-32 pb-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-white/[0.04] rounded-xl overflow-hidden">
+            {MILESTONES.map((m) => (
+              <div key={m.label} className="bg-[#0a0a0f] px-8 py-10 text-center">
+                <div className="text-3xl font-bold text-white/90">{m.value}</div>
+                <div className="text-[11px] tracking-widest uppercase text-white/20 mt-1.5 font-mono">{m.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── Features Grid ─── */}
-      <section className="relative py-24 md:py-32">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent" />
-
-        <div className="relative z-10 max-w-6xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-purple-300 to-cyan-300 bg-clip-text text-transparent">
-              What Awaits You
+      {/* ─── Features ─── */}
+      <section className="py-28">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="max-w-xl mb-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              Everything you expect from a crime game. Nothing you don&apos;t.
             </h2>
-            <p className="text-white/30 font-mono text-sm mt-3 tracking-wider">
-              Every aspect of the underground economy, simulated in real time.
+            <p className="text-white/20 text-sm leading-relaxed">
+              Turn-based design means you progress on your schedule. No real-time grinding,
+              no notifications. Log in, take action, log out.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURES.map((feat) => (
-              <div
-                key={feat.title}
-                className="group relative rounded-sm border border-white/5 bg-white/[0.02] p-6 hover:bg-white/[0.04] hover:border-white/10 transition-all duration-300"
-              >
-                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <feat.icon size={22} className={`${feat.color} mb-3`} />
-                <h3 className="text-sm font-semibold font-mono tracking-wider text-white/80 mb-2">{feat.title}</h3>
-                <p className="text-xs font-mono text-white/30 leading-relaxed">{feat.desc}</p>
+          <div className="space-y-0 divide-y divide-white/[0.04]">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="py-5 md:py-6 grid md:grid-cols-3 gap-2 md:gap-8">
+                <h3 className="text-sm font-medium text-white/90 md:col-span-1">{f.title}</h3>
+                <p className="text-sm text-white/20 md:col-span-2 leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── How It Works ─── */}
-      <section className="relative py-24 md:py-32">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-950/10 to-transparent" />
-        <div className="relative z-10 max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-cyan-300 to-purple-300 bg-clip-text text-transparent mb-16">
-            How It Works
-          </h2>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: "01", title: "Create Your Character", desc: "Sign up in seconds and customize your stats. Choose your path — enforcer, dealer, or hacker." },
-              { step: "02", title: "Hustle & Build", desc: "Commit crimes, trade on the black market, win fights, and stack cash. Every action earns respect." },
-              { step: "03", title: "Dominate", desc: "Join or lead a gang, claim territory, invest in the trading terminal, and rise to the top of the leaderboard." },
-            ].map((step) => (
-              <div key={step.step} className="relative">
-                <div className="text-5xl font-bold font-mono text-purple-500/10 mb-4">{step.step}</div>
-                <h3 className="text-base font-semibold font-mono tracking-wider text-white/80 mb-2">{step.title}</h3>
-                <p className="text-sm font-mono text-white/30 leading-relaxed max-w-xs mx-auto">{step.desc}</p>
+      {/* ─── Economy Section ─── */}
+      <section className="py-28 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/[0.01] to-transparent" />
+        <div className="relative z-10 max-w-6xl mx-auto px-6">
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                A simulated economy that runs without you.
+              </h2>
+              <div className="space-y-4 text-sm text-white/20 leading-relaxed">
+                <p>
+                  Drug prices drift in a mean-reverting random walk. The trading
+                  terminal ticks every 5 seconds — 15 assets across 6 categories,
+                  each with its own volatility profile.
+                </p>
+                <p>
+                  Gang operations generate passive vault income based on member
+                  skill levels and daily task completion. Every role contributes.
+                </p>
+                <p>
+                  Bank interest compounds on deposits. Gang investments pay a
+                  share of operation proceeds. The economy works whether you are
+                  actively trading or logged off.
+                </p>
               </div>
-            ))}
+            </div>
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-8">
+              <div className="text-[11px] tracking-widest uppercase text-white/20 font-mono mb-6">Live price feed</div>
+              <div className="space-y-3">
+                {[
+                  { sym: "WEED", price: "$187", chg: "+2.4%" },
+                  { sym: "COKE", price: "$3,120", chg: "-1.1%" },
+                  { sym: "BTG", price: "$48,200", chg: "+5.8%" },
+                  { sym: "AK47", price: "$34,800", chg: "-0.3%" },
+                  { sym: "LAMBO", price: "$402,000", chg: "+0.7%" },
+                ].map((a) => (
+                  <div key={a.sym} className="flex items-center justify-between py-1.5">
+                    <span className="text-sm font-mono text-white/60">{a.sym}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-mono text-white/40">{a.price}</span>
+                      <span className={`text-xs font-mono w-14 text-right ${a.chg.startsWith("+") ? "text-green-400/60" : "text-red-400/60"}`}>
+                        {a.chg}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="relative py-24 md:py-32">
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url(/login.png)", filter: "brightness(0.15)" }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-950/40 to-cyan-950/40" />
-
-        <div className="relative z-10 text-center px-4 max-w-2xl mx-auto">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            <span className="bg-gradient-to-r from-purple-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
-              Ready to Rule the Streets?
-            </span>
+      <section className="py-28">
+        <div className="max-w-xl mx-auto px-6 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+            No pay-to-win. No download. No grind.
           </h2>
-          <p className="text-white/40 font-mono text-sm mb-10 tracking-wide">
-            Thousands of players. A living economy. One kingpin.
+          <p className="text-white/20 text-sm mb-10 leading-relaxed">
+            Every mechanic in Gang Wars is built around turn-based strategy.
+            What you earn depends on how you play, not how long you stay logged in.
           </p>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 px-10 py-4 rounded-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-lg tracking-widest uppercase transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.4)]"
+            className="inline-flex items-center px-6 py-3 rounded-lg bg-white text-[#0a0a0f] text-sm font-semibold hover:bg-white/90 transition-all"
           >
-            Get Started <ArrowRight size={18} />
+            Create your account
+            <svg className="ml-2 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </Link>
         </div>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer className="relative py-8 border-t border-white/5">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="Gang Wars" width={100} height={35} className="h-6 w-auto opacity-40" />
-            <span className="text-[10px] font-mono text-white/20 tracking-widest uppercase">&copy; 2026</span>
+      <footer className="border-t border-white/[0.04] py-8">
+        <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Image src="/logo.png" alt="Gang Wars" width={60} height={22} className="h-4 w-auto opacity-20" />
+            <span className="text-[11px] text-white/10 font-mono">&copy; 2026</span>
           </div>
           <div className="flex items-center gap-6">
-            <Link href="/login" className="text-[10px] font-mono text-white/20 hover:text-white/50 uppercase tracking-widest transition-colors">
-              Login
-            </Link>
-            <Link href="/register" className="text-[10px] font-mono text-white/20 hover:text-white/50 uppercase tracking-widest transition-colors">
-              Register
-            </Link>
+            <Link href="/login" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Log in</Link>
+            <Link href="/register" className="text-[11px] text-white/20 hover:text-white/50 transition-colors">Sign up</Link>
           </div>
         </div>
       </footer>
