@@ -379,6 +379,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       cash: schema.users.cash,
       bank: schema.users.bank,
       avatarUrl: schema.users.avatarUrl,
+      specialization: schema.users.specialization,
     })
     .from(schema.gangMembers)
     .innerJoin(schema.users, eq(schema.gangMembers.userId, schema.users.id))
@@ -607,6 +608,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       cash: schema.users.cash,
       bank: schema.users.bank,
       avatarUrl: schema.users.avatarUrl,
+      specialization: schema.users.specialization,
     })
     .from(schema.gangMembers)
     .innerJoin(schema.users, eq(schema.gangMembers.userId, schema.users.id))

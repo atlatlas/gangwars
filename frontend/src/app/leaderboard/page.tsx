@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import GameLayout from "@/components/GameLayout";
 import { leaderboard } from "@/lib/api";
 import { LeaderboardData, LeaderboardEntry } from "@/types";
-import { Trophy, Users, Skull, Medal, TrendingUp, DollarSign, Zap } from "lucide-react";
+import { Trophy, Users, Skull, Medal, TrendingUp, DollarSign, Zap, Swords, Terminal } from "lucide-react";
 
 const RESPECT_TIERS: { min: number; title: string }[] = [
   { min: 100000, title: "Godfather" },
@@ -88,6 +88,20 @@ export default function LeaderboardPage() {
         <div className="flex-1 min-w-0">
           <p className="font-mono text-xs text-white/80 truncate">
             {entry.username}
+            {entry.specialization && (() => {
+              const specConfig: Record<string, { icon: any; label: string; color: string; bg: string; border: string }> = {
+                enforcer: { icon: Swords, label: "Enforcer", color: "text-pink-300", bg: "bg-pink-500/10", border: "border-pink-400/20" },
+                dealer: { icon: DollarSign, label: "Dealer", color: "text-cyan-300", bg: "bg-cyan-500/10", border: "border-cyan-400/20" },
+                hacker: { icon: Terminal, label: "Hacker", color: "text-purple-300", bg: "bg-purple-500/10", border: "border-purple-400/20" },
+              };
+              const cfg = specConfig[entry.specialization] || specConfig.hacker;
+              const SpecIcon = cfg.icon;
+              return (
+                <span className={`inline-flex items-center gap-1 px-1 py-0 rounded-sm text-[9px] font-mono uppercase tracking-wider leading-none ml-1 align-middle border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                  <SpecIcon size={8} /> {cfg.label}
+                </span>
+              );
+            })()}
             {isMe && <span className="text-pink-400/60 text-sm ml-1">(you)</span>}
           </p>
           <p className="text-xs font-mono text-white/25">Level {entry.level}</p>

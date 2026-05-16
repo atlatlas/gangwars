@@ -21,6 +21,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           username: schema.users.username,
           level: schema.users.level,
           xp: schema.users.xp,
+          specialization: schema.users.specialization,
         })
           .from(schema.users)
           .orderBy(desc(schema.users.level), desc(schema.users.xp))
@@ -34,6 +35,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           username: schema.users.username,
           level: schema.users.level,
           respect: schema.users.respect,
+          specialization: schema.users.specialization,
         })
           .from(schema.users)
           .orderBy(desc(schema.users.respect))
@@ -50,6 +52,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
           cash: schema.users.cash,
           bank: schema.users.bank,
           respect: schema.users.respect,
+          specialization: schema.users.specialization,
         })
           .from(schema.users)
           .orderBy(desc(sql`${schema.users.cash} + COALESCE(${schema.users.bank}, 0)`))
@@ -78,6 +81,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
             id: r.id,
             username: r.username,
             level: r.level,
+            specialization: r.specialization,
             netWorth: r.cash + (r.bank ?? 0) + blackMarket,
           };
         }).sort((a, b) => b.netWorth - a.netWorth);
@@ -98,6 +102,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
             id: schema.users.id,
             username: schema.users.username,
             level: schema.users.level,
+            specialization: schema.users.specialization,
           })
             .from(schema.users)
             .where(inArray(schema.users.id, userIds))
@@ -110,6 +115,7 @@ leaderboardRouter.get("/:type", authMiddleware, async (req: AuthRequest, res: Re
               id: s.userId,
               username: userMap.get(s.userId)?.username || "Unknown",
               level: userMap.get(s.userId)?.level || 0,
+              specialization: userMap.get(s.userId)?.specialization || null,
               pvpWins: s.pvpWins,
               pvpLosses: s.pvpLosses,
               winRate: s.pvpWins + s.pvpLosses > 0

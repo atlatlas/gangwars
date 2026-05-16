@@ -128,6 +128,7 @@ export interface LeaderboardEntry {
   id: number;
   username: string;
   level: number;
+  specialization?: string | null;
   respect?: number;
   xp?: number;
   netWorth?: number;
@@ -229,6 +230,7 @@ export interface GangMember {
   userId: number;
   username: string;
   level: number;
+  specialization?: string | null;
   avatarUrl?: string | null;
   role: "leader" | "lieutenant" | "enforcer" | "member";
   joinedAt: string;

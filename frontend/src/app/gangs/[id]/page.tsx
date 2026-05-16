@@ -8,7 +8,7 @@ import { gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { useTopNotification } from "@/components/TopNotification";
 import { GangDetail, GangMember, GangOperationsData, TurfDistrict, GangTurfEntry } from "@/types";
-import { Shield, Users, Crown, LogOut, Skull, ArrowLeft, Star, ChevronUp, ChevronDown, Plus, X, Check, Send, DollarSign, TrendingUp, Landmark, Map, Swords, Crosshair, Eye, Wrench, Trophy, Camera, Image as ImageIcon } from "lucide-react";
+import { Shield, Users, Crown, LogOut, Skull, ArrowLeft, Star, ChevronUp, ChevronDown, Plus, X, Check, Send, DollarSign, TrendingUp, Landmark, Map, Swords, Crosshair, Eye, Wrench, Trophy, Camera, Terminal, Image as ImageIcon } from "lucide-react";
 
 const ROLE_CONFIG: Record<string, { icon: typeof Crown; color: string; label: string }> = {
   leader: { icon: Crown, color: "text-yellow-500 drop-shadow-[0_0_4px_rgba(234,179,8,0.3)]", label: "Leader" },
@@ -1332,6 +1332,20 @@ const handleWithdrawInvestment = () => {
                       <div className="flex items-center gap-1.5 min-w-0">
                         <RoleIcon size={12} className={`${roleConfig.color} shrink-0`} />
                         <span className="font-mono text-xs text-white/80 truncate">{member.username}</span>
+                        {member.specialization && (() => {
+                          const specConfig: Record<string, { icon: any; label: string; color: string; bg: string; border: string }> = {
+                            enforcer: { icon: Swords, label: "Enforcer", color: "text-pink-300", bg: "bg-pink-500/10", border: "border-pink-400/20" },
+                            dealer: { icon: DollarSign, label: "Dealer", color: "text-cyan-300", bg: "bg-cyan-500/10", border: "border-cyan-400/20" },
+                            hacker: { icon: Terminal, label: "Hacker", color: "text-purple-300", bg: "bg-purple-500/10", border: "border-purple-400/20" },
+                          };
+                          const cfg = specConfig[member.specialization] || specConfig.hacker;
+                          const SpecIcon = cfg.icon;
+                          return (
+                            <span className={`inline-flex items-center gap-1 px-1 py-0 rounded-sm text-[9px] font-mono uppercase tracking-wider leading-none shrink-0 border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                              <SpecIcon size={8} /> {cfg.label}
+                            </span>
+                          );
+                        })()}
                         {member.userId === user?.id && (
                           <span className="text-[10px] font-mono text-white/20 shrink-0">(you)</span>
                         )}
