@@ -81,6 +81,9 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
   const [chartLoading, setChartLoading] = useState(false);
   const [actionId, setActionId] = useState<number | null>(null);
   const [sellMode, setSellMode] = useState<Record<number, boolean>>({});
+  const [selectedDrugId, setSelectedDrugId] = useState<number | null>(null);
+  const [priceFixCooldown, setPriceFixCooldown] = useState(0);
+  const [priceFixing, setPriceFixing] = useState(false);
 
   const loadData = async () => {
     setError("");
@@ -159,6 +162,31 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
       setChartHistory([]);
     } finally {
       setChartLoading(false);
+    }
+  };
+
+  // Price Fix cooldown countdown
+  useEffect(() => {
+    if (priceFixCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setPriceFixCooldown(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [priceFixCooldown]);
+
+  const handlePriceFix = async (direction: "up" | "down") => {
+    if (!selectedDrugId) return;
+    setPriceFixing(true);
+    try {
+      await drugMarketApi.priceFix(selectedDrugId, direction);
+      const drug = drugs.find(d => d.id === selectedDrugId);
+      showNotification(`Price fix applied: ${drug?.name} driven ${direction}!`, "success");
+      setPriceFixCooldown(3600); // 60 min
+      await loadData();
+    } catch (err: any) {
+      showNotification(err.message, "error");
+    } finally {
+      setPriceFixing(false);
     }
   };
 
@@ -384,6 +412,63 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Price Fix — Dealer-spec exclusive */}
+      {user?.specialization === "dealer" && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={13} className="text-pink-400" />
+            <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">
+              Price Fix
+            </span>
+            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 border border-pink-500/30">
+              Dealer
+            </span>
+          </div>
+          <div className="p-3 bg-bg-dark/60 border border-pink-500/20 rounded">
+            <p className="text-[10px] font-mono text-white/40 mb-3">
+              Force a drug price up or down by 15%. 60-minute cooldown.
+            </p>
+            <div className="flex items-center gap-3">
+              <select
+                value={selectedDrugId ?? ""}
+                onChange={e => setSelectedDrugId(e.target.value ? Number(e.target.value) : null)}
+                disabled={priceFixCooldown > 0}
+                className="flex-1 bg-bg-deep border border-white/10 rounded px-2.5 py-1.5 text-[11px] font-mono text-white/70 focus:outline-none focus:border-pink-500/40"
+              >
+                <option value="">Select drug...</option>
+                {drugs.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name} (${d.currentPrice.toLocaleString()})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => handlePriceFix("up")}
+                disabled={priceFixing || !selectedDrugId || priceFixCooldown > 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono bg-green-500/15 text-green-300 border border-green-500/25 rounded hover:bg-green-500/25 transition-all disabled:opacity-40"
+              >
+                <TrendingUp size={12} />
+                Drive Up
+              </button>
+              <button
+                onClick={() => handlePriceFix("down")}
+                disabled={priceFixing || !selectedDrugId || priceFixCooldown > 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono bg-red-500/15 text-red-300 border border-red-500/25 rounded hover:bg-red-500/25 transition-all disabled:opacity-40"
+              >
+                <TrendingDown size={12} />
+                Drive Down
+              </button>
+            </div>
+            {priceFixCooldown > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-[10px] font-mono text-yellow-400/60">
+                <RefreshCw size={10} className="animate-spin" />
+                Cooldown: {Math.floor(priceFixCooldown / 60)}m {priceFixCooldown % 60}s
+              </div>
+            )}
           </div>
         </div>
       )}

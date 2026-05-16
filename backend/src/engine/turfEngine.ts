@@ -2,6 +2,7 @@ import { db, schema } from "../db";
 import { eq, and, sql } from "drizzle-orm";
 
 const TICK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const HOURLY_INCOME_BASE = 10; // $10 per incomeBonus point per hour
 
 const LEVEL_THRESHOLDS = [0, 200, 500, 1000, 2000, 3500];
 const BONUS_MULTIPLIERS = [1.0, 1.5, 2.0, 2.5, 3.5, 5.0];
@@ -74,6 +75,33 @@ export class TurfEngine {
         })
         .where(eq(schema.gangTurf.id, turf.id))
         .run();
+
+      // ─── Turf Payday: credit hourly income to gang vault ───
+      const lastIncome = turf.lastTurfIncomeAt ? new Date(turf.lastTurfIncomeAt).getTime() : 0;
+      const hourMs = 60 * 60 * 1000;
+      if (Date.now() - lastIncome >= hourMs) {
+        const district = db.select({ incomeBonus: schema.turfDistricts.incomeBonus })
+          .from(schema.turfDistricts)
+          .where(eq(schema.turfDistricts.id, turf.districtId))
+          .all()[0];
+
+        if (district && district.incomeBonus > 0) {
+          const mult = TurfEngine.getBonusMultiplier(newLevel);
+          const payout = Math.round(district.incomeBonus * mult * HOURLY_INCOME_BASE);
+
+          if (payout > 0) {
+            db.update(schema.gangs)
+              .set({ vault: sql`vault + ${payout}` })
+              .where(eq(schema.gangs.id, turf.gangId))
+              .run();
+
+            db.update(schema.gangTurf)
+              .set({ lastTurfIncomeAt: now })
+              .where(eq(schema.gangTurf.id, turf.id))
+              .run();
+          }
+        }
+      }
     }
   }
 

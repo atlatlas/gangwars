@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import GameLayout from "@/components/GameLayout";
-import { pvp } from "@/lib/api";
+import { pvp, profileExt } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { PlayerIntel, AttackResult } from "@/types";
-import { Swords, Search, Skull, Shield, Crosshair, AlertTriangle, Zap, TrendingUp } from "lucide-react";
+import { Swords, Search, Skull, Shield, Crosshair, AlertTriangle, Zap, TrendingUp, Terminal } from "lucide-react";
 
 export default function FightPage() {
-  const { refreshUser } = useUser();
+  const { user, refreshUser } = useUser();
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ id: number; username: string; level: number }[]>([]);
   const [searching, setSearching] = useState(false);
@@ -16,6 +16,7 @@ export default function FightPage() {
   const [loadingIntel, setLoadingIntel] = useState(false);
   const [attacking, setAttacking] = useState(false);
   const [result, setResult] = useState<AttackResult | null>(null);
+  const [hackResult, setHackResult] = useState<{ success: boolean; targetUsername: string; respectStolen: number; turnsLeft: number } | null>(null);
   const [error, setError] = useState("");
 
   const handleSearch = async (q: string) => {
@@ -42,6 +43,7 @@ export default function FightPage() {
     setLoadingIntel(true);
     setError("");
     setResult(null);
+    setHackResult(null);
     try {
       const data = await pvp.intel(id);
       setSelectedTarget(data);
@@ -49,6 +51,23 @@ export default function FightPage() {
       setError(err.message);
     } finally {
       setLoadingIntel(false);
+    }
+  };
+
+  const handleHack = async () => {
+    if (!selectedTarget) return;
+    setAttacking(true);
+    setError("");
+    setResult(null);
+    setHackResult(null);
+    try {
+      const data = await profileExt.hack(selectedTarget.id);
+      setHackResult(data);
+      await refreshUser();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setAttacking(false);
     }
   };
 
@@ -141,7 +160,7 @@ export default function FightPage() {
         </div>
       )}
 
-      {selectedTarget && !loadingIntel && !result && (
+      {selectedTarget && !loadingIntel && !result && !hackResult && (
         <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mb-4 animate-slide-in reveal">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -204,6 +223,24 @@ export default function FightPage() {
             >
               <Skull size={13} /> Hit (10t)
             </button>
+            {user?.specialization === "enforcer" && (
+              <button
+                onClick={() => handleAttack("shakedown")}
+                disabled={attacking}
+                className="font-mono tracking-wider text-xs uppercase text-red-400/70 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 rounded-sm px-4 py-2 transition-all duration-150 hover:shadow-[0_0_12px_rgba(239,68,68,0.1)] flex items-center justify-center gap-2"
+              >
+                <Swords size={13} /> Shakedown (12t)
+              </button>
+            )}
+            {user?.specialization === "hacker" && (
+              <button
+                onClick={handleHack}
+                disabled={attacking}
+                className="font-mono tracking-wider text-xs uppercase text-purple-400/70 hover:text-purple-300 border border-purple-400/20 hover:border-purple-400/40 rounded-sm px-4 py-2 transition-all duration-150 hover:shadow-[0_0_12px_rgba(147,51,234,0.1)] flex items-center justify-center gap-2"
+              >
+                <Terminal size={13} /> Data Heist (15t)
+              </button>
+            )}
             <button
               onClick={() => handleAttack("house_raid")}
               disabled={attacking}
@@ -299,6 +336,51 @@ export default function FightPage() {
 
           <button
             onClick={() => { setSelectedTarget(null); setResult(null); setQuery(""); setSearchResults([]); }}
+            className="w-full mt-3 font-mono tracking-wider text-xs uppercase text-white/40 hover:text-white/70 border border-white/10 hover:border-white/20 rounded-sm px-4 py-2 transition-all duration-150"
+          >
+            New Attack
+          </button>
+        </div>
+      )}
+
+      {/* Hack Result */}
+      {hackResult && (
+        <div className={`rounded-sm border p-4 animate-slide-in ${hackResult.success ? "border-purple-500/25 bg-purple-500/[0.04]" : "border-cyan-500/25 bg-cyan-500/[0.04]"}`}>
+          <div className="flex items-center gap-3 mb-4">
+            <Terminal size={24} className={hackResult.success ? "text-purple-400" : "text-cyan-400"} />
+            <div>
+              <p className={`font-mono text-sm tracking-wider ${hackResult.success ? "text-purple-300" : "text-cyan-300"}`}>
+                {hackResult.success ? "> DATA BREACH SUCCESSFUL" : "> INTRUSION DETECTED"}
+              </p>
+              <p className="text-xs font-mono text-white/30">
+                Target: {hackResult.targetUsername}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            <div className="bg-black/20 rounded-sm p-3 text-center">
+              <p className="text-[11px] font-mono uppercase tracking-wider text-white/30">Status</p>
+              <p className={`font-mono text-sm ${hackResult.success ? "text-purple-300" : "text-cyan-300"}`}>
+                {hackResult.success ? "Data acquired" : "Failed"}
+              </p>
+            </div>
+            {hackResult.success && (
+              <div className="bg-black/20 rounded-sm p-3 text-center">
+                <p className="text-[11px] font-mono uppercase tracking-wider text-white/30">Respect Stolen</p>
+                <p className="font-mono text-sm text-purple-300 drop-shadow-[0_0_4px_rgba(147,51,234,0.2)]">
+                  +{hackResult.respectStolen}
+                </p>
+              </div>
+            )}
+            <div className="bg-black/20 rounded-sm p-3 text-center">
+              <p className="text-[11px] font-mono uppercase tracking-wider text-white/30">Turns Left</p>
+              <p className="font-mono text-sm text-white/80">{hackResult.turnsLeft}</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => { setSelectedTarget(null); setResult(null); setHackResult(null); setQuery(""); setSearchResults([]); }}
             className="w-full mt-3 font-mono tracking-wider text-xs uppercase text-white/40 hover:text-white/70 border border-white/10 hover:border-white/20 rounded-sm px-4 py-2 transition-all duration-150"
           >
             New Attack

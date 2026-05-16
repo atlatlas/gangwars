@@ -116,6 +116,9 @@ try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN influence INTEGER DEFAULT 0 
 try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN level INTEGER DEFAULT 1 NOT NULL"); } catch {}
 try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN last_influence_tick TEXT"); } catch {}
 
+// Turf income
+try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN last_turf_income_at TEXT"); } catch {}
+
 // ─── Gang arsenal ───
 sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_arsenal (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db, schema } from "../db";
 import { eq, sql } from "drizzle-orm";
 import { generateToken, authMiddleware, AuthRequest } from "../middleware/auth";
+import { getRespectBonuses } from "../utils/respect";
 
 export const authRouter = Router();
 
@@ -142,11 +143,7 @@ authRouter.get("/me", authMiddleware, async (req: AuthRequest, res: Response) =>
       { min: 0, title: "Street Rat" },
     ];
     const respectTitle = RESPTECT_TIERS.find(t => user.respect >= t.min)?.title ?? "Street Rat";
-    const respectBonuses = {
-      crimeSuccessBonus: Math.min(10, Math.floor(user.respect / 1000)),
-      combatIntimidation: Math.min(30, Math.floor(user.respect / 3333)),
-      drugTradeBonus: Math.min(10, Math.floor(user.respect / 10000)),
-    };
+    const respectBonuses = getRespectBonuses(user.respect);
 
     // Gang info
     let gangId: number | null = null;

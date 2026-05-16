@@ -387,6 +387,7 @@ export const gangTurf = sqliteTable("gang_turf", {
   influence: integer("influence").default(0).notNull(),
   level: integer("level").default(1).notNull(),
   lastInfluenceTick: text("last_influence_tick"),
+  lastTurfIncomeAt: text("last_turf_income_at"),
 }, (table) => ({
   turfGangIdx: index("turf_gang_idx").on(table.gangId),
 }));

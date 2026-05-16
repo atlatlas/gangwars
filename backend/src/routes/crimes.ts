@@ -7,6 +7,7 @@ import { refreshTurns } from "./turns";
 import { logActivityEvent } from "./activityEvents";
 import { applyArsenalDurabilityLoss, getUserGangId } from "../utils/arsenalDurability";
 import { addGangReputation } from "../utils/gangReputation";
+import { getCrimeRespectBonus } from "../utils/respect";
 
 interface ItemEffects {
   crimeBonus?: number;
@@ -115,8 +116,7 @@ function calcSuccess(
 ): number {
   const statValue = user[crime.statUsed as keyof typeof user] as number;
   const baseChance = (statValue / crime.baseDifficulty) * 50 + user.level * 0.2 + 20 + bonuses.crimeBonus;
-  // Respect street cred: +1% per 1,000 respect, capped at +10%
-  const respectBonus = Math.min(10, Math.floor(user.respect / 1000));
+  const respectBonus = getCrimeRespectBonus(user.respect);
   return Math.min(95, Math.max(5, Math.round(baseChance + respectBonus)));
 }
 

@@ -660,3 +660,72 @@ drugMarketRouter.get("/history/:itemId", authMiddleware, async (req: AuthRequest
     res.status(500).json({ error: "Server error" });
   }
 });
+
+// ─── POST /api/market/drugs/price-fix — Dealer-exclusive: force price direction ───
+const priceFixCooldowns = new Map<number, number>();
+
+drugMarketRouter.post("/price-fix", authMiddleware, jailCheck, hpCheck, async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.userId!) });
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    if (user.specialization !== "dealer") {
+      res.status(403).json({ error: "Only dealers can manipulate prices" });
+      return;
+    }
+
+    const { itemId, direction } = z.object({
+      itemId: z.number().int().positive(),
+      direction: z.enum(["up", "down"]),
+    }).parse(req.body);
+
+    // Cooldown check
+    const lastUsed = priceFixCooldowns.get(req.userId!) ?? 0;
+    const cooldownMs = 60 * 60 * 1000; // 1 hour
+    const elapsed = Date.now() - lastUsed;
+    if (elapsed < cooldownMs) {
+      const remainingMin = Math.ceil((cooldownMs - elapsed) / 60000);
+      res.status(429).json({ error: `Price fix on cooldown. ${remainingMin} minutes remaining.` });
+      return;
+    }
+
+    const item = db.select().from(schema.items).where(eq(schema.items.id, itemId)).all()[0];
+    if (!item) { res.status(404).json({ error: "Drug not found" }); return; }
+    if (item.type !== "drug") { res.status(400).json({ error: "Only drug prices can be manipulated" }); return; }
+
+    const currPrice = item.currentPrice ?? item.basePrice ?? item.buyPrice;
+    const change = direction === "up" ? 0.15 : -0.15;
+    const newPrice = Math.max(1, Math.round(currPrice * (1 + change)));
+
+    db.update(schema.items)
+      .set({
+        previousPrice: currPrice,
+        currentPrice: newPrice,
+        lastPriceUpdate: new Date().toISOString(),
+      })
+      .where(eq(schema.items.id, itemId))
+      .run();
+
+    priceFixCooldowns.set(req.userId!, Date.now());
+
+    logActivityEvent(req.userId!, "price_fix",
+      `Used Price Fix to drive ${item.name} ${direction === "up" ? "up" : "down"} to $${newPrice.toLocaleString()}`,
+      { itemName: item.name, direction, oldPrice: currPrice, newPrice });
+
+    res.json({
+      success: true,
+      itemName: item.name,
+      direction,
+      previousPrice: currPrice,
+      newPrice,
+      cooldownMinutes: 60,
+    });
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      res.status(400).json({ error: err.errors[0].message });
+      return;
+    }
+    console.error("Price fix error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});

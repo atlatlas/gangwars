@@ -1498,6 +1498,56 @@ const handleWithdrawInvestment = () => {
                   </div>
                 ) : (
                   <>
+                    {/* Operations Summary Card */}
+                    {opData?.activeOperations && opData.activeOperations.length > 0 && (
+                      <div className="mb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="bg-black/30 border border-white/5 rounded-sm p-3">
+                          <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Running</p>
+                          <p className="text-sm font-mono text-green-400 mt-1">{opData.activeOperations.length}</p>
+                        </div>
+                        <div className="bg-black/30 border border-white/5 rounded-sm p-3">
+                          <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Daily Income</p>
+                          <p className="text-sm font-mono text-cyan-300 mt-1">
+                            ${opData.activeOperations.reduce((s, o) => s + (o.totalDailyIncome || 0), 0).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="bg-black/30 border border-white/5 rounded-sm p-3">
+                          <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Members</p>
+                          <p className="text-sm font-mono text-white/70 mt-1">
+                            {opData.activeOperations.reduce((s, o) => s + (o.assignedMembers?.length || 0), 0)}
+                          </p>
+                        </div>
+                        <div className="bg-black/30 border border-white/5 rounded-sm p-3">
+                          <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider">Pending Payout</p>
+                          <p className="text-sm font-mono text-yellow-400 mt-1">
+                            ${opData.activeOperations.reduce((s, o) => s + (o.pendingPayout || 0), 0).toLocaleString()}
+                          </p>
+                        </div>
+                        {/* Completion rate bar */}
+                        {(() => {
+                          const totalAssigned = opData.activeOperations.reduce((s, o) => s + (o.dailyProgress?.total || 0), 0);
+                          const totalCompleted = opData.activeOperations.reduce((s, o) => s + (o.dailyProgress?.completed || 0), 0);
+                          const pct = totalAssigned > 0 ? Math.round(totalCompleted / totalAssigned * 100) : 0;
+                          return (
+                            <div className="col-span-2 md:col-span-4 bg-black/30 border border-white/5 rounded-sm p-3">
+                              <div className="flex items-center justify-between text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1.5">
+                                <span>Daily Completion</span>
+                                <span>{totalCompleted}/{totalAssigned} ({pct}%)</span>
+                              </div>
+                              <div className="h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all ${
+                                    pct >= 80 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
                     {/* Active Operations */}
                     {opData?.activeOperations && opData.activeOperations.length > 0 ? (
                       opData.activeOperations.map((op: any) => {

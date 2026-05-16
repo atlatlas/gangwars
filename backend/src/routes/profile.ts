@@ -5,6 +5,8 @@ import { eq, and, sql } from "drizzle-orm";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
 import { refreshTurns } from "./turns";
 import { logActivityEvent } from "./activityEvents";
+import { calcWarfareRatings, getSkillLevel } from "../utils/combat";
+import { getRespectBonuses } from "../utils/respect";
 
 // ─── Respect Tier System ───
 
@@ -50,14 +52,6 @@ function getRespectProgress(respect: number): { current: number; next: number; t
   return { current: 0, next: 100, title: "Street Rat", nextTitle: "Hustler", percent: 0 };
 }
 
-function getRespectBonuses(respect: number): { crimeSuccessBonus: number; combatIntimidation: number; drugTradeBonus: number } {
-  return {
-    crimeSuccessBonus: Math.min(10, Math.floor(respect / 1000)),
-    combatIntimidation: Math.min(30, Math.floor(respect / 3333)),
-    drugTradeBonus: Math.min(10, Math.floor(respect / 10000)),
-  };
-}
-
 function applyRespectDecay(user: typeof schema.users.$inferSelect): number {
   // Skip decay for Kingpin tier and below
   if (user.respect <= 10000) return user.respect;
@@ -87,34 +81,6 @@ function applyRespectDecay(user: typeof schema.users.$inferSelect): number {
 }
 
 // ─── Warfare Rating Helpers ───
-
-function getSkillLevel(userId: number, skillName: string): number {
-  const skill = db.select({ level: schema.userSkills.level })
-    .from(schema.userSkills)
-    .innerJoin(schema.skillDefinitions, eq(schema.userSkills.skillId, schema.skillDefinitions.id))
-    .where(and(eq(schema.userSkills.userId, userId), eq(schema.skillDefinitions.name, skillName)))
-    .all()[0];
-  return skill?.level ?? 0;
-}
-
-function calcWarfareRatings(userId: number, user: typeof schema.users.$inferSelect) {
-  const guerrilla = getSkillLevel(userId, "Guerrilla Warfare");
-  const chemistry = getSkillLevel(userId, "Chemistry");
-  const sixthSense = getSkillLevel(userId, "Sixth Sense");
-  const womensStudies = getSkillLevel(userId, "Women's Studies");
-  const sexualEd = getSkillLevel(userId, "Sexual Education");
-
-  let thug = user.strength * 2 + guerrilla * 3;
-  let dealer = user.intelligence * 2 + chemistry * 2 + sixthSense * 1;
-  let pimp = user.charisma * 2 + sexualEd * 3 + womensStudies * 2;
-
-  // Specialization bonus
-  if (user.specialization === "enforcer") thug = Math.round(thug * 1.1);
-  if (user.specialization === "dealer") dealer = Math.round(dealer * 1.1);
-  if (user.specialization === "hacker") pimp = Math.round(pimp * 1.1);
-
-  return { thug, dealer, pimp, highest: Math.max(thug, dealer, pimp) };
-}
 
 const AVATAR_MAX_LENGTH = 2000000; // 2MB for base64 data URL
 
@@ -479,7 +445,7 @@ profileRouter.get("/warfare", authMiddleware, async (req: AuthRequest, res: Resp
     });
     if (!user) { res.status(404).json({ error: "User not found" }); return; }
 
-    const ratings = calcWarfareRatings(user.id, user);
+    const ratings = calcWarfareRatings(user);
     res.json(ratings);
   } catch (err) {
     console.error("Warfare error:", err);
@@ -520,6 +486,133 @@ profileRouter.post("/choose-specialization", authMiddleware, jailCheck, hpCheck,
       return;
     }
     console.error("Specialization error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ─── POST /api/profile/hack/:targetId — Hacker-exclusive: steal respect ───
+const hackCooldowns = new Map<number, number>();
+
+profileRouter.post("/hack/:targetId", authMiddleware, jailCheck, hpCheck, async (req: AuthRequest, res: Response) => {
+  try {
+    const targetId = parseInt(req.params.targetId as string);
+    if (targetId === req.userId) {
+      res.status(400).json({ error: "Can't hack yourself" });
+      return;
+    }
+
+    const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.userId!) });
+    if (!user) { res.status(404).json({ error: "User not found" }); return; }
+
+    if (user.specialization !== "hacker") {
+      res.status(403).json({ error: "Only hackers can perform data heists" });
+      return;
+    }
+
+    // Refresh turns
+    refreshTurns(user);
+    const freshUser = await db.query.users.findFirst({ where: eq(schema.users.id, user.id) });
+    if (!freshUser) { res.status(404).json({ error: "User not found" }); return; }
+    const turnCost = 15;
+    if (freshUser.turns < turnCost) {
+      res.status(400).json({ error: "Not enough turns (need 15)" });
+      return;
+    }
+
+    const target = await db.query.users.findFirst({ where: eq(schema.users.id, targetId) });
+    if (!target) { res.status(404).json({ error: "Target not found" }); return; }
+
+    // Level range check
+    if (Math.abs(user.level - target.level) > 10) {
+      res.status(400).json({ error: "Target is too far outside your level range (10 levels)" });
+      return;
+    }
+
+    // New player protection
+    if (target.level < 10) {
+      res.status(400).json({ error: "This player is under protection (below level 10)" });
+      return;
+    }
+
+    // Cooldown check
+    const lastHack = hackCooldowns.get(req.userId!) ?? 0;
+    const cooldownMs = 30 * 60 * 1000; // 30 minutes
+    const elapsed = Date.now() - lastHack;
+    if (elapsed < cooldownMs) {
+      const remainingMin = Math.ceil((cooldownMs - elapsed) / 60000);
+      res.status(429).json({ error: `Data heist on cooldown. ${remainingMin} minutes remaining.` });
+      return;
+    }
+
+    // Success formula: intelligence + hacking skill vs target intelligence
+    const hackingSkill = getSkillLevel(user.id, "Hacking");
+    const atkScore = user.intelligence * 2 + hackingSkill * 3;
+    const defScore = target.intelligence * 2;
+    const successChance = atkScore / (atkScore + Math.max(1, defScore));
+    const success = Math.random() < successChance;
+
+    // Deduct turns
+    db.update(schema.users)
+      .set({ turns: sql`turns - ${turnCost}` })
+      .where(eq(schema.users.id, user.id))
+      .run();
+
+    hackCooldowns.set(req.userId!, Date.now());
+
+    if (success) {
+      // Steal respect: base 5-15, scaled by target's respect
+      const stolenRespect = Math.max(2, Math.min(50, Math.floor((5 + Math.random() * 10) * (target.respect / Math.max(1, user.respect)))));
+
+      db.update(schema.users)
+        .set({ respect: Math.max(0, target.respect - stolenRespect) })
+        .where(eq(schema.users.id, target.id))
+        .run();
+      db.update(schema.users)
+        .set({ respect: user.respect + stolenRespect })
+        .where(eq(schema.users.id, user.id))
+        .run();
+
+      logActivityEvent(user.id, "data_heist",
+        `Hacked ${target.username} and stole ${stolenRespect} respect`,
+        { targetUsername: target.username, stolenRespect, success: true });
+      logActivityEvent(target.id, "data_heist_loss",
+        `Your data was stolen by ${user.username}. Lost ${stolenRespect} respect`,
+        { attackerUsername: user.username, stolenRespect });
+
+      const updatedUser = db.select({ turns: schema.users.turns }).from(schema.users).where(eq(schema.users.id, user.id)).all()[0];
+
+      res.json({
+        success: true,
+        targetUsername: target.username,
+        respectStolen: stolenRespect,
+        turnsLeft: updatedUser?.turns ?? 0,
+      });
+    } else {
+      // Failed: no respect stolen, but turn cost is lost
+      logActivityEvent(user.id, "data_heist_fail",
+        `Failed to hack ${target.username}`,
+        { targetUsername: target.username, success: false });
+
+      // Notify target they were targeted
+      db.insert(schema.notifications).values({
+        userId: target.id,
+        type: "hack_attempt",
+        title: "Hack attempt detected",
+        body: `${user.username} tried to hack your data but failed.`,
+        createdAt: new Date().toISOString(),
+      }).run();
+
+      const updatedUser = db.select({ turns: schema.users.turns }).from(schema.users).where(eq(schema.users.id, user.id)).all()[0];
+
+      res.json({
+        success: false,
+        targetUsername: target.username,
+        respectStolen: 0,
+        turnsLeft: updatedUser?.turns ?? 0,
+      });
+    }
+  } catch (err) {
+    console.error("Hack error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

@@ -137,6 +137,11 @@ export const profileExt = {
       method: "POST",
       body: JSON.stringify({ specialization: spec }),
     }),
+  hack: (targetId: number) =>
+    request<{ success: boolean; targetUsername: string; respectStolen: number; turnsLeft: number }>(
+      `/profile/hack/${targetId}`,
+      { method: "POST" }
+    ),
 };
 
 // Skills
@@ -163,6 +168,12 @@ export const drugMarket = {
     request<any>("/market/drugs/collect", { method: "POST" }),
   history: (itemId: number) =>
     request<any>(`/market/drugs/history/${itemId}`),
+  priceFix: (itemId: number, direction: "up" | "down") =>
+    request<{ success: boolean; itemName: string; direction: string; previousPrice: number; newPrice: number; cooldownMinutes: number }>(
+      "/market/drugs/price-fix", {
+      method: "POST",
+      body: JSON.stringify({ itemId, direction }),
+    }),
 };
 
 export const gangs = {

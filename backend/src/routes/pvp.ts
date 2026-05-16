@@ -7,6 +7,7 @@ import { refreshTurns } from "./turns";
 import { logActivityEvent } from "./activityEvents";
 import { applyArsenalDurabilityLoss, getUserGangId } from "../utils/arsenalDurability";
 import { addGangReputation } from "../utils/gangReputation";
+import { calcWarfareRatings } from "../utils/combat";
 
 export const pvpRouter = Router();
 
@@ -17,33 +18,6 @@ interface ItemEffects {
 }
 
 // ─── Helpers ───
-
-function getSkillLevel(userId: number, skillName: string): number {
-  const skill = db.select({ level: schema.userSkills.level })
-    .from(schema.userSkills)
-    .innerJoin(schema.skillDefinitions, eq(schema.userSkills.skillId, schema.skillDefinitions.id))
-    .where(and(eq(schema.userSkills.userId, userId), eq(schema.skillDefinitions.name, skillName)))
-    .all()[0];
-  return skill?.level ?? 0;
-}
-
-function calcWarfareRatings(user: typeof schema.users.$inferSelect) {
-  const guerrilla = getSkillLevel(user.id, "Guerrilla Warfare");
-  const chemistry = getSkillLevel(user.id, "Chemistry");
-  const sixthSense = getSkillLevel(user.id, "Sixth Sense");
-  const womensStudies = getSkillLevel(user.id, "Women's Studies");
-  const sexualEd = getSkillLevel(user.id, "Sexual Education");
-
-  let thug = user.strength * 2 + guerrilla * 3;
-  let dealer = user.intelligence * 2 + chemistry * 2 + sixthSense * 1;
-  let pimp = user.charisma * 2 + sexualEd * 3 + womensStudies * 2;
-
-  if (user.specialization === "enforcer") thug = Math.round(thug * 1.1);
-  if (user.specialization === "dealer") dealer = Math.round(dealer * 1.1);
-  if (user.specialization === "hacker") pimp = Math.round(pimp * 1.1);
-
-  return { thug, dealer, pimp };
-}
 
 function getCombatBonuses(userId: number): number {
   const weaponRow = db.select({
@@ -277,7 +251,7 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     const targetId = parseInt(req.params.id as string);
     const attackType = (req.body.type as string) || "mug";
 
-    const validTypes = ["mug", "ambush", "rob", "hit", "spy", "house_raid"];
+    const validTypes = ["mug", "ambush", "rob", "hit", "spy", "house_raid", "shakedown"];
     if (!validTypes.includes(attackType)) {
       res.status(400).json({ error: "Invalid attack type" });
       return;
@@ -293,6 +267,11 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     });
     if (!attacker) { res.status(404).json({ error: "User not found" }); return; }
 
+    // Shakedown is enforcer-only
+    if (attackType === "shakedown" && attacker.specialization !== "enforcer") {
+      res.status(400).json({ error: "Only enforcers can use Shakedown" });
+      return;
+    }
     // Refresh turns before using them
     refreshTurns(attacker);
     // Re-fetch attacker with updated values
@@ -329,7 +308,7 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     }
 
     // Turn costs
-    const turnCosts: Record<string, number> = { mug: 5, ambush: 8, rob: 8, hit: 10, spy: 2, house_raid: 15 };
+    const turnCosts: Record<string, number> = { mug: 5, ambush: 8, rob: 8, hit: 10, spy: 2, house_raid: 15, shakedown: 12 };
     const cost = turnCosts[attackType];
 
     // Check if using retaliation (free attack) — only for non-spy attacks
@@ -553,6 +532,66 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
             itemStolen = { name: stolen.item.name, quantity: stolenQty };
           }
         }
+      } else if (attackType === "shakedown") {
+        // Steal 8% cash (less than mug, but you also get an item)
+        lootCash = Math.min(Math.floor(defender.cash * 0.08), Math.max(200, defender.level * 30));
+        db.update(schema.users)
+          .set({ cash: Math.max(0, defender.cash - lootCash) })
+          .where(eq(schema.users.id, defender.id))
+          .run();
+        db.update(schema.users)
+          .set({ cash: attacker.cash + lootCash })
+          .where(eq(schema.users.id, attacker.id))
+          .run();
+
+        // Guaranteed item steal — take a random non-equipped item from defender
+        const stealTargets = db.select({
+          inventory: schema.userInventory,
+          item: schema.items,
+        })
+        .from(schema.userInventory)
+        .innerJoin(schema.items, eq(schema.userInventory.itemId, schema.items.id))
+        .where(and(
+          eq(schema.userInventory.userId, defender.id),
+          eq(schema.userInventory.equipped, false),
+        ))
+        .all();
+
+        if (stealTargets.length > 0) {
+          const stolen = stealTargets[Math.floor(Math.random() * stealTargets.length)];
+          const stolenQty = stolen.item.type === "arm" || stolen.item.type === "footman" ? 1 : Math.max(1, Math.ceil(stolen.inventory.quantity * 0.25));
+          const remaining = stolen.inventory.quantity - stolenQty;
+
+          if (remaining <= 0) {
+            db.delete(schema.userInventory).where(eq(schema.userInventory.id, stolen.inventory.id)).run();
+          } else {
+            db.update(schema.userInventory)
+              .set({ quantity: remaining })
+              .where(eq(schema.userInventory.id, stolen.inventory.id))
+              .run();
+          }
+
+          const existingInv = db.select()
+            .from(schema.userInventory)
+            .where(and(eq(schema.userInventory.userId, attacker.id), eq(schema.userInventory.itemId, stolen.item.id)))
+            .all()[0];
+          if (existingInv) {
+            db.update(schema.userInventory)
+              .set({ quantity: existingInv.quantity + stolenQty })
+              .where(eq(schema.userInventory.id, existingInv.id))
+              .run();
+          } else {
+            db.insert(schema.userInventory).values({
+              userId: attacker.id,
+              itemId: stolen.item.id,
+              equipped: false,
+              quantity: stolenQty,
+              acquiredAt: new Date().toISOString(),
+            }).run();
+          }
+
+          itemStolen = { name: stolen.item.name, quantity: stolenQty };
+        }
       }
 
       // Apply damage to defender
@@ -587,6 +626,15 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
       // House raid loss penalty
       if (attackType === "house_raid") {
         const cashLost = Math.floor(attacker.cash * 0.2);
+        db.update(schema.users)
+          .set({ cash: Math.max(0, attacker.cash - cashLost) })
+          .where(eq(schema.users.id, attacker.id))
+          .run();
+      }
+
+      // Shakedown loss penalty
+      if (attackType === "shakedown") {
+        const cashLost = Math.floor(attacker.cash * 0.1);
         db.update(schema.users)
           .set({ cash: Math.max(0, attacker.cash - cashLost) })
           .where(eq(schema.users.id, attacker.id))
