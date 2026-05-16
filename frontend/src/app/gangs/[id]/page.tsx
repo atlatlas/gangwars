@@ -913,6 +913,11 @@ const handleWithdrawInvestment = () => {
                         <span className="text-[10px] font-mono text-orange-400/60 bg-orange-500/5 px-1.5 py-0.5 rounded-sm">
                           +{gang.levelBenefits.pvpBonus ?? 0}% PvP
                         </span>
+                        {(gang.levelBenefits.incomeBonus ?? 0) > 0 && (
+                          <span className="text-[10px] font-mono text-yellow-400/60 bg-yellow-500/5 px-1.5 py-0.5 rounded-sm">
+                            +{gang.levelBenefits.incomeBonus}% Income
+                          </span>
+                        )}
                         {gang.levelBenefits.tagColor !== "purple" && (
                           <span className="text-[10px] font-mono text-purple-400/60 bg-purple-500/5 px-1.5 py-0.5 rounded-sm">
                             Tag: {gang.levelBenefits.tagColor}

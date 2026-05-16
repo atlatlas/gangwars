@@ -5,6 +5,7 @@ import { eq, and, desc, like, sql } from "drizzle-orm";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
 import { logActivityEvent } from "./activityEvents";
 import { addGangReputation } from "../utils/gangReputation";
+import { TurfEngine } from "../engine/turfEngine";
 
 export const gangsRouter = Router();
 
@@ -83,6 +84,7 @@ function getLevelBenefits(level: number) {
     vaultCapacity: 100000 + (level - 1) * 50000,
     crimeBonus: (level - 1) * 1,
     pvpBonus: (level - 1) * 2,
+    incomeBonus: 0,
     tagColor: level >= 10 ? "red" : level >= 5 ? "gold" : level >= 3 ? "cyan" : "purple",
   };
 }
@@ -668,6 +670,24 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
     const reputationToNext = getRepToNext(gang.level);
     let contract = null;
     let levelBenefits = getLevelBenefits(gang.level);
+
+    // Add turf bonuses from owned districts (accounting for turf level multipliers)
+    const turfBonusRows = db.select({
+      crimeBonus: schema.turfDistricts.crimeBonus,
+      pvpBonus: schema.turfDistricts.pvpBonus,
+      incomeBonus: schema.turfDistricts.incomeBonus,
+      level: schema.gangTurf.level,
+    })
+      .from(schema.gangTurf)
+      .innerJoin(schema.turfDistricts, eq(schema.gangTurf.districtId, schema.turfDistricts.id))
+      .where(and(eq(schema.gangTurf.gangId, gangId), sql`${schema.gangTurf.challengedBy} IS NULL`))
+      .all();
+    for (const t of turfBonusRows) {
+      const mult = TurfEngine.getBonusMultiplier(t.level);
+      levelBenefits.crimeBonus += Math.round(t.crimeBonus * mult);
+      levelBenefits.pvpBonus += Math.round(t.pvpBonus * mult);
+      levelBenefits.incomeBonus = (levelBenefits.incomeBonus ?? 0) + Math.round(t.incomeBonus * mult);
+    }
 
     // Check if deadline passed on active contract → reset progress
     const existingContract = db.select()

@@ -332,6 +332,7 @@ export interface GangLevelBenefits {
   vaultCapacity: number;
   crimeBonus: number;
   pvpBonus: number;
+  incomeBonus: number;
   tagColor: "purple" | "cyan" | "gold" | "red";
 }
 
