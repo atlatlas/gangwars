@@ -419,6 +419,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
         members: memberRows.map(m => ({
           userId: m.userId, username: m.username,
           level: m.level, role: m.role, avatarUrl: m.avatarUrl,
+          specialization: m.specialization,
         })),
         investmentsOpen: gang.investmentsOpen,
         investorShare: gang.investorShare,
@@ -658,6 +659,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
         level: m.level,
         respect: m.respect,
         avatarUrl: m.avatarUrl,
+        specialization: m.specialization,
         netWorth: m.cash + m.bank + blackMarket,
       };
     });
