@@ -33,6 +33,9 @@ if (fs.existsSync(migrationsDir)) {
         } catch (e: any) {
           if (e?.code === "SQLITE_ERROR" && (String(e?.message).includes("already exists") || String(e?.message).includes("duplicate column"))) {
             // Object already exists — safe to skip on re-runs
+          } else if (e?.code === "SQLITE_CONSTRAINT_UNIQUE" && trimmed.toUpperCase().includes("CREATE UNIQUE INDEX")) {
+            // Unique index can't be created if data violates it — skip (migration already ran)
+            console.log(`  ⚠ skip (unique conflict):`, trimmed.split('\n')[0].trim().substring(0, 80));
           } else {
             throw e;
           }
