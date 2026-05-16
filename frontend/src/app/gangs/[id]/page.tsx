@@ -1133,8 +1133,13 @@ const handleWithdrawInvestment = () => {
                           History
                         </button>
                       </>
-                    ) : null}
+                    ) : (
+                      <span className="text-[10px] font-mono text-white/20">Unable to load attack info</span>
+                    )}
                   </div>
+                )}
+                {!isOwnGang && !user?.gangId && (
+                  <span className="text-[10px] font-mono text-white/20">Join a gang to attack others</span>
                 )}
                 </div>
               </div>
