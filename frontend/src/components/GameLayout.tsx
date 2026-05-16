@@ -23,7 +23,6 @@ export default function GameLayout({ children }: GameLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [healing, setHealing] = useState(false);
-  const [showHealDropdown, setShowHealDropdown] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -62,7 +61,6 @@ export default function GameLayout({ children }: GameLayoutProps) {
       await profileApi.heal(method);
       await refreshUser();
       showNotification(method === "cash" ? "Healed to full HP" : "Sacrificed turns to heal", "success");
-      setShowHealDropdown(false);
     } catch (err: any) {
       if (err.data?.turnHealAvailable) {
         showNotification("Not enough cash. Use turns to heal instead.", "warning");
@@ -152,33 +150,20 @@ export default function GameLayout({ children }: GameLayoutProps) {
             <div className="flex items-center gap-1 shrink-0 relative" title="HP">
               <Heart size={12} className="text-neon-red drop-shadow-[0_0_4px_rgba(248,113,113,0.3)]" />
               <AnimatedValue value={`${user.hp}/${user.maxHp}`} format="hp" className="font-mono text-[11px] md:text-xs text-pink-300" />
-              {user.hp < user.maxHp && user.hp > 0 && (
-                <button
-                  onClick={() => setShowHealDropdown(!showHealDropdown)}
-                  disabled={healing}
-                  className="ml-0.5 font-mono text-[8px] md:text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1 py-0.5 transition-all"
-                >
-                  {healing ? (
-                    <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
-                  ) : (
-                    "Heal"
-                  )}
-                </button>
-              )}
-              {user.hp <= 0 && (
+              {user.hp < user.maxHp && (
                 <div className="flex gap-0.5 ml-0.5">
                   <button
                     onClick={() => handleHeal("cash")}
                     disabled={healing}
-                    className="font-mono text-[8px] md:text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1 py-0.5 transition-all"
+                    className="font-mono text-[8px] md:text-[9px] uppercase text-green-300 hover:text-green-200 border border-green-400/40 hover:border-green-400/60 rounded-sm px-1 py-0.5 transition-all"
                   >
                     {healing ? (
-                      <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
+                      <div className="animate-spin h-2 w-2 border border-green-400/30 border-t-green-400 rounded-full" />
                     ) : (
                       "Heal"
                     )}
                   </button>
-                  {user.turns > 0 && (
+                  {user.turns > 0 && user.hp < user.maxHp && (
                     <button
                       onClick={() => handleHeal("turns")}
                       disabled={healing}
@@ -188,32 +173,6 @@ export default function GameLayout({ children }: GameLayoutProps) {
                     </button>
                   )}
                 </div>
-              )}
-              {/* Heal dropdown — unchanged */}
-              {showHealDropdown && user.hp > 0 && user.hp < user.maxHp && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowHealDropdown(false)} />
-                  <div className="absolute top-full right-0 mt-1 z-50 min-w-[160px] rounded-sm border border-white/5 bg-bg-dark p-1 shadow-lg">
-                    <button
-                      onClick={() => handleHeal("cash")}
-                      disabled={healing}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-pink-300 hover:text-pink-200 hover:bg-pink-500/10 transition-all text-left"
-                    >
-                      <Heart size={11} className="text-pink-400" />
-                      Heal ${((user.maxHp - user.hp) * 2).toLocaleString()}
-                    </button>
-                    {user.turns > 0 && (
-                      <button
-                        onClick={() => handleHeal("turns")}
-                        disabled={healing}
-                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 transition-all text-left"
-                      >
-                        <Zap size={11} className="text-cyan-400" />
-                        Turns ({Math.min(user.turns, 10) * 5}% HP)
-                      </button>
-                    )}
-                  </div>
-                </>
               )}
             </div>
             <div className="w-px h-3 md:h-4 bg-white/5 shrink-0" />
