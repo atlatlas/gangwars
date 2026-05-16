@@ -373,8 +373,7 @@ const handleInvite = async () => {
     try {
       await gangsApi.startOperation(gangId, opDefId, memberIds);
       showNotif("Operation", "Operation started!", "success");
-      loadGang();
-      loadOperations();
+      await Promise.all([loadGang(), loadOperations()]);
       setSelectedMemberIds([]);
     } catch (err: any) {
       showNotif("Operation", err.message, "error");

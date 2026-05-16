@@ -294,6 +294,19 @@ gangOperationsRouter.post("/:id/operations/start", authMiddleware, jailCheck, hp
       return;
     }
 
+    // Check operation isn't already active
+    const existingActive = db.select()
+      .from(schema.gangActiveOperations)
+      .where(and(
+        eq(schema.gangActiveOperations.gangId, gangId),
+        eq(schema.gangActiveOperations.operationDefId, operationDefId),
+      ))
+      .all()[0];
+    if (existingActive) {
+      res.status(400).json({ error: "This operation is already active" });
+      return;
+    }
+
     const def = db.select().from(schema.gangOperationDefs).where(eq(schema.gangOperationDefs.id, operationDefId)).all()[0];
     if (!def) {
       res.status(404).json({ error: "Operation not found" });
