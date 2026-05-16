@@ -342,7 +342,7 @@ export default function BankPage() {
         {bankData && <InterestChart bankBalance={bankData.bank} />}
 
         {/* Action panel */}
-        <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5 reveal reveal-delay-4">
+        <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 reveal reveal-delay-4">
           <h2 className="text-sm font-mono text-white/40 uppercase tracking-wider mb-4">Manage Funds</h2>
 
           <div className="flex items-center gap-3 mb-4">
@@ -390,7 +390,7 @@ export default function BankPage() {
         </div>
 
         {/* ─── Gang Investments ─── */}
-        <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5 mt-6 reveal reveal-delay-5">
+        <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mt-6 reveal reveal-delay-5">
           <h2 className="text-sm font-mono text-white/40 uppercase tracking-wider mb-1 flex items-center gap-2">
             <TrendingUp size={14} className="text-cyan-400" /> Gang Investments
           </h2>
