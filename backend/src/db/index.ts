@@ -116,6 +116,51 @@ try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN influence INTEGER DEFAULT 0 
 try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN level INTEGER DEFAULT 1 NOT NULL"); } catch {}
 try { sqlite.exec("ALTER TABLE gang_turf ADD COLUMN last_influence_tick TEXT"); } catch {}
 
+// ─── Gang arsenal ───
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_arsenal (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  pvp_power INTEGER DEFAULT 10 NOT NULL,
+  crime_bonus INTEGER DEFAULT 0 NOT NULL,
+  durability INTEGER DEFAULT 10 NOT NULL,
+  max_durability INTEGER DEFAULT 10 NOT NULL,
+  equipped_by INTEGER REFERENCES users(id),
+  assigned_turf_id INTEGER REFERENCES gang_turf(id),
+  purchased_at TEXT NOT NULL
+)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_arsenal_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  arsenal_id INTEGER NOT NULL REFERENCES gang_arsenal(id),
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  action TEXT NOT NULL,
+  user_id INTEGER REFERENCES users(id),
+  details TEXT,
+  created_at TEXT NOT NULL
+)`);
+
+// ─── Gang attacks ───
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_attacks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attacker_gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  defender_gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  attack_type TEXT NOT NULL,
+  attacker_power INTEGER NOT NULL,
+  defender_power INTEGER NOT NULL,
+  attacker_won INTEGER NOT NULL DEFAULT 0,
+  loot_vault INTEGER DEFAULT 0 NOT NULL,
+  reputation_change INTEGER DEFAULT 0 NOT NULL,
+  created_at TEXT NOT NULL
+)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_attack_cooldowns (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  attacker_gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  defender_gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  attack_type TEXT NOT NULL,
+  expires_at TEXT NOT NULL
+)`)
+
 // ─── Cleanup: remove test feedback entries ───
 try {
   const testRows = sqlite.prepare("SELECT id FROM feedback WHERE title = ? OR title LIKE ?")

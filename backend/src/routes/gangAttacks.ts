@@ -112,51 +112,56 @@ gangAttacksRouter.get("/:id/attacks", authMiddleware, (req: AuthRequest, res: Re
 
 // GET /api/gangs/:targetId/attack/status — cooldown and power info
 gangAttacksRouter.get("/:targetId/attack/status", authMiddleware, (req: AuthRequest, res: Response) => {
-  const userId = req.userId!;
-  const targetGangId = parseInt(req.params.targetId as string);
-  if (isNaN(targetGangId)) return res.status(400).json({ error: "Invalid gang ID" });
+  try {
+    const userId = req.userId!;
+    const targetGangId = parseInt(req.params.targetId as string);
+    if (isNaN(targetGangId)) return res.status(400).json({ error: "Invalid gang ID" });
 
-  const myGangId = getUserGangId(userId);
-  if (!myGangId) return res.status(400).json({ error: "You are not in a gang" });
-  if (myGangId === targetGangId) return res.status(400).json({ error: "Cannot attack your own gang" });
+    const myGangId = getUserGangId(userId);
+    if (!myGangId) return res.status(400).json({ error: "You are not in a gang" });
+    if (myGangId === targetGangId) return res.status(400).json({ error: "Cannot attack your own gang" });
 
-  const targetGang = db.select({ level: schema.gangs.level, vault: schema.gangs.vault })
-    .from(schema.gangs)
-    .where(eq(schema.gangs.id, targetGangId))
-    .all()[0];
-  if (!targetGang) return res.status(404).json({ error: "Gang not found" });
+    const targetGang = db.select({ level: schema.gangs.level, vault: schema.gangs.vault })
+      .from(schema.gangs)
+      .where(eq(schema.gangs.id, targetGangId))
+      .all()[0];
+    if (!targetGang) return res.status(404).json({ error: "Gang not found" });
 
-  const myGang = db.select({ level: schema.gangs.level })
-    .from(schema.gangs)
-    .where(eq(schema.gangs.id, myGangId))
-    .all()[0];
-  if (!myGang) return res.status(404).json({ error: "Your gang not found" });
+    const myGang = db.select({ level: schema.gangs.level })
+      .from(schema.gangs)
+      .where(eq(schema.gangs.id, myGangId))
+      .all()[0];
+    if (!myGang) return res.status(404).json({ error: "Your gang not found" });
 
-  const raidCooldown = getCooldown(myGangId, targetGangId, "raid");
-  const sabotageCooldown = getCooldown(myGangId, targetGangId, "sabotage");
+    const raidCooldown = getCooldown(myGangId, targetGangId, "raid");
+    const sabotageCooldown = getCooldown(myGangId, targetGangId, "sabotage");
 
-  const myPower = getGangCombatPower(myGangId);
-  const targetPower = getGangCombatPower(targetGangId);
-  const arsenalBonus = getDefenderArsenalBonus(targetGangId);
-  const levelMultiplier = getGangLevelMultiplier(myGang.level, targetGang.level);
+    const myPower = getGangCombatPower(myGangId);
+    const targetPower = getGangCombatPower(targetGangId);
+    const arsenalBonus = getDefenderArsenalBonus(targetGangId);
+    const levelMultiplier = getGangLevelMultiplier(myGang.level, targetGang.level);
 
-  const effectiveDefenderPower = Math.round((targetPower.total + arsenalBonus) * levelMultiplier);
+    const effectiveDefenderPower = Math.round((targetPower.total + arsenalBonus) * levelMultiplier);
 
-  res.json({
-    myGangId,
-    myPower: myPower.total,
-    myMemberCount: myPower.memberCount,
-    targetPower: targetPower.total,
-    targetMemberCount: targetPower.memberCount,
-    targetArsenalBonus: arsenalBonus,
-    targetLevelMultiplier: levelMultiplier,
-    effectiveDefenderPower,
-    targetVault: targetGang.vault,
-    targetLevel: targetGang.level,
-    myLevel: myGang.level,
-    raidCooldown,
-    sabotageCooldown,
-  });
+    res.json({
+      myGangId,
+      myPower: myPower.total,
+      myMemberCount: myPower.memberCount,
+      targetPower: targetPower.total,
+      targetMemberCount: targetPower.memberCount,
+      targetArsenalBonus: arsenalBonus,
+      targetLevelMultiplier: levelMultiplier,
+      effectiveDefenderPower,
+      targetVault: targetGang.vault,
+      targetLevel: targetGang.level,
+      myLevel: myGang.level,
+      raidCooldown,
+      sabotageCooldown,
+    });
+  } catch (err: any) {
+    console.error("Attack status error:", err);
+    res.status(500).json({ error: err.message || "Failed to load attack info" });
+  }
 });
 
 // POST /api/gangs/:targetId/attack/raid — launch a raid
