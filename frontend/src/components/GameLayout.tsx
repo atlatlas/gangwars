@@ -156,7 +156,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
                 <button
                   onClick={() => setShowHealDropdown(!showHealDropdown)}
                   disabled={healing}
-                  className="ml-0.5 font-mono text-[8px] md:text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
+                  className="ml-0.5 font-mono text-[8px] md:text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1 py-0.5 transition-all"
                 >
                   {healing ? (
                     <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
@@ -170,7 +170,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
                   <button
                     onClick={() => handleHeal("cash")}
                     disabled={healing}
-                    className="font-mono text-[8px] md:text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 hover:border-pink-400/40 rounded-sm px-1 py-0.5 transition-all"
+                    className="font-mono text-[8px] md:text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1 py-0.5 transition-all"
                   >
                     {healing ? (
                       <div className="animate-spin h-2 w-2 border border-pink-400/30 border-t-pink-400 rounded-full" />
@@ -182,7 +182,7 @@ export default function GameLayout({ children }: GameLayoutProps) {
                     <button
                       onClick={() => handleHeal("turns")}
                       disabled={healing}
-                      className="font-mono text-[8px] md:text-[9px] uppercase text-cyan-400/60 hover:text-cyan-300 border border-cyan-400/20 hover:border-cyan-400/40 rounded-sm px-1 py-0.5 transition-all"
+                      className="font-mono text-[8px] md:text-[9px] uppercase text-cyan-300 hover:text-cyan-200 border border-cyan-400/40 hover:border-cyan-400/60 rounded-sm px-1 py-0.5 transition-all"
                     >
                       Turns
                     </button>
@@ -197,18 +197,18 @@ export default function GameLayout({ children }: GameLayoutProps) {
                     <button
                       onClick={() => handleHeal("cash")}
                       disabled={healing}
-                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-white/70 hover:text-white hover:bg-white/5 transition-all text-left"
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-pink-300 hover:text-pink-200 hover:bg-pink-500/10 transition-all text-left"
                     >
-                      <DollarSign size={11} className="text-green-400" />
+                      <Heart size={11} className="text-pink-400" />
                       Heal ${((user.maxHp - user.hp) * 2).toLocaleString()}
                     </button>
                     {user.turns > 0 && (
                       <button
                         onClick={() => handleHeal("turns")}
                         disabled={healing}
-                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-white/70 hover:text-white hover:bg-white/5 transition-all text-left"
+                        className="w-full flex items-center gap-2 px-2.5 py-2 rounded-sm text-[11px] font-mono text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 transition-all text-left"
                       >
-                        <Zap size={11} className="text-yellow-400" />
+                        <Zap size={11} className="text-cyan-400" />
                         Turns ({Math.min(user.turns, 10) * 5}% HP)
                       </button>
                     )}

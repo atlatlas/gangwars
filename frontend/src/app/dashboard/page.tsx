@@ -326,12 +326,12 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
                 <Heart size={12} className="text-red-400 drop-shadow-lg" />
                 <span className="text-sm font-mono text-red-300 drop-shadow-lg">{user.hp}<span className="text-white/40">/{user.maxHp}</span></span>
                 {user.hp < user.maxHp && user.hp > 0 && (
-                  <button onClick={() => handleHeal("cash")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-pink-400/60 hover:text-pink-300 border border-pink-400/20 rounded-sm px-1.5 py-0.5 transition-all flex items-center gap-0.5"><Heart size={8} /> ${((user.maxHp - user.hp) * 2).toLocaleString()}</button>
+                  <button onClick={() => handleHeal("cash")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1.5 py-0.5 transition-all flex items-center gap-0.5"><Heart size={8} /> ${((user.maxHp - user.hp) * 2).toLocaleString()}</button>
                 )}
                 {user.hp <= 0 && (
                   <>
-                    <button onClick={() => handleHeal("cash")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-pink-400/60 border border-pink-400/20 rounded-sm px-1.5 py-0.5 flex items-center gap-0.5"><Heart size={8} /> Heal</button>
-                    {user.turns > 0 && <button onClick={() => handleHeal("turns")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-cyan-400/60 border border-cyan-400/20 rounded-sm px-1.5 py-0.5 flex items-center gap-0.5"><Zap size={8} /> {(Math.min(user.turns, 10) * 5)}%</button>}
+                    <button onClick={() => handleHeal("cash")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-pink-300 hover:text-pink-200 border border-pink-400/40 hover:border-pink-400/60 rounded-sm px-1.5 py-0.5 flex items-center gap-0.5"><Heart size={8} /> Heal</button>
+                    {user.turns > 0 && <button onClick={() => handleHeal("turns")} disabled={healing} className="font-mono tracking-wider text-[9px] uppercase text-cyan-300 hover:text-cyan-200 border border-cyan-400/40 hover:border-cyan-400/60 rounded-sm px-1.5 py-0.5 flex items-center gap-0.5"><Zap size={8} /> {(Math.min(user.turns, 10) * 5)}%</button>}
                   </>
                 )}
               </div>
