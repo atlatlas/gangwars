@@ -196,33 +196,50 @@ export default function GangsPage() {
         </div>
 
         {!user.gangId && !isMyGang && (
-          <button
-            onClick={() => handleJoin(entry.id)}
-            disabled={joining === entry.id || isFull || requestedGangs.has(entry.id)}
-            className={`shrink-0 ml-3 text-xs font-mono tracking-wider uppercase px-3 py-1.5 rounded-sm transition-all flex items-center gap-1.5 ${
-              isFull
-                ? "text-white/20 border border-white/5 cursor-not-allowed"
-                : requestedGangs.has(entry.id)
-                ? "text-yellow-400/60 border border-yellow-400/20 cursor-default"
-                : "text-yellow-400/70 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 hover:shadow-[0_0_8px_rgba(234,179,8,0.1)]"
-            }`}
-          >
-            {joining === entry.id ? (
-              <div className="animate-spin h-3 w-3 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full mx-auto" />
-            ) : isFull ? (
-              "Full"
-            ) : requestedGangs.has(entry.id) ? (
-              <><Send size={10} /> Sent</>
-            ) : (
-              <><Send size={10} /> Request</>
-            )}
-          </button>
+          <>
+            <button
+              onClick={() => router.push(`/gangs/${entry.id}`)}
+              className="shrink-0 ml-3 text-xs font-mono text-white/30 hover:text-white/60 transition-colors"
+            >
+              View
+            </button>
+            <button
+              onClick={() => handleJoin(entry.id)}
+              disabled={joining === entry.id || isFull || requestedGangs.has(entry.id)}
+              className={`shrink-0 ml-1 text-xs font-mono tracking-wider uppercase px-3 py-1.5 rounded-sm transition-all flex items-center gap-1.5 ${
+                isFull
+                  ? "text-white/20 border border-white/5 cursor-not-allowed"
+                  : requestedGangs.has(entry.id)
+                  ? "text-yellow-400/60 border border-yellow-400/20 cursor-default"
+                  : "text-yellow-400/70 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 hover:shadow-[0_0_8px_rgba(234,179,8,0.1)]"
+              }`}
+            >
+              {joining === entry.id ? (
+                <div className="animate-spin h-3 w-3 border-2 border-yellow-400/30 border-t-yellow-400 rounded-full mx-auto" />
+              ) : isFull ? (
+                "Full"
+              ) : requestedGangs.has(entry.id) ? (
+                <><Send size={10} /> Sent</>
+              ) : (
+                <><Send size={10} /> Request</>
+              )}
+            </button>
+          </>
         )}
 
         {user.gangId === entry.id && (
           <button
             onClick={() => router.push(`/gangs/${entry.id}`)}
             className="shrink-0 ml-3 text-xs font-mono text-purple-400/60 hover:text-purple-300 transition-colors"
+          >
+            View
+          </button>
+        )}
+
+        {user.gangId && user.gangId !== entry.id && (
+          <button
+            onClick={() => router.push(`/gangs/${entry.id}`)}
+            className="shrink-0 ml-3 text-xs font-mono text-white/30 hover:text-white/60 transition-colors"
           >
             View
           </button>

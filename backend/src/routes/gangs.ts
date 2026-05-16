@@ -396,6 +396,36 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
 
     const memberCount = memberRows.length;
 
+    // Check if the requesting user is a member of this gang
+    const isMember = memberRows.some(m => m.userId === req.userId);
+
+    // Public profile for non-members
+    if (!isMember) {
+      const pendingJoinRequest = db.select()
+        .from(schema.gangJoinRequests)
+        .where(and(
+          eq(schema.gangJoinRequests.gangId, gangId),
+          eq(schema.gangJoinRequests.userId, req.userId!),
+          eq(schema.gangJoinRequests.status, 'pending'),
+        ))
+        .all()[0];
+
+      return res.json({
+        id: gang.id, name: gang.name, tag: gang.tag,
+        description: gang.description, level: gang.level,
+        maxMembers: gang.maxMembers, leaderId: gang.leaderId,
+        memberCount, bannerUrl: gang.bannerUrl, createdAt: gang.createdAt,
+        members: memberRows.map(m => ({
+          userId: m.userId, username: m.username,
+          level: m.level, role: m.role, avatarUrl: m.avatarUrl,
+        })),
+        investmentsOpen: gang.investmentsOpen,
+        investorShare: gang.investorShare,
+        totalInvestments: gang.totalInvestments,
+        pendingJoinRequest: !!pendingJoinRequest,
+      });
+    }
+
     const now = new Date();
     const RESPECT_PER_HOUR: Record<string, number> = {
       member: 2,

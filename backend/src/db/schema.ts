@@ -564,3 +564,29 @@ export const tradingPriceHistory = sqliteTable("trading_price_history", {
   tphAssetIdx: index("tph_asset_idx").on(table.assetId),
   tphTimeIdx: index("tph_time_idx").on(table.recordedAt),
 }));
+
+export const gangAttacks = sqliteTable("gang_attacks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  attackerGangId: integer("attacker_gang_id").notNull().references(() => gangs.id),
+  defenderGangId: integer("defender_gang_id").notNull().references(() => gangs.id),
+  attackType: text("attack_type", { enum: ["raid", "sabotage"] }).notNull(),
+  attackerPower: integer("attacker_power").notNull(),
+  defenderPower: integer("defender_power").notNull(),
+  attackerWon: integer("attacker_won", { mode: "boolean" }).notNull(),
+  lootVault: integer("loot_vault").default(0).notNull(),
+  reputationChange: integer("reputation_change").default(0).notNull(),
+  createdAt: text("created_at").notNull(),
+}, (table) => ({
+  gangAttackAttackerIdx: index("gang_attack_attacker_idx").on(table.attackerGangId),
+  gangAttackDefenderIdx: index("gang_attack_defender_idx").on(table.defenderGangId),
+}));
+
+export const gangAttackCooldowns = sqliteTable("gang_attack_cooldowns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  attackerGangId: integer("attacker_gang_id").notNull().references(() => gangs.id),
+  defenderGangId: integer("defender_gang_id").notNull().references(() => gangs.id),
+  attackType: text("attack_type", { enum: ["raid", "sabotage"] }).notNull(),
+  expiresAt: text("expires_at").notNull(),
+}, (table) => ({
+  cooldownAttackerDefenderIdx: uniqueIndex("cooldown_attacker_defender_idx").on(table.attackerGangId, table.defenderGangId, table.attackType),
+}));

@@ -16,6 +16,7 @@ import {
   MessageSquare,
   HelpCircle,
   X,
+  Newspaper,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,6 +34,7 @@ const navItems = [
   { href: "/gangs", label: "Gangs", icon: Shield },
   { href: "/help", label: "Help", icon: HelpCircle },
   { href: "/feedback", label: "Feedback", icon: MessageSquare },
+  { href: "/announcements", label: "Announcements", icon: Newspaper },
 ];
 
 interface SidebarProps {

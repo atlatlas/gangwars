@@ -245,11 +245,100 @@ export interface GangDetail extends Gang {
   contract: GangContract | null;
   levelBenefits: GangLevelBenefits;
   pendingRequestCount?: number;
+  pendingJoinRequest?: boolean;
   accountantId?: number | null;
   lastSalaryPayout?: string | null;
   investmentsOpen?: number;
   investorShare?: number;
   totalInvestments?: number;
+}
+
+export interface GangPublicMember {
+  userId: number;
+  username: string;
+  level: number;
+  role: string;
+  avatarUrl?: string | null;
+}
+
+export interface GangPublicProfile {
+  id: number;
+  name: string;
+  tag: string;
+  description: string;
+  level: number;
+  maxMembers: number;
+  leaderId: number;
+  memberCount: number;
+  bannerUrl?: string | null;
+  createdAt: string;
+  members: GangPublicMember[];
+  investmentsOpen?: number;
+  investorShare?: number;
+  totalInvestments?: number;
+  pendingJoinRequest: boolean;
+}
+
+export interface GangAttackStatus {
+  myGangId: number;
+  myPower: number;
+  myMemberCount: number;
+  targetPower: number;
+  targetMemberCount: number;
+  targetArsenalBonus: number;
+  targetLevelMultiplier: number;
+  effectiveDefenderPower: number;
+  targetVault: number;
+  targetLevel: number;
+  myLevel: number;
+  raidCooldown: { onCooldown: boolean; expiresAt: string | null };
+  sabotageCooldown: { onCooldown: boolean; expiresAt: string | null };
+}
+
+export interface GangAttackResult {
+  attackerWon: boolean;
+  attackerGangId: number;
+  defenderGangId: number;
+  attackerPower: number;
+  defenderPower: number;
+  lootVault: number;
+  cost: number;
+  attackerRepChange: number;
+  defenderRepChange: number;
+  cooldownExpires: string;
+}
+
+export interface GangAttackEntry {
+  id: number;
+  attackerGangId: number;
+  defenderGangId: number;
+  attackType: "raid" | "sabotage";
+  attackerPower: number;
+  defenderPower: number;
+  attackerWon: boolean;
+  lootVault: number;
+  reputationChange: number;
+  createdAt: string;
+  attackerGangName: string;
+  attackerGangTag: string;
+  defenderGangName: string;
+  defenderGangTag: string;
+}
+  id: number;
+  name: string;
+  tag: string;
+  description: string;
+  level: number;
+  maxMembers: number;
+  leaderId: number;
+  memberCount: number;
+  bannerUrl?: string | null;
+  createdAt: string;
+  members: GangPublicMember[];
+  investmentsOpen?: number;
+  investorShare?: number;
+  totalInvestments?: number;
+  pendingJoinRequest: boolean;
 }
 
 export interface GangLevelBenefits {

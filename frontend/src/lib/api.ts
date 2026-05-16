@@ -338,6 +338,17 @@ export const gangs = {
     my: () => request<any>("/investments"),
     open: () => request<any>("/investments/open"),
   },
+  // Attacks
+  attack: {
+    status: (gangId: number, targetId: number) =>
+      request<any>(`/gangs/${targetId}/attack/status`),
+    raid: (targetId: number) =>
+      request<any>(`/gangs/${targetId}/attack/raid`, { method: "POST" }),
+    sabotage: (targetId: number) =>
+      request<any>(`/gangs/${targetId}/attack/sabotage`, { method: "POST" }),
+    history: (gangId: number) =>
+      request<any>(`/gangs/${gangId}/attacks`),
+  },
 };
 
 export const hoes = {

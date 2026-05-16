@@ -93,6 +93,21 @@ export default function GangDetailPage() {
   const [investShare, setInvestShare] = useState(30);
   const [settingInvestShare, setSettingInvestShare] = useState(false);
 
+  // Public profile actions
+  const [joinRequestSent, setJoinRequestSent] = useState(false);
+  const [joiningGang, setJoiningGang] = useState(false);
+  const [showInvestInput, setShowInvestInput] = useState(false);
+  const [investAmount, setInvestAmount] = useState("");
+  const [investingPublic, setInvestingPublic] = useState(false);
+
+  // Attack state
+  const [attackStatus, setAttackStatus] = useState<any>(null);
+  const [attackStatusLoading, setAttackStatusLoading] = useState(false);
+  const [attackResult, setAttackResult] = useState<any>(null);
+  const [attacking, setAttacking] = useState(false);
+  const [attackHistory, setAttackHistory] = useState<any[]>([]);
+  const [showAttackHistory, setShowAttackHistory] = useState(false);
+
   const gangId = parseInt(params.id as string);
 
   useEffect(() => {
@@ -100,6 +115,7 @@ export default function GangDetailPage() {
     loadPendingInvites();
     loadOperations();
     loadInvestments();
+    loadAttackStatus();
   }, [gangId]);
 
   // Auto-dismiss operation notification
@@ -178,6 +194,83 @@ export default function GangDetailPage() {
     } finally {
       setActionLoading(false);
       setConfirming(null);
+    }
+  };
+
+  const handleJoinGang = async () => {
+    setJoiningGang(true);
+    try {
+      await gangsApi.join(gangId);
+      setJoinRequestSent(true);
+      showNotif("Join Request", "Request sent to join gang", "success");
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setJoiningGang(false);
+    }
+  };
+
+  const handleInvestPublic = async () => {
+    const amount = parseInt(investAmount);
+    if (isNaN(amount) || amount < 10000) {
+      showNotif("Invest", "Minimum investment is 0,000", "error");
+      return;
+    }
+    setInvestingPublic(true);
+    try {
+      await gangsApi.investments.invest(gangId, amount);
+      showNotif("Investment", "Invested $" + amount.toLocaleString() + " in " + (gang?.name || "gang"), "success");
+      setShowInvestInput(false);
+      setInvestAmount("");
+    } catch (err: any) {
+      showNotif("Error", err.message, "error");
+    } finally {
+      setInvestingPublic(false);
+    }
+  };
+
+  const loadAttackStatus = async () => {
+    setAttackStatusLoading(true);
+    try {
+      const data = await gangsApi.attack.status(gangId, gangId);
+      setAttackStatus(data);
+    } catch {}
+    setAttackStatusLoading(false);
+  };
+
+  const handleRaid = async () => {
+    setAttacking(true);
+    setAttackResult(null);
+    try {
+      const result = await gangsApi.attack.raid(gangId);
+      setAttackResult(result);
+      if (result.attackerWon) {
+        showNotif("Raid", "Victory! Stole $" + result.lootVault.toLocaleString(), "success");
+      } else {
+        showNotif("Raid", "Raid failed! Lost $" + (result.cost || 0).toLocaleString(), "error");
+      }
+      loadAttackStatus();
+      loadGang();
+    } catch (err: any) {
+      showNotif("Raid", err.message || "Raid failed", "error");
+    } finally {
+      setAttacking(false);
+    }
+  };
+
+  const handleSabotage = async () => {
+    setAttacking(true);
+    setAttackResult(null);
+    try {
+      const result = await gangsApi.attack.sabotage(gangId);
+      setAttackResult(result);
+      showNotif("Sabotage", "Sabotage successful! Rep reduced by " + result.reputationReduced, "success");
+      loadAttackStatus();
+      loadGang();
+    } catch (err: any) {
+      showNotif("Sabotage", err.message || "Sabotage failed", "error");
+    } finally {
+      setAttacking(false);
     }
   };
 
@@ -936,6 +1029,7 @@ const handleWithdrawInvestment = () => {
                     )}
                   </div>
                 </div>
+                <div className="flex items-center gap-2 shrink-0 ml-auto flex-wrap justify-end">
                 {isOwnGang && membership && membership.role !== "leader" && (
                   <button
                     onClick={() => setConfirming("leave")}
@@ -954,12 +1048,145 @@ const handleWithdrawInvestment = () => {
                     <Skull size={12} /> {actionLoading && confirming === "disband" ? "Disbanding..." : "Disband Gang"}
                   </button>
                 )}
+
+                {/* Public profile actions */}
+                {!isOwnGang && !user?.gangId && (
+                  <button
+                    onClick={handleJoinGang}
+                    disabled={joiningGang || joinRequestSent || gang.pendingJoinRequest}
+                    className="font-mono tracking-wider text-xs uppercase text-green-400/70 hover:text-green-300 border border-green-400/20 hover:border-green-400/40 rounded-sm px-3 py-1.5 transition-all duration-150 flex items-center gap-1.5 shrink-0"
+                  >
+                    <Users size={12} />
+                    {joiningGang ? "Sending..." : (joinRequestSent || gang.pendingJoinRequest) ? "Request Sent" : "Request to Join"}
+                  </button>
+                )}
+                {!isOwnGang && gang.investmentsOpen && (
+                  <div className="flex items-center gap-2">
+                    {!showInvestInput ? (
+                      <button
+                        onClick={() => setShowInvestInput(true)}
+                        className="font-mono tracking-wider text-xs uppercase text-yellow-400/70 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-sm px-3 py-1.5 transition-all duration-150 flex items-center gap-1.5 shrink-0"
+                      >
+                        <DollarSign size={12} /> Invest
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={investAmount}
+                          onChange={(e) => setInvestAmount(e.target.value)}
+                          placeholder="Amount (min $10k)"
+                          className="w-32 bg-black/30 border border-white/10 rounded-sm px-2 py-1.5 text-xs font-mono text-white/80 placeholder:text-white/20 focus:outline-none focus:border-yellow-400/30"
+                          min={10000}
+                        />
+                        <button
+                          onClick={handleInvestPublic}
+                          disabled={investingPublic || !investAmount}
+                          className="font-mono tracking-wider text-xs uppercase text-yellow-400/70 hover:text-yellow-300 border border-yellow-400/20 hover:border-yellow-400/40 rounded-sm px-2 py-1.5 transition-all flex items-center gap-1 shrink-0"
+                        >
+                          {investingPublic ? "..." : "Pay"}
+                        </button>
+                        <button
+                          onClick={() => setShowInvestInput(false)}
+                          className="text-xs font-mono text-white/30 hover:text-white/60 px-1"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Attack buttons for non-members in a gang */}
+                {!isOwnGang && user?.gangId && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    {attackStatusLoading ? (
+                      <span className="text-[10px] font-mono text-white/30">Loading...</span>
+                    ) : attackStatus ? (
+                      <>
+                        <button
+                          onClick={handleRaid}
+                          disabled={attacking || attackStatus.raidCooldown?.onCooldown}
+                          className="font-mono tracking-wider text-xs uppercase text-red-400/70 hover:text-red-300 border border-red-400/20 hover:border-red-400/40 rounded-sm px-3 py-1.5 transition-all duration-150 flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Swords size={12} />
+                          {attacking ? "..." : attackStatus.raidCooldown?.onCooldown ? "Raid Cooldown" : "Raid"}
+                        </button>
+                        <button
+                          onClick={handleSabotage}
+                          disabled={attacking || attackStatus.sabotageCooldown?.onCooldown}
+                          className="font-mono tracking-wider text-xs uppercase text-orange-400/70 hover:text-orange-300 border border-orange-400/20 hover:border-orange-400/40 rounded-sm px-3 py-1.5 transition-all duration-150 flex items-center gap-1.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Crosshair size={12} />
+                          {attacking ? "..." : attackStatus.sabotageCooldown?.onCooldown ? "Sabotage CD" : "Sabotage"}
+                        </button>
+                        <button
+                          onClick={() => {
+  const show = !showAttackHistory;
+  setShowAttackHistory(show);
+  if (show) {
+    gangsApi.attack.history(gangId).then(setAttackHistory).catch(() => {});
+  }
+}}
+                          className="text-[10px] font-mono text-white/30 hover:text-white/60 underline"
+                        >
+                          History
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                )}
+                </div>
               </div>
               {gang.description && (
                 <p className="text-xs font-mono text-white/40 border-t border-white/5 pt-3 mt-1">
                   {gang.description}
                 </p>
               )}
+
+              {/* Attack result display */}
+              {attackResult && (
+                <div className="border-t border-white/5 mt-3 pt-3">
+                  <div className={`rounded-sm border p-3 ${
+                    attackResult.attackerWon
+                      ? "border-green-500/30 bg-green-500/5"
+                      : "border-red-500/30 bg-red-500/5"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      {attackResult.attackerWon ? (
+                        <Trophy size={14} className="text-green-400" />
+                      ) : (
+                        <Skull size={14} className="text-red-400" />
+                      )}
+                      <span className={`font-mono text-xs uppercase tracking-wider ${
+                        attackResult.attackerWon ? "text-green-400" : "text-red-400"
+                      }`}>
+                        {attackResult.attackerWon ? "Victory!" : "Defeat!"}
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-xs font-mono text-white/50">
+                      {attackResult.lootVault > 0 && (
+                        <p>Stolen: <span className="text-green-400">${attackResult.lootVault.toLocaleString()}</span></p>
+                      )}
+                      {attackResult.cost > 0 && (
+                        <p>Lost: <span className="text-red-400">${attackResult.cost.toLocaleString()}</span></p>
+                      )}
+                      {attackResult.attackerRepChange !== undefined && (
+                        <p>Rep: <span className={attackResult.attackerRepChange >= 0 ? "text-green-400" : "text-red-400"}>
+                          {attackResult.attackerRepChange >= 0 ? "+" : ""}{attackResult.attackerRepChange}
+                        </span></p>
+                      )}
+                      {attackResult.defenderRepChange !== undefined && (
+                        <p>Defender Rep: <span className={attackResult.defenderRepChange >= 0 ? "text-green-400" : "text-red-400"}>
+                          {attackResult.defenderRepChange >= 0 ? "+" : ""}{attackResult.defenderRepChange}
+                        </span></p>
+                      )}
+                      <p className="text-[10px] text-white/20">Your power: {attackResult.attackerPower} vs {attackResult.defenderPower}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {isOwnGang && (
                 <div className="border-t border-white/5 mt-3 pt-3">
                   <div className="flex items-center gap-2 mb-2">
@@ -1293,10 +1520,12 @@ const handleWithdrawInvestment = () => {
                         </span>
                         <span className="text-xs font-mono text-white/25">Lv.{member.level}</span>
                       </div>
+                      {isOwnGang && (
                       <div className="flex items-center gap-2 text-xs font-mono text-white/20">
                         <span className="flex items-center gap-0.5"><DollarSign size={9} />{member.netWorth?.toLocaleString() ?? 0}</span>
                         <span className="flex items-center gap-0.5"><TrendingUp size={9} />{member.respect ?? 0}</span>
                       </div>
+                      )}
                       <div className="flex items-center gap-1 pt-1 border-t border-white/5 min-h-[20px]">
                         {isLeader && !isMemberLeader && member.userId !== user?.id && (
                           <>
@@ -1343,6 +1572,48 @@ const handleWithdrawInvestment = () => {
                 })}
               </div>
             </div>
+
+            {/* Attack History */}
+            {showAttackHistory && !isOwnGang && (
+              <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 mb-4 reveal">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-mono text-white/30 uppercase tracking-wider flex items-center gap-2">
+                    <Swords size={12} /> Attack History
+                  </h2>
+                  <button onClick={() => { setShowAttackHistory(false); setAttackHistory([]); }} className="text-xs font-mono text-white/30 hover:text-white/60">
+                    Close
+                  </button>
+                </div>
+                {attackHistory.length === 0 ? (
+                  <div className="text-xs font-mono text-white/30">No attacks yet</div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {attackHistory.map((a: any) => (
+                      <div key={a.id} className="bg-black/20 rounded-sm border border-white/5 p-2 text-xs font-mono">
+                        <div className="flex items-center gap-2">
+                          <span className={a.attackerWon ? "text-green-400" : "text-red-400"}>
+                            {a.attackType.toUpperCase()}
+                          </span>
+                          <span className="text-white/50">
+                            [{a.attackerGangTag}] {a.attackerGangName}
+                          </span>
+                          <span className="text-white/20">&rarr;</span>
+                          <span className="text-white/50">
+                            [{a.defenderGangTag}] {a.defenderGangName}
+                          </span>
+                        </div>
+                        <div className="text-white/30 mt-1">
+                          {a.attackerWon ? "Attacker won" : "Defender won"} &middot;
+                          Power {a.attackerPower} vs {a.defenderPower}
+                          {a.lootVault > 0 && <span className="text-green-400"> &middot; Stolen ${a.lootVault.toLocaleString()}</span>}
+                        </div>
+                        <div className="text-white/20 text-[10px]">{new Date(a.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Tab Bar + Content */}
             {isOwnGang && (
