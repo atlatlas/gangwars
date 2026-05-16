@@ -405,7 +405,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
 
       {/* Content area with bg.png background below hero */}
       <div className="relative shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-purple-500/15">
-        <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-65" aria-hidden="true" />
+        <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-45" aria-hidden="true" />
 
       {/* Stat info panel — between hero and dashboard, no clipping */}
       {hoveredStat && (() => {
