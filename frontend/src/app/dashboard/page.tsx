@@ -334,7 +334,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
                   const cfg = specConfig[user.specialization] || specConfig.hacker;
                   const SpecIcon = cfg.icon;
                   return (
-                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono uppercase tracking-wider border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono uppercase tracking-wider leading-none mt-0.5 border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
                       <SpecIcon size={10} /> {cfg.label}
                     </span>
                   );
