@@ -37,6 +37,7 @@ import {
   Brain,
   MessageCircle,
   Star,
+  Terminal,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -322,7 +323,23 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
             <div>
               <div className="pl-[4.5rem] md:pl-[5.5rem]">
               {/* Name + Level + HP + heal */}
-              <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">{user.username}</h1>
+              <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg flex items-center gap-2">
+                {user.username}
+                {user.specialization && (() => {
+                  const specConfig: Record<string, { icon: any; label: string; color: string; bg: string; border: string }> = {
+                    enforcer: { icon: Swords, label: "Enforcer", color: "text-pink-300", bg: "bg-pink-500/10", border: "border-pink-400/20" },
+                    dealer: { icon: DollarSign, label: "Dealer", color: "text-cyan-300", bg: "bg-cyan-500/10", border: "border-cyan-400/20" },
+                    hacker: { icon: Terminal, label: "Hacker", color: "text-purple-300", bg: "bg-purple-500/10", border: "border-purple-400/20" },
+                  };
+                  const cfg = specConfig[user.specialization] || specConfig.hacker;
+                  const SpecIcon = cfg.icon;
+                  return (
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[10px] font-mono uppercase tracking-wider border ${cfg.border} ${cfg.bg} ${cfg.color}`}>
+                      <SpecIcon size={10} /> {cfg.label}
+                    </span>
+                  );
+                })()}
+              </h1>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 <Crown size={14} className="text-neon-navy drop-shadow-lg" />
                 <span className="text-sm font-mono text-white/90 drop-shadow-lg">Lv.{user.level}</span>
