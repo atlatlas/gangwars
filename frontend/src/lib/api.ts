@@ -340,7 +340,7 @@ export const gangs = {
   },
   // Attacks
   attack: {
-    status: (gangId: number, targetId: number) =>
+    status: (targetId: number) =>
       request<any>(`/gangs/${targetId}/attack/status`),
     raid: (targetId: number) =>
       request<any>(`/gangs/${targetId}/attack/raid`, { method: "POST" }),
