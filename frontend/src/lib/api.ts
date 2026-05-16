@@ -142,8 +142,8 @@ export const profileExt = {
 // Skills
 export const skills = {
   list: () => request<{ turns: number; skills: any[] }>("/skills"),
-  train: (id: number) =>
-    request<any>(`/skills/${id}/train`, { method: "POST" }),
+  train: (id: number, turns?: number) =>
+    request<any>(`/skills/${id}/train`, { method: "POST", body: turns ? JSON.stringify({ turns }) : undefined }),
 };
 
 // Drug Market

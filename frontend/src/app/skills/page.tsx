@@ -32,6 +32,7 @@ export default function SkillsPage() {
   const [loading, setLoading] = useState(true);
   const { showNotification } = useTopNotification();
   const [trainingId, setTrainingId] = useState<number | null>(null);
+  const [turnInputs, setTurnInputs] = useState<Record<number, string>>({});
 
   const fetchSkills = async () => {
     try {
@@ -51,14 +52,16 @@ export default function SkillsPage() {
 
   const handleTrain = async (skillId: number) => {
     setTrainingId(skillId);
+    const turnsToSpend = turnInputs[skillId] ? parseInt(turnInputs[skillId]) : 0;
     try {
-      const res = await skillsApi.train(skillId);
-      showNotification(
-        res.leveledUp
-          ? `${res.skillName}: +${res.xpGained} XP · LEVEL UP! Now level ${res.newLevel}`
-          : `${res.skillName}: +${res.xpGained} XP`,
-        res.leveledUp ? "success" : "info"
-      );
+      const res = await skillsApi.train(skillId, turnsToSpend > 0 ? turnsToSpend : undefined);
+      const msg = res.maxedOut
+        ? `${res.skillName}: MAXED at level ${res.newLevel}! +${res.xpGained} XP (${res.turnsUsed} turns)`
+        : res.totalLevelUps > 0
+        ? `${res.skillName}: +${res.xpGained} XP, ${res.totalLevelUps} level up${res.totalLevelUps > 1 ? 's' : ''}! Now level ${res.newLevel}`
+        : `${res.skillName}: +${res.xpGained} XP (${res.turnsUsed} turns)`;
+      showNotification(msg, res.leveledUp ? "success" : "info");
+      setTurnInputs((prev) => ({ ...prev, [skillId]: "" }));
       await fetchSkills();
     } catch (err: any) {
       showNotification(err.message, "error");
@@ -143,23 +146,34 @@ export default function SkillsPage() {
                   </div>
                 )}
 
-                {/* Bottom row: effect text + train button */}
+                {/* Bottom row: effect text + bulk train */}
                 <div className="flex items-center justify-between pt-1">
                   <span className="text-[11px] font-mono text-text-secondary/40">
                     {skill.xpPerTrain} XP per train &middot; {skill.turnCost} turns
                   </span>
-                  <button
-                    onClick={() => handleTrain(skill.id)}
-                    disabled={trainingId === skill.id || turns < skill.turnCost || skill.level >= skill.maxLevel}
-                    className="px-4 py-1.5 text-xs font-mono tracking-wider uppercase bg-purple-500/20 hover:bg-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed border border-purple-500/30 rounded transition-all duration-150 flex items-center gap-2"
-                  >
-                    {trainingId === skill.id ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Zap size={12} />
-                    )}
-                    Train
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={turns}
+                      placeholder="turns"
+                      value={turnInputs[skill.id] ?? ""}
+                      onChange={(e) => setTurnInputs((p) => ({ ...p, [skill.id]: e.target.value }))}
+                      className="w-16 text-xs font-mono bg-black/30 border border-white/10 rounded px-2 py-1.5 text-white/70 placeholder-white/20 text-center focus:outline-none focus:border-purple-500/40"
+                    />
+                    <button
+                      onClick={() => handleTrain(skill.id)}
+                      disabled={trainingId === skill.id || turns < skill.turnCost || skill.level >= skill.maxLevel}
+                      className="px-4 py-1.5 text-xs font-mono tracking-wider uppercase bg-purple-500/20 hover:bg-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed border border-purple-500/30 rounded transition-all duration-150 flex items-center gap-2"
+                    >
+                      {trainingId === skill.id ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <Zap size={12} />
+                      )}
+                      Train
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

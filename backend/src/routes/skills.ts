@@ -58,7 +58,7 @@ skillsRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =>
   }
 });
 
-// POST /api/skills/:id/train — train a skill
+// POST /api/skills/:id/train — train a skill (accepts optional `turns` body param for bulk training)
 skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest, res: Response) => {
   try {
     const skillId = parseInt(req.params.id as string);
@@ -77,13 +77,11 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
       return;
     }
 
-    // Get or create user_skill row (needed to compute progressive turn cost)
+    // Get or create user_skill row
     let userSkill = db.select()
       .from(schema.userSkills)
       .where(and(eq(schema.userSkills.userId, user.id), eq(schema.userSkills.skillId, skillId)))
       .all()[0];
-
-    const userSkillLevel = userSkill?.level ?? 0;
 
     if (!userSkill) {
       db.insert(schema.userSkills).values({
@@ -99,89 +97,110 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
         .all()[0]!;
     }
 
-    // Check max level
-    if (userSkill.level >= skill.maxLevel) {
-      res.status(400).json({ error: "Skill already at max level" });
-      return;
-    }
-
     const refreshedTurns = refreshTurns(user);
-    const turnCost = getComputedTurnCost(skill.turnCost, userSkillLevel);
 
-    // Check turns
-    if (refreshedTurns < turnCost) {
-      res.status(400).json({ error: "Not enough turns" });
+    // How many turns the user wants to spend (default = one cycle)
+    const turnsToSpend = Math.min(
+      (req.body.turns as number) ?? getComputedTurnCost(skill.turnCost, userSkill.level),
+      refreshedTurns
+    );
+
+    const statValue = user[skill.statUsed as keyof typeof user] as number;
+    const baseXpPerCycle = skill.baseXpPerTrain + Math.floor(statValue * 0.5);
+
+    // Simulate training cycles (turn cost changes on level-up)
+    let currentLevel = userSkill.level;
+    let currentXp = userSkill.xp;
+    let totalTurnsUsed = 0;
+    let totalXpGained = 0;
+    let totalLevelUps = 0;
+    let totalStatPointsGained = 0;
+    let totalRespectGained = 0;
+    let maxedOut = false;
+    const newMilestones: { type: string; level: number }[] = [];
+
+    while (totalTurnsUsed < turnsToSpend) {
+      if (currentLevel >= skill.maxLevel) { maxedOut = true; break; }
+
+      const cost = getComputedTurnCost(skill.turnCost, currentLevel);
+      const turnsLeft = turnsToSpend - totalTurnsUsed;
+      if (turnsLeft < cost) break; // not enough turns for a full cycle
+
+      totalTurnsUsed += cost;
+      currentXp += baseXpPerCycle;
+      totalXpGained += baseXpPerCycle;
+
+      const xpNeeded = Math.floor(10 * (currentLevel + 1) * skill.difficulty);
+      if (currentXp >= xpNeeded) {
+        currentXp -= xpNeeded;
+        currentLevel++;
+        totalLevelUps++;
+
+        // Stat point every 10 levels
+        if (currentLevel % 10 === 0) totalStatPointsGained++;
+        totalRespectGained += 3;
+
+        if (currentLevel === skill.maxLevel) {
+          newMilestones.push({ type: "maxed", level: currentLevel });
+        } else if (currentLevel % 5 === 0) {
+          newMilestones.push({ type: "milestone", level: currentLevel });
+        }
+      }
+    }
+
+    if (totalTurnsUsed === 0) {
+      res.status(400).json({ error: "Not enough turns to train" });
       return;
     }
 
-    // Deduct turns
+    // Apply all changes
+    const now = new Date().toISOString();
     db.update(schema.users)
-      .set({ turns: refreshedTurns - turnCost })
+      .set({
+        turns: refreshedTurns - totalTurnsUsed,
+        respect: user.respect + totalRespectGained,
+        statPoints: user.statPoints + totalStatPointsGained,
+      })
       .where(eq(schema.users.id, user.id))
       .run();
 
-    // Calculate XP gained
-    const statValue = user[skill.statUsed as keyof typeof user] as number;
-    const xpGained = skill.baseXpPerTrain + Math.floor(statValue * 0.5);
-    const newXp = userSkill.xp + xpGained;
-    const xpNeeded = Math.floor(10 * (userSkill.level + 1) * skill.difficulty);
-
-    let leveledUp = false;
-    let newLevel = userSkill.level;
-    let remainingXp = newXp;
-
-    if (newXp >= xpNeeded) {
-      leveledUp = true;
-      newLevel = Math.min(userSkill.level + 1, skill.maxLevel);
-      remainingXp = newXp - xpNeeded;
-
-      // Give stat point every 10 levels
-      if (newLevel % 10 === 0) {
-        db.update(schema.users)
-          .set({ statPoints: user.statPoints + 1 })
-          .where(eq(schema.users.id, user.id))
-          .run();
-      }
-
-      // +3 respect per skill level-up
-      db.update(schema.users)
-        .set({ respect: user.respect + 3 })
-        .where(eq(schema.users.id, user.id))
-        .run();
+    if (totalRespectGained > 0) {
       const skStats = await db.query.playerStats.findFirst({ where: eq(schema.playerStats.userId, user.id) });
       if (skStats) {
         db.update(schema.playerStats)
-          .set({ respectSkills: skStats.respectSkills + 3 })
+          .set({ respectSkills: skStats.respectSkills + totalRespectGained })
           .where(eq(schema.playerStats.userId, user.id))
           .run();
-      }
-
-      if (newLevel === skill.maxLevel) {
-        logActivityEvent(user.id, "skill_maxed", `Mastered ${skill.name} reaching level ${newLevel}!`, { skillName: skill.name, maxLevel: skill.maxLevel });
-      } else if (newLevel % 5 === 0) {
-        logActivityEvent(user.id, "skill_milestone",
-          `Reached level ${newLevel} in ${skill.name}!`,
-          { skillName: skill.name, newLevel });
       }
     }
 
     db.update(schema.userSkills)
       .set({
-        level: newLevel,
-        xp: leveledUp ? remainingXp : newXp,
-        lastTrainedAt: new Date().toISOString(),
+        level: currentLevel,
+        xp: currentXp,
+        lastTrainedAt: now,
       })
       .where(eq(schema.userSkills.id, userSkill.id))
       .run();
 
-    // Auto-track gang daily task for train_skill-type operations
-    if (leveledUp) {
+    // Log activity events for milestones
+    for (const m of newMilestones) {
+      if (m.type === "maxed") {
+        logActivityEvent(user.id, "skill_maxed", `Mastered ${skill.name} reaching level ${m.level}!`, { skillName: skill.name, maxLevel: skill.maxLevel });
+      } else {
+        logActivityEvent(user.id, "skill_milestone",
+          `Reached level ${m.level} in ${skill.name}!`,
+          { skillName: skill.name, newLevel: m.level });
+      }
+    }
+
+    // Auto-track gang daily task for train_skill-type operations (if any level-up happened)
+    if (totalLevelUps > 0) {
       const gm = db.select({ gangId: schema.gangMembers.gangId })
         .from(schema.gangMembers)
         .where(eq(schema.gangMembers.userId, user.id))
         .all()[0];
       if (gm) {
-        // Check which active operation this member is assigned to
         const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
           .from(schema.gangOperationAssignments)
           .where(and(
@@ -201,7 +220,6 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
               .all()[0];
             if (opDef && opDef.dailyTaskType === "train_skill") {
               const today = new Date().toISOString().split("T")[0];
-              const now = new Date().toISOString();
               const existingTask = db.select()
                 .from(schema.gangDailyTasks)
                 .where(and(
@@ -231,19 +249,24 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
       }
     }
 
-    const nextXpNeeded = newLevel >= skill.maxLevel ? 0 : Math.floor(10 * (newLevel + 1) * skill.difficulty);
+    const nextXpNeeded = currentLevel >= skill.maxLevel ? 0 : Math.floor(10 * (currentLevel + 1) * skill.difficulty);
 
     res.json({
       success: true,
       skillName: skill.name,
-      xpGained,
-      leveledUp,
-      newLevel,
-      xp: leveledUp ? remainingXp : newXp,
+      cyclesCompleted: Math.max(1, totalLevelUps + (totalXpGained > 0 ? 1 : 0)),
+      xpGained: totalXpGained,
+      leveledUp: totalLevelUps > 0,
+      totalLevelUps,
+      newLevel: currentLevel,
+      xp: currentXp,
       xpNeeded: nextXpNeeded,
-      turnCost,
-      turnsLeft: refreshedTurns - turnCost,
-      statPointGained: leveledUp && newLevel % 10 === 0,
+      turnCost: getComputedTurnCost(skill.turnCost, currentLevel),
+      turnsUsed: totalTurnsUsed,
+      turnsLeft: refreshedTurns - totalTurnsUsed,
+      statPointGained: totalStatPointsGained > 0,
+      totalStatPointsGained,
+      maxedOut,
     });
   } catch (err) {
     console.error("Train skill error:", err);
