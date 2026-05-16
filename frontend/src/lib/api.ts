@@ -276,16 +276,6 @@ export const gangs = {
       method: "POST",
       body: JSON.stringify({ activeOperationId }),
     }),
-  assignMember: (gangId: number, opId: number, userId: number) =>
-    request<any>(`/gangs/${gangId}/operations/${opId}/assign`, {
-      method: "POST",
-      body: JSON.stringify({ userId }),
-    }),
-  unassignMember: (gangId: number, opId: number, userId: number) =>
-    request<any>(`/gangs/${gangId}/operations/${opId}/unassign`, {
-      method: "POST",
-      body: JSON.stringify({ userId }),
-    }),
   // Arsenal
   arsenal: {
     list: (gangId: number) => request<any>(`/gangs/${gangId}/arsenal`),

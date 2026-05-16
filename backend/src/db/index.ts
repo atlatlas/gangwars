@@ -258,5 +258,89 @@ sqlite.exec(`CREATE TABLE IF NOT EXISTS trading_price_history (
 try { sqlite.exec("CREATE INDEX IF NOT EXISTS tph_asset_idx ON trading_price_history(asset_id)"); } catch {}
 try { sqlite.exec("CREATE INDEX IF NOT EXISTS tph_time_idx ON trading_price_history(recorded_at)"); } catch {}
 
+// ─── Operation system tables ───
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_operation_defs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  skill_id INTEGER NOT NULL REFERENCES skill_definitions(id),
+  min_skill_level INTEGER NOT NULL,
+  daily_task_type TEXT NOT NULL,
+  daily_task_description TEXT NOT NULL,
+  income_per_member_l1 INTEGER NOT NULL,
+  min_skill_level_l2 INTEGER NOT NULL,
+  income_per_member_l2 INTEGER NOT NULL,
+  upgrade_cost_l1_to_l2 INTEGER NOT NULL,
+  min_skill_level_l3 INTEGER NOT NULL,
+  income_per_member_l3 INTEGER NOT NULL,
+  upgrade_cost_l2_to_l3 INTEGER NOT NULL
+)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_operation_reqs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  operation_def_id INTEGER NOT NULL REFERENCES gang_operation_defs(id),
+  skill_id INTEGER NOT NULL REFERENCES skill_definitions(id),
+  min_level INTEGER NOT NULL,
+  sort_order INTEGER DEFAULT 0 NOT NULL
+)`);
+// Fix: old schema had UNIQUE on gang_id — remove it by recreating the table
+// (ALTER TABLE in SQLite can't drop constraints directly)
+try {
+  const oldSql = sqlite.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='gang_active_operations'").all() as any[];
+  if (oldSql.length > 0 && oldSql[0].sql.includes("UNIQUE")) {
+    sqlite.exec("ALTER TABLE gang_active_operations RENAME TO gang_active_operations_old");
+    sqlite.exec(`CREATE TABLE gang_active_operations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      gang_id INTEGER NOT NULL REFERENCES gangs(id),
+      operation_def_id INTEGER NOT NULL REFERENCES gang_operation_defs(id),
+      level INTEGER DEFAULT 1 NOT NULL,
+      started_at TEXT NOT NULL,
+      last_payout_at TEXT
+    )`);
+    sqlite.exec("PRAGMA foreign_keys=OFF");
+    sqlite.exec("INSERT INTO gang_active_operations SELECT * FROM gang_active_operations_old");
+    sqlite.exec("PRAGMA foreign_keys=ON");
+    sqlite.exec("DROP TABLE gang_active_operations_old");
+    console.log("Migrated gang_active_operations — removed UNIQUE on gang_id");
+  }
+} catch (e) {
+  console.log("gang_active_operations migration skipped:", e);
+}
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_active_operations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  operation_def_id INTEGER NOT NULL REFERENCES gang_operation_defs(id),
+  level INTEGER DEFAULT 1 NOT NULL,
+  started_at TEXT NOT NULL,
+  last_payout_at TEXT
+)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_operation_assignments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  active_operation_id INTEGER NOT NULL REFERENCES gang_active_operations(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  assigned_at TEXT NOT NULL
+)`);
+try { sqlite.exec("DROP INDEX IF EXISTS assign_user_unique"); } catch {}
+try { sqlite.exec("CREATE INDEX IF NOT EXISTS assign_user_idx ON gang_operation_assignments(gang_id, user_id)"); } catch {}
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_daily_tasks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  operation_def_id INTEGER NOT NULL REFERENCES gang_operation_defs(id),
+  task_date TEXT NOT NULL,
+  completed INTEGER DEFAULT 0 NOT NULL,
+  verified_at TEXT
+)`);
+sqlite.exec(`CREATE TABLE IF NOT EXISTS gang_operation_payouts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  gang_id INTEGER NOT NULL REFERENCES gangs(id),
+  operation_def_id INTEGER NOT NULL REFERENCES gang_operation_defs(id),
+  level INTEGER NOT NULL,
+  amount_per_member INTEGER NOT NULL,
+  total_payout INTEGER NOT NULL,
+  eligible_member_count INTEGER NOT NULL,
+  paid_at TEXT NOT NULL
+)`);
+
 export const db = drizzle(sqlite, { schema });
 export { schema };

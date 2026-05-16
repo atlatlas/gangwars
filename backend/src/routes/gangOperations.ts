@@ -213,6 +213,52 @@ gangOperationsRouter.get("/:id/operations", authMiddleware, (req: AuthRequest, r
         };
       });
 
+      // Auto-detect task completion by checking game logs
+      const startOfDay = `${today}T00:00:00.000Z`;
+      const endOfDay = `${today}T23:59:59.999Z`;
+      for (const member of assignedMembers) {
+        if (member.completed) continue;
+        let verified = false;
+        switch (def.dailyTaskType) {
+          case "pvp_win": {
+            const row = db.select({ count: sql<number>`COUNT(*)` })
+              .from(schema.pvpLog)
+              .where(and(eq(schema.pvpLog.attackerId, member.userId), eq(schema.pvpLog.attackerWin, true), sql`${schema.pvpLog.createdAt} >= ${startOfDay}`, sql`${schema.pvpLog.createdAt} <= ${endOfDay}`))
+              .all()[0];
+            verified = (row?.count ?? 0) > 0;
+            break;
+          }
+          case "crime": {
+            const row = db.select({ count: sql<number>`COUNT(*)` })
+              .from(schema.crimeLog)
+              .where(and(eq(schema.crimeLog.userId, member.userId), sql`${schema.crimeLog.createdAt} >= ${startOfDay}`, sql`${schema.crimeLog.createdAt} <= ${endOfDay}`))
+              .all()[0];
+            verified = (row?.count ?? 0) > 0;
+            break;
+          }
+          case "train_skill": {
+            const reqSkillIds = reqsForDef.map(r => r.skillId);
+            const trained = db.select()
+              .from(schema.userSkills)
+              .where(and(eq(schema.userSkills.userId, member.userId), inArray(schema.userSkills.skillId, reqSkillIds.length > 0 ? reqSkillIds : [def.skillId]), sql`${schema.userSkills.lastTrainedAt} >= ${startOfDay}`, sql`${schema.userSkills.lastTrainedAt} <= ${endOfDay}`))
+              .all()[0];
+            verified = !!trained;
+            break;
+          }
+        }
+        if (verified) {
+          const existingTask = todayTasks.find(t => t.userId === member.userId);
+          const taskNow = new Date().toISOString();
+          if (existingTask) {
+            db.update(schema.gangDailyTasks).set({ completed: true, verifiedAt: taskNow }).where(eq(schema.gangDailyTasks.id, existingTask.id)).run();
+          } else {
+            db.insert(schema.gangDailyTasks).values({ gangId, userId: member.userId, operationDefId: def.id, taskDate: today, completed: true, verifiedAt: taskNow }).run();
+          }
+          member.completed = true;
+          member.verifiedAt = taskNow;
+        }
+      }
+
       const completedCount = assignedMembers.filter(m => m.completed).length;
 
       // Count tasks completed since last payout (same logic as collect endpoint)
@@ -709,19 +755,6 @@ gangOperationsRouter.post("/:id/operations/complete-task", authMiddleware, jailC
         verified = !!trained;
         break;
       }
-      case "deposit_vault": {
-        const depositTask = db.select()
-          .from(schema.gangDailyTasks)
-          .where(and(
-            eq(schema.gangDailyTasks.userId, req.userId!),
-            eq(schema.gangDailyTasks.operationDefId, activeOp.operationDefId),
-            eq(schema.gangDailyTasks.taskDate, today),
-            eq(schema.gangDailyTasks.completed, true),
-          ))
-          .all()[0];
-        verified = !!depositTask;
-        break;
-      }
     }
 
     if (!verified) {
@@ -872,120 +905,3 @@ gangOperationsRouter.post("/:id/operations/collect", authMiddleware, jailCheck, 
   }
 });
 
-// POST /api/gangs/:id/operations/:opId/assign — assign a member to an operation
-gangOperationsRouter.post("/:id/operations/:opId/assign", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
-  try {
-    const gangId = parseInt(req.params.id as string);
-    const opId = parseInt(req.params.opId as string);
-    const { userId } = z.object({ userId: z.number().int().positive() }).parse(req.body);
-
-    const gang = db.select().from(schema.gangs).where(eq(schema.gangs.id, gangId)).all()[0];
-    if (!gang) {
-      res.status(404).json({ error: "Gang not found" });
-      return;
-    }
-
-    if (!isLeader(gang, req.userId!)) {
-      res.status(403).json({ error: "Only the gang leader can assign members" });
-      return;
-    }
-
-    const activeOp = db.select()
-      .from(schema.gangActiveOperations)
-      .where(and(
-        eq(schema.gangActiveOperations.id, opId),
-        eq(schema.gangActiveOperations.gangId, gangId),
-      ))
-      .all()[0];
-    if (!activeOp) {
-      res.status(400).json({ error: "Active operation not found" });
-      return;
-    }
-
-    const member = db.select()
-      .from(schema.gangMembers)
-      .where(and(
-        eq(schema.gangMembers.userId, userId),
-        eq(schema.gangMembers.gangId, gangId),
-      ))
-      .all()[0];
-    if (!member) {
-      res.status(400).json({ error: "User is not a member of this gang" });
-      return;
-    }
-
-    const existingAssignment = db.select()
-      .from(schema.gangOperationAssignments)
-      .where(and(
-        eq(schema.gangOperationAssignments.gangId, gangId),
-        eq(schema.gangOperationAssignments.userId, userId),
-      ))
-      .all()[0];
-    if (existingAssignment) {
-      res.status(400).json({ error: "Member is already assigned to an operation" });
-      return;
-    }
-
-    const now = new Date().toISOString();
-    db.insert(schema.gangOperationAssignments).values({
-      gangId,
-      activeOperationId: opId,
-      userId,
-      assignedAt: now,
-    }).run();
-
-    res.status(201).json({ message: "Member assigned", userId, assignedAt: now });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: err.errors[0].message });
-      return;
-    }
-    console.error("Assign member error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// POST /api/gangs/:id/operations/:opId/unassign — unassign a member from an operation
-gangOperationsRouter.post("/:id/operations/:opId/unassign", authMiddleware, jailCheck, hpCheck, (req: AuthRequest, res: Response) => {
-  try {
-    const gangId = parseInt(req.params.id as string);
-    const opId = parseInt(req.params.opId as string);
-    const { userId } = z.object({ userId: z.number().int().positive() }).parse(req.body);
-
-    const gang = db.select().from(schema.gangs).where(eq(schema.gangs.id, gangId)).all()[0];
-    if (!gang) {
-      res.status(404).json({ error: "Gang not found" });
-      return;
-    }
-
-    if (!isLeader(gang, req.userId!)) {
-      res.status(403).json({ error: "Only the gang leader can unassign members" });
-      return;
-    }
-
-    const existing = db.select()
-      .from(schema.gangOperationAssignments)
-      .where(and(
-        eq(schema.gangOperationAssignments.activeOperationId, opId),
-        eq(schema.gangOperationAssignments.userId, userId),
-      ))
-      .all()[0];
-    if (!existing) {
-      res.status(400).json({ error: "Assignment not found" });
-      return;
-    }
-
-    db.delete(schema.gangOperationAssignments)
-      .where(eq(schema.gangOperationAssignments.id, existing.id))
-      .run();
-
-    res.json({ message: "Member unassigned" });
-  } catch (err) {
-    if (err instanceof z.ZodError) {
-      res.status(400).json({ error: err.errors[0].message });
-      return;
-    }
-    console.error("Unassign member error:", err);
-    res.status(500).json({ error: "Server error" });
-  }
-});

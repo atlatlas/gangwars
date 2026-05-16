@@ -240,7 +240,7 @@ export const gangOperationDefs = sqliteTable("gang_operation_defs", {
   description: text("description").notNull(),
   skillId: integer("skill_id").notNull().references(() => skillDefinitions.id),
   minSkillLevel: integer("min_skill_level").notNull(),
-  dailyTaskType: text("daily_task_type", { enum: ["pvp_win", "crime", "train_skill", "deposit_vault"] }).notNull(),
+  dailyTaskType: text("daily_task_type", { enum: ["pvp_win", "crime", "train_skill"] }).notNull(),
   dailyTaskDescription: text("daily_task_description").notNull(),
   incomePerMemberL1: integer("income_per_member_l1").notNull(),
   minSkillLevelL2: integer("min_skill_level_l2").notNull(),
@@ -280,7 +280,7 @@ export const gangOperationAssignments = sqliteTable("gang_operation_assignments"
   assignedAt: text("assigned_at").notNull(),
 }, (table) => ({
   assignOpIdx: index("assign_op_idx").on(table.activeOperationId),
-  assignUserUnique: uniqueIndex("assign_user_unique").on(table.gangId, table.userId),
+  assignUserIdx: index("assign_user_idx").on(table.gangId, table.userId),
 }));
 
 export const gangDailyTasks = sqliteTable("gang_daily_tasks", {

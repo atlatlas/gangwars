@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom";
 import { useParams, useRouter } from "next/navigation";
 import GameLayout from "@/components/GameLayout";
 import GangConflictSection from "@/components/GangConflictSection";
@@ -65,9 +64,7 @@ export default function GangDetailPage() {
   const [settingSalary, setSettingSalary] = useState<number | null>(null);
   const [salaryInput, setSalaryInput] = useState<Record<number, string>>({});
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
-  const { showConfirm } = useTopNotification();
-  const [opNotif, setOpNotif] = useState<{ id: number; title: string; message: string; type: string; exiting?: boolean } | null>(null);
-  const opNotifKey = useRef(0);
+  const { showConfirm, showNotification } = useTopNotification();
   const [expandedOp, setExpandedOp] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"operations" | "turf" | "arsenal" | "accountant" | "requests" | "investments">("operations");
 
@@ -111,14 +108,6 @@ export default function GangDetailPage() {
     loadInvestments();
   }, [gangId]);
 
-  // Auto-dismiss operation notification
-  useEffect(() => {
-    if (!opNotif) return;
-    const t = setTimeout(() => setOpNotif((p) => p ? { ...p, exiting: true } : null), 4000);
-    const t2 = setTimeout(() => setOpNotif(null), 4200);
-    return () => { clearTimeout(t); clearTimeout(t2); };
-  }, [opNotif?.id]);
-
   const loadGang = async () => {
     setError("");
     try {
@@ -151,10 +140,10 @@ export default function GangDetailPage() {
     try {
       await gangsApi.leave(gangId);
       await refreshUser();
-      showNotif("Leave Gang", "Left the gang", "success");
+      showNotification("Leave Gang: Left the gang", "success");
       router.push("/gangs");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setActionLoading(false);
     }
@@ -165,10 +154,10 @@ export default function GangDetailPage() {
     try {
       await gangsApi.kick(gangId, targetId);
       await refreshUser();
-      showNotif("Kick", `${name} kicked from the gang`, "success");
+      showNotification(`Kick: ${name} kicked from the gang`, "success");
       loadGang();
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setActionLoading(false);
       setConfirming(null);
@@ -180,10 +169,10 @@ export default function GangDetailPage() {
     try {
       await gangsApi.transfer(gangId, targetId);
       await refreshUser();
-      showNotif("Transfer", `Leadership transferred to ${name}`, "success");
+      showNotification(`Transfer: Leadership transferred to ${name}`, "success");
       loadGang();
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setActionLoading(false);
       setConfirming(null);
@@ -195,9 +184,9 @@ export default function GangDetailPage() {
     try {
       await gangsApi.join(gangId);
       setJoinRequestSent(true);
-      showNotif("Join Request", "Request sent to join gang", "success");
+      showNotification("Join Request: Request sent to join gang", "success");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setJoiningGang(false);
     }
@@ -206,17 +195,17 @@ export default function GangDetailPage() {
   const handleInvestPublic = async () => {
     const amount = parseInt(investAmount);
     if (isNaN(amount) || amount < 10000) {
-      showNotif("Invest", "Minimum investment is $10,000", "error");
+      showNotification("Invest: Minimum investment is $10,000", "error");
       return;
     }
     setInvestingPublic(true);
     try {
       await gangsApi.investments.invest(gangId, amount);
-      showNotif("Investment", "Invested $" + amount.toLocaleString() + " in " + (gang?.name || "gang"), "success");
+      showNotification("Investment: " + ("Invested $" + amount.toLocaleString() + " in " + (gang?.name || "gang")), "success");
       setShowInvestInput(false);
       setInvestAmount("");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setInvestingPublic(false);
     }
@@ -227,10 +216,10 @@ export default function GangDetailPage() {
     try {
       await gangsApi.disband(gangId);
       await refreshUser();
-      showNotif("Disband", "Gang disbanded", "success");
+      showNotification("Disband: Gang disbanded", "success");
       router.push("/gangs");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setActionLoading(false);
       setConfirming(null);
@@ -241,10 +230,10 @@ export default function GangDetailPage() {
     setActionLoading(true);
     try {
       const data = await gangsApi.promote(gangId, targetId);
-      showNotif("Promotion", `${name} promoted to ${data.newRole}`, "success");
+      showNotification(`Promotion: ${name} promoted to ${data.newRole}`, "success");
       loadGang();
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setActionLoading(false);
       setConfirming(null);
@@ -261,15 +250,15 @@ const handleInvite = async () => {
         (u: any) => u.username.toLowerCase() === inviteUsername.trim().toLowerCase()
       );
       if (!target) {
-        showNotif("Invite", "User not found", "error");
+        showNotification("Invite: User not found", "error");
         setInviting(false);
         return;
       }
       await gangsApi.invite(gangId, target.id);
-      showNotif("Invite", `Invite sent to ${target.username}`, "success");
+      showNotification(`Invite: Invite sent to ${target.username}`, "success");
       setInviteUsername("");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setInviting(false);
     }
@@ -278,28 +267,28 @@ const handleInvite = async () => {
   const handleCancelInvite = async (inviteId: number) => {
     try {
       await gangsApi.cancelInvite(gangId, inviteId);
-      showNotif("Cancel Invite", "Invite cancelled", "success");
+      showNotification("Cancel Invite: Invite cancelled", "success");
       setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId));
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     }
   };
 
   const handleDeposit = async () => {
     const amount = parseInt(depositAmount);
     if (isNaN(amount) || amount <= 0) {
-      showNotif("Deposit", "Enter a valid amount", "error");
+      showNotification("Deposit: Enter a valid amount", "error");
       return;
     }
     setDepositing(true);
     try {
       const result = await gangsApi.deposit(gangId, amount);
       await refreshUser();
-      showNotif("Deposit", `Deposited $${result.amount.toLocaleString()} to gang vault`, "success");
+      showNotification(`Deposit: Deposited $${result.amount.toLocaleString()} to gang vault`, "success");
       setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
       setDepositAmount("");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setDepositing(false);
     }
@@ -308,18 +297,18 @@ const handleInvite = async () => {
   const handleWithdraw = async () => {
     const amount = parseInt(withdrawAmount);
     if (isNaN(amount) || amount <= 0) {
-      showNotif("Withdraw", "Enter a valid amount", "error");
+      showNotification("Withdraw: Enter a valid amount", "error");
       return;
     }
     setWithdrawing(true);
     try {
       const result = await gangsApi.withdraw(gangId, amount);
       await refreshUser();
-      showNotif("Withdraw", `Withdrew $${result.amount.toLocaleString()} from gang vault`, "success");
+      showNotification(`Withdraw: Withdrew $${result.amount.toLocaleString()} from gang vault`, "success");
       setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
       setWithdrawAmount("");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setWithdrawing(false);
     }
@@ -328,18 +317,18 @@ const handleInvite = async () => {
   const handlePayMember = async (targetId: number, targetName: string) => {
     const amount = parseInt(payAmount[targetId] ?? "");
     if (isNaN(amount) || amount <= 0) {
-      showNotif("Pay", "Enter a valid amount", "error");
+      showNotification("Pay: Enter a valid amount", "error");
       return;
     }
     setPaying(targetId);
     try {
       const result = await gangsApi.payMember(gangId, targetId, amount);
       await refreshUser();
-      showNotif("Payment", `Paid $${result.amount.toLocaleString()} to ${result.targetUsername}`, "success");
+      showNotification(`Payment: Paid $${result.amount.toLocaleString()} to ${result.targetUsername}`, "success");
       setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
       setPayAmount((prev) => ({ ...prev, [targetId]: "" }));
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setPaying(null);
     }
@@ -350,10 +339,10 @@ const handleInvite = async () => {
     try {
       const result = await gangsApi.levelUp(gangId);
       await refreshUser();
-      showNotif("Level Up", `Gang reached level ${result.level}!`, "success");
+      showNotification(`Level Up: Gang reached level ${result.level}!`, "success");
       loadGang();
     } catch (err: any) {
-      showNotif("Level Up", err.message || "Failed to level up", "error");
+      showNotification("Level Up: " + (err.message || "Failed to level up"), "error");
     } finally {
       setLevelingUp(false);
     }
@@ -364,7 +353,9 @@ const handleInvite = async () => {
     try {
       const data = await gangsApi.operations(gangId);
       setOpData(data);
-    } catch {}
+    } catch {
+      setOpData(null);
+    }
     setOpLoading(false);
   };
 
@@ -372,11 +363,11 @@ const handleInvite = async () => {
     setOpActionLoading(true);
     try {
       await gangsApi.startOperation(gangId, opDefId, memberIds);
-      showNotif("Operation", "Operation started!", "success");
+      showNotification("Operation: Operation started!", "success");
       await Promise.all([loadGang(), loadOperations()]);
       setSelectedMemberIds([]);
     } catch (err: any) {
-      showNotif("Operation", err.message, "error");
+      showNotification("Operation: " + err.message, "error");
     } finally {
       setOpActionLoading(false);
       setConfirmOp(null);
@@ -387,11 +378,10 @@ const handleInvite = async () => {
     setOpActionLoading(true);
     try {
       await gangsApi.stopOperation(gangId, activeOperationId);
-      showNotif("Operation", "Operation stopped", "success");
-      loadGang();
-      loadOperations();
+      showNotification("Operation: Operation stopped", "success");
+      await Promise.all([loadGang(), loadOperations()]);
     } catch (err: any) {
-      showNotif("Operation", err.message, "error");
+      showNotification("Operation: " + err.message, "error");
     } finally {
       setOpActionLoading(false);
       setConfirmOp(null);
@@ -402,11 +392,11 @@ const handleInvite = async () => {
     setOpActionLoading(true);
     try {
       const result = await gangsApi.collectPayout(gangId, activeOperationId);
-      showNotif("Payout", `Collected $${result.collected.toLocaleString()} to gang vault!`, "success");
+      showNotification(`Payout: Collected $${result.collected.toLocaleString()} to gang vault!`, "success");
       setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
-      loadOperations();
+      await loadOperations();
     } catch (err: any) {
-      showNotif("Payout", err.message, "error");
+      showNotification("Payout: " + err.message, "error");
     } finally {
       setOpActionLoading(false);
     }
@@ -416,27 +406,13 @@ const handleInvite = async () => {
     setOpActionLoading(true);
     try {
       const data = await gangsApi.levelUpOperation(gangId, activeOperationId);
-      showNotif("Upgrade", `Operation upgraded to level ${data.level}!`, "success");
-      loadGang();
-      loadOperations();
+      showNotification(`Upgrade: Operation upgraded to level ${data.level}!`, "success");
+      await Promise.all([loadGang(), loadOperations()]);
     } catch (err: any) {
-      showNotif("Upgrade Failed", err.message, "error");
+      showNotification("Upgrade Failed: " + err.message, "error");
     } finally {
       setOpActionLoading(false);
       setConfirmOp(null);
-    }
-  };
-
-  const handleCompleteTask = async (activeOperationId: number) => {
-    setOpActionLoading(true);
-    try {
-      await gangsApi.completeTask(gangId, activeOperationId);
-      showNotif("Task", "Daily task completed!", "success");
-      loadOperations();
-    } catch (err: any) {
-      showNotif("Task", err.message, "error");
-    } finally {
-      setOpActionLoading(false);
     }
   };
 
@@ -449,7 +425,7 @@ const handleInvite = async () => {
       setDistricts(data.districts);
       setTurfVault(data.vault);
     } catch (err: any) {
-      showNotif("Turf", err.message || "Failed to load turf", "error");
+      showNotification("Turf: " + (err.message || "Failed to load turf"), "error");
     }
     setTurfLoading(false);
   };
@@ -459,11 +435,11 @@ const handleInvite = async () => {
     setTurfActionLoading(`claim-${districtId}`);
     try {
       await gangsApi.turf.claim(gangId, districtId);
-      showNotif("Turf", `Claimed ${name}!`, "success");
+      showNotification(`Turf: Claimed ${name}!`, "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      showNotif("Turf", err.message || "Failed to claim district", "error");
+      showNotification("Turf: " + (err.message || "Failed to claim district"), "error");
     }
     setTurfActionLoading(null);
   };
@@ -473,11 +449,11 @@ const handleInvite = async () => {
     setTurfActionLoading(`challenge-${districtId}`);
     try {
       const result = await gangsApi.turf.challenge(gangId, districtId);
-      showNotif("Turf", result.message || `Challenged for ${name}!`, "success");
+      showNotification("Turf: " + (result.message || `Challenged for ${name}!`), "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      showNotif("Turf", err.message || "Failed to challenge", "error");
+      showNotification("Turf: " + (err.message || "Failed to challenge"), "error");
     }
     setTurfActionLoading(null);
   };
@@ -487,11 +463,11 @@ const handleInvite = async () => {
     setTurfActionLoading(`abandon-${districtId}`);
     try {
       const result = await gangsApi.turf.abandon(gangId, districtId);
-      showNotif("Turf", result.message || `Abandoned ${name}`, "success");
+      showNotification("Turf: " + (result.message || `Abandoned ${name}`), "success");
       await refreshUser();
       loadTurf();
     } catch (err: any) {
-      showNotif("Turf", err.message || "Failed to abandon", "error");
+      showNotification("Turf: " + (err.message || "Failed to abandon"), "error");
     }
     setTurfActionLoading(null);
   };
@@ -504,7 +480,7 @@ const handleInvite = async () => {
       const result = await gangsApi.arsenal.list(gangId);
       setArsenalData(result);
     } catch (err: any) {
-      showNotif("Arsenal", err.message || "Failed to load arsenal", "error");
+      showNotification("Arsenal: " + (err.message || "Failed to load arsenal"), "error");
     }
     setArsenalLoading(false);
   };
@@ -524,11 +500,11 @@ const handleInvite = async () => {
     setRequestsActionLoading(userId);
     try {
       await gangsApi.requests.accept(gangId, userId);
-      showNotif("Join Request", "Player joined the gang!", "success");
+      showNotification("Join Request: Player joined the gang!", "success");
       setRequests((prev) => prev.filter((r) => r.userId !== userId));
       loadGang();
     } catch (err: any) {
-      showNotif("Join Request", err.message || "Failed to accept request", "error");
+      showNotification("Join Request: " + (err.message || "Failed to accept request"), "error");
     } finally {
       setRequestsActionLoading(null);
     }
@@ -538,10 +514,10 @@ const handleInvite = async () => {
     setRequestsActionLoading(userId);
     try {
       await gangsApi.requests.decline(gangId, userId);
-      showNotif("Join Request", "Join request declined", "success");
+      showNotification("Join Request: Join request declined", "success");
       setRequests((prev) => prev.filter((r) => r.userId !== userId));
     } catch (err: any) {
-      showNotif("Join Request", err.message || "Failed to decline request", "error");
+      showNotification("Join Request: " + (err.message || "Failed to decline request"), "error");
     } finally {
       setRequestsActionLoading(null);
     }
@@ -564,24 +540,24 @@ const handleInvite = async () => {
     try {
       const data = await gangsApi.investments.toggle(gangId);
       setInvestData((prev: any) => prev ? { ...prev, investmentsOpen: data.investmentsOpen } : prev);
-      showNotif("Investments", data.investmentsOpen ? "Investments opened" : "Investments closed", "success");
+      showNotification("Investments: " + (data.investmentsOpen ? "Investments opened" : "Investments closed"), "success");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     }
   };
 
   const handleSetInvestShare = async () => {
     if (investShare < 10 || investShare > 50) {
-      showNotif("Investments", "Share must be 10-50%", "error");
+      showNotification("Investments: Share must be 10-50%", "error");
       return;
     }
     setSettingInvestShare(true);
     try {
       const data = await gangsApi.investments.setShare(gangId, investShare);
       setInvestData((prev: any) => prev ? { ...prev, investorShare: data.investorShare } : prev);
-      showNotif("Investments", `Investor share set to ${data.investorShare}%`, "success");
+      showNotification(`Investments: Investor share set to ${data.investorShare}%`, "success");
     } catch (err: any) {
-      showNotif("Error", err.message, "error");
+      showNotification("Error: " + err.message, "error");
     } finally {
       setSettingInvestShare(false);
     }
@@ -596,10 +572,10 @@ const handleWithdrawInvestment = () => {
         try {
           const data = await gangsApi.investments.withdraw(gangId);
           await refreshUser();
-          showNotif("Investment", `Withdrew $${data.refunded.toLocaleString()} principal`, "success");
+          showNotification(`Investment: Withdrew $${data.refunded.toLocaleString()} principal`, "success");
           loadInvestments();
         } catch (err: any) {
-          showNotif("Error", err.message, "error");
+          showNotification("Error: " + err.message, "error");
         } finally {
           setWithdrawingInvest(false);
         }
@@ -612,11 +588,11 @@ const handleWithdrawInvestment = () => {
     setArsenalActionLoading(`buy-${name}`);
     try {
       await gangsApi.arsenal.buy(gangId, name);
-      showNotif("Arsenal", `Purchased ${name}!`, "success");
+      showNotification(`Arsenal: Purchased ${name}!`, "success");
       await refreshUser();
       loadArsenal();
     } catch (err: any) {
-      showNotif("Arsenal", err.message || "Failed to purchase", "error");
+      showNotification("Arsenal: " + (err.message || "Failed to purchase"), "error");
     }
     setArsenalActionLoading(null);
   };
@@ -626,10 +602,10 @@ const handleWithdrawInvestment = () => {
     setArsenalActionLoading(`assign-${arsenalId}`);
     try {
       await gangsApi.arsenal.assignTurf(gangId, arsenalId, turfId);
-      showNotif("Arsenal", "Item assigned to turf!", "success");
+      showNotification("Arsenal: Item assigned to turf!", "success");
       loadArsenal();
     } catch (err: any) {
-      showNotif("Arsenal", err.message || "Failed to assign", "error");
+      showNotification("Arsenal: " + (err.message || "Failed to assign"), "error");
     }
     setArsenalActionLoading(null);
   };
@@ -639,10 +615,10 @@ const handleWithdrawInvestment = () => {
     setArsenalActionLoading(`unassign-${arsenalId}`);
     try {
       await gangsApi.arsenal.unassignTurf(gangId, arsenalId);
-      showNotif("Arsenal", "Item unassigned from turf!", "success");
+      showNotification("Arsenal: Item unassigned from turf!", "success");
       loadArsenal();
     } catch (err: any) {
-      showNotif("Arsenal", err.message || "Failed to unassign", "error");
+      showNotification("Arsenal: " + (err.message || "Failed to unassign"), "error");
     }
     setArsenalActionLoading(null);
   };
@@ -652,11 +628,11 @@ const handleWithdrawInvestment = () => {
     setArsenalActionLoading(`repair-${arsenalId}`);
     try {
       await gangsApi.arsenal.repair(gangId, arsenalId);
-      showNotif("Repair", "Item repaired!", "success");
+      showNotification("Repair: Item repaired!", "success");
       await refreshUser();
       loadArsenal();
     } catch (err: any) {
-      showNotif("Repair", err.message || "Failed to repair", "error");
+      showNotification("Repair: " + (err.message || "Failed to repair"), "error");
     }
     setArsenalActionLoading(null);
   };
@@ -680,11 +656,6 @@ const handleWithdrawInvestment = () => {
     if (rank === 0) return "enforcer";
     if (rank === 1) return "lieutenant";
     return null;
-  };
-
-  const showNotif = (title: string, message: string, type: "success" | "error") => {
-    opNotifKey.current++;
-    setOpNotif({ id: opNotifKey.current, title, message, type });
   };
 
   /** Resize & compress an image file to a base64 data URL */
@@ -725,10 +696,10 @@ const handleWithdrawInvestment = () => {
       const dataUrl = await compressImage(file, 1200, 0.85);
       await gangsApi.setBanner(gangId, dataUrl);
       setGang((prev) => prev ? { ...prev, bannerUrl: dataUrl } : prev);
-      showNotif("Banner", "Banner updated!", "success");
+      showNotification("Banner: Banner updated!", "success");
       setShowBannerPicker(false);
     } catch (err: any) {
-      showNotif("Banner", err?.message || "Failed to upload image", "error");
+      showNotification("Banner: " + (err?.message || "Failed to upload image"), "error");
     } finally {
       setUploadingBanner(false);
     }
@@ -740,11 +711,11 @@ const handleWithdrawInvestment = () => {
     try {
       await gangsApi.setBanner(gangId, customBannerUrl.trim());
       setGang((prev) => prev ? { ...prev, bannerUrl: customBannerUrl.trim() } : prev);
-      showNotif("Banner", "Banner updated!", "success");
+      showNotification("Banner: Banner updated!", "success");
       setShowBannerPicker(false);
       setCustomBannerUrl("");
     } catch (err: any) {
-      showNotif("Banner", err.message, "error");
+      showNotification("Banner: " + err.message, "error");
     } finally {
       setBannerSetting(false);
     }
@@ -755,10 +726,10 @@ const handleWithdrawInvestment = () => {
     try {
       await gangsApi.setBanner(gangId, null);
       setGang((prev) => prev ? { ...prev, bannerUrl: null } : prev);
-      showNotif("Banner", "Banner removed", "success");
+      showNotification("Banner: Banner removed", "success");
       setShowBannerPicker(false);
     } catch (err: any) {
-      showNotif("Banner", err.message, "error");
+      showNotification("Banner: " + err.message, "error");
     } finally {
       setBannerSetting(false);
     }
@@ -768,10 +739,10 @@ const handleWithdrawInvestment = () => {
     setSettingAccountant(true);
     try {
       await gangsApi.setAccountant(gangId, hire);
-      showNotif("Accountant", hire ? "Accountant bot hired" : "Accountant bot fired", "success");
+      showNotification("Accountant: " + (hire ? "Accountant bot hired" : "Accountant bot fired"), "success");
       loadGang();
     } catch (err: any) {
-      showNotif("Accountant", err.message, "error");
+      showNotification("Accountant: " + err.message, "error");
     } finally {
       setSettingAccountant(false);
     }
@@ -780,18 +751,18 @@ const handleWithdrawInvestment = () => {
   const handleSetSalary = async (userId: number) => {
     const amount = parseInt(salaryInput[userId] ?? "0");
     if (isNaN(amount) || amount < 0) {
-      showNotif("Salary", "Enter a valid amount", "error");
+      showNotification("Salary: Enter a valid amount", "error");
       return;
     }
     setSettingSalary(userId);
     try {
       await gangsApi.setSalary(gangId, userId, amount);
       const name = gang?.members.find((m) => m.userId === userId)?.username;
-      showNotif("Salary", amount > 0 ? `${name} salary set to $${amount}/day` : `Salary removed for ${name}`, "success");
+      showNotification("Salary: " + (amount > 0 ? `${name} salary set to $${amount}/day` : `Salary removed for ${name}`), "success");
       loadGang();
       setSalaryInput((prev) => ({ ...prev, [userId]: "" }));
     } catch (err: any) {
-      showNotif("Salary", err.message, "error");
+      showNotification("Salary: " + err.message, "error");
     } finally {
       setSettingSalary(null);
     }
@@ -801,28 +772,6 @@ const handleWithdrawInvestment = () => {
 
   return (
     <GameLayout>
-      {/* Top notification overlay — portaled to body */}
-      {opNotif && createPortal(
-        <div
-          className={`fixed top-0 left-0 right-0 z-[200] h-12 flex items-center justify-center gap-3 px-4 font-mono text-xs tracking-wider backdrop-blur-xl border-b ${
-            opNotif.exiting ? "animate-slide-up-out" : "animate-slide-in"
-          } ${
-            opNotif.type === "error"
-              ? "bg-red-500/8 text-red-300 border-red-500/15"
-              : "bg-emerald-500/8 text-emerald-300 border-emerald-500/15"
-          }`}
-        >
-          {opNotif.type === "error" ? (
-            <Skull size={14} className="text-red-300" />
-          ) : (
-            <Trophy size={14} className="text-emerald-300" />
-          )}
-          <span className="font-semibold">{opNotif.title}</span>
-          <span className="opacity-40 mx-0.5">—</span>
-          <span className="opacity-70">{opNotif.message}</span>
-        </div>,
-        document.body
-      )}
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Back */}
         <button
@@ -1605,26 +1554,6 @@ const handleWithdrawInvestment = () => {
                               )}
                             </div>
 
-                            {/* My task CTA */}
-                            {(() => {
-                              const myStatus = op.assignedMembers?.find((m: any) => m.userId === user?.id);
-                              if (myStatus && !myStatus.completed) {
-                                return (
-                                  <button
-                                    onClick={() => handleCompleteTask(op.id)}
-                                    disabled={opActionLoading}
-                                    className="w-full font-mono text-xs uppercase text-pink-400/70 border border-pink-400/20 rounded-sm px-3 py-1.5 hover:border-pink-400/40 transition-all mb-2"
-                                  >
-                                    {opActionLoading ? "Verifying..." : `Complete Task: ${op.dailyTaskDescription}`}
-                                  </button>
-                                );
-                              }
-                              if (myStatus?.completed) {
-                                return <p className="text-xs font-mono text-green-400/60 mb-2">Daily task completed today!</p>;
-                              }
-                              return null;
-                            })()}
-
                             {/* Collect payout button */}
                             {(op.pendingPayout > 0) && (
                               <button
@@ -1705,36 +1634,31 @@ const handleWithdrawInvestment = () => {
                               </div>
                             </div>
 
-                            {/* Your Status — personal eligibility */}
+                            {/* Requirements — who qualifies */}
                             <div className="bg-black/30 rounded-sm p-2 mb-2 border border-white/5">
-                              <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider mb-0.5">Your Status</p>
-                              {(() => {
-                                const myEntry = entry.memberEligibility?.find((m: any) => m.userId === user?.id);
-                                return (
-                                  <div className="space-y-0.5">
-                                    {def.requirements?.map((r: any) => {
-                                      const meets = myEntry?.satisfiedReqs?.includes(r.sortOrder);
-                                      return (
-                                        <div key={r.sortOrder} className="flex items-center gap-1.5 text-xs font-mono">
-                                          <span className={meets ? "text-green-400" : "text-white/40"}>{r.skillName}</span>
-                                          <span className={meets ? "text-green-400/80" : "text-yellow-400/60"}>Lv.{r.minLevel}</span>
-                                          <span className="text-white/20">(yours: {r.userLevel ?? 0})</span>
-                                          <span>{meets ? " ✅" : " ❌"}</span>
-                                        </div>
-                                      );
-                                    })}
-                                    <p className={`text-xs font-mono mt-0.5 ${myEntry?.isEligible ? "text-green-400" : "text-yellow-400"}`}>
-                                      {(() => {
-                                        if (!myEntry?.isEligible) return "Meet at least 1 requirement to qualify";
-                                        if (entry.allRequirementsSatisfied) return "You qualify!";
-                                        const missing = def.requirements?.filter((r: any) => !r.satisfied) ?? [];
-                                        const names = missing.map((r: any) => `${r.skillName} Lv.${r.minLevel}`).join(", ");
-                                        return `You qualify! Need a member with ${names} to start.`;
-                                      })()}
-                                    </p>
-                                  </div>
-                                );
-                              })()}
+                              <p className="text-[10px] font-mono text-white/25 uppercase tracking-wider mb-0.5">Requirements</p>
+                              <div className="space-y-0.5">
+                                {def.requirements?.map((r: any) => {
+                                  const myEntry = entry.memberEligibility?.find((m: any) => m.userId === user?.id);
+                                  const iMeet = myEntry?.satisfiedReqs?.includes(r.sortOrder);
+                                  const qualifier = entry.memberEligibility?.find((m: any) =>
+                                    m.satisfiedReqs?.includes(r.sortOrder) && m.userId !== user?.id
+                                  );
+                                  return (
+                                    <div key={r.sortOrder} className="flex items-center gap-1.5 text-xs font-mono">
+                                      <span className={r.satisfied ? "text-green-400" : "text-orange-400"}>{r.skillName}</span>
+                                      <span className={r.satisfied ? "text-green-400/80" : "text-yellow-400/60"}>Lv.{r.minLevel}</span>
+                                      {iMeet ? (
+                                        <span className="text-green-400">(yours: {r.userLevel ?? 0}) ✅</span>
+                                      ) : qualifier ? (
+                                        <span className="text-green-400/70">({qualifier.username} qualifies) ✅</span>
+                                      ) : (
+                                        <span className="text-orange-400/60">❌</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
 
                             {/* Daily Task */}
@@ -1792,19 +1716,24 @@ const handleWithdrawInvestment = () => {
                                     {entry.memberEligibility
                                       .filter((em: any) => em.isEligible)
                                       .map((em: any) => (
-                                        <label key={em.userId} className="flex items-center gap-2 text-xs font-mono cursor-pointer hover:text-white/80 transition-colors">
-                                          <input
-                                            type="checkbox"
-                                            checked={selectedMemberIds.includes(em.userId)}
-                                            onChange={(e) => {
-                                              if (e.target.checked) {
-                                                setSelectedMemberIds((prev) => [...prev, em.userId]);
-                                              } else {
-                                                setSelectedMemberIds((prev) => prev.filter((id) => id !== em.userId));
-                                              }
-                                            }}
-                                            className="accent-pink-400"
-                                          />
+                                        <label key={em.userId} className="flex items-center gap-2 text-xs font-mono cursor-pointer hover:text-white/80 transition-colors group">
+                                          <span className="relative flex items-center justify-center w-3.5 h-3.5 border border-white/20 group-hover:border-white/40 transition-colors rounded-[1px]">
+                                            <input
+                                              type="checkbox"
+                                              checked={selectedMemberIds.includes(em.userId)}
+                                              onChange={(e) => {
+                                                if (e.target.checked) {
+                                                  setSelectedMemberIds((prev) => [...prev, em.userId]);
+                                                } else {
+                                                  setSelectedMemberIds((prev) => prev.filter((id) => id !== em.userId));
+                                                }
+                                              }}
+                                              className="absolute opacity-0 w-full h-full cursor-pointer"
+                                            />
+                                            {selectedMemberIds.includes(em.userId) && (
+                                              <span className="absolute inset-0 bg-pink-400/80 flex items-center justify-center text-[9px] text-white font-mono leading-none">✓</span>
+                                            )}
+                                          </span>
                                           <span className="text-white/70">{em.username}</span>
                                           <span className="text-white/30">({em.satisfiedReqs.length} req(s))</span>
                                         </label>
