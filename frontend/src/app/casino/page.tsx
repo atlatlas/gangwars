@@ -14,7 +14,7 @@ export default function CasinoPage() {
 
   return (
     <GameLayout>
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-5xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-5 reveal">
           <div>
@@ -149,7 +149,7 @@ function BlackjackPanel() {
 
   if (status === "idle" || status === "round_over") {
     return (
-      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5">
+      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4">
         {status === "round_over" && (
           <div className="mb-4 space-y-3">
             <div className="rounded-sm bg-black/30 p-3">
@@ -315,7 +315,7 @@ function SlotsPanel() {
         )}
       </div>
 
-      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5">
+      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4">
         <div className="flex items-center gap-3 mb-4">
           <DollarSign size={16} className="text-pink-400" />
           <input type="number" min="100" value={bet}
@@ -457,7 +457,7 @@ function RideTheBusPanel() {
   // Idle or result state
   if (status === "idle" || status === "won" || status === "lost") {
     return (
-      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5">
+      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4">
         {status === "won" && (
           <div className="text-center mb-4 p-3 rounded-sm bg-pink-500/10 border border-pink-500/30">
             <p className="text-lg font-mono text-pink-300">You won ${payout} ({multiplier}x)!</p>
@@ -501,7 +501,7 @@ function RideTheBusPanel() {
       </div>
 
       {/* Card display */}
-      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-5 text-center">
+      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-4 text-center">
         <p className="text-xs font-mono text-white/30 uppercase tracking-wider mb-3">
           {roundLabels[round]}
         </p>
