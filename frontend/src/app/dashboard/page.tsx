@@ -246,13 +246,16 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-bg-deep/30 to-transparent" />
 
         {/* Logo — right on mobile, centered on desktop */}
-        <div className="absolute top-1/3 right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2 z-10">
+        <div className="absolute top-[38%] right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2 z-10">
           <img
             src="/logo.png"
             alt="Gang Wars"
-            className="h-28 md:h-36 w-auto drop-shadow-[0_0_32px_rgba(147,51,234,0.6)]"
+            className="h-32 md:h-40 w-auto"
+            style={{ filter: 'drop-shadow(0 0 32px rgba(147,51,234,0.6))', animation: 'logoGlow 6s ease-in-out infinite' }}
           />
         </div>
+
+        <style>{`@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 24px rgba(147,51,234,0.3))}50%{filter:drop-shadow(0 0 56px rgba(147,51,234,0.8))}}`}</style>
 
         {/* Profile overlay — avatar + name + level + HP + XP + attributes (consolidated) */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
@@ -399,6 +402,10 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         {/* Gradient blend at bottom */}
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-bg-deep via-bg-deep/50 to-transparent pointer-events-none" />
       </div>
+
+      {/* Content area with bg.png background below hero */}
+      <div className="relative shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-purple-500/15">
+        <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-65" aria-hidden="true" />
 
       {/* Stat info panel — between hero and dashboard, no clipping */}
       {hoveredStat && (() => {
@@ -825,6 +832,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
             </div>
           )}
         </div>
+      </div>
       </div>
       {showSpecPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
