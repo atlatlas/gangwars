@@ -324,22 +324,6 @@ export interface GangAttackEntry {
   defenderGangName: string;
   defenderGangTag: string;
 }
-  id: number;
-  name: string;
-  tag: string;
-  description: string;
-  level: number;
-  maxMembers: number;
-  leaderId: number;
-  memberCount: number;
-  bannerUrl?: string | null;
-  createdAt: string;
-  members: GangPublicMember[];
-  investmentsOpen?: number;
-  investorShare?: number;
-  totalInvestments?: number;
-  pendingJoinRequest: boolean;
-}
 
 export interface GangLevelBenefits {
   maxMembers: number;
