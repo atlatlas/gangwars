@@ -259,21 +259,22 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
 
         {/* Profile overlay — avatar + name + level + HP + XP + attributes (consolidated) */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
-          <div className="flex items-end gap-4">
-            {/* Avatar - larger */}
-            <div className="relative group shrink-0">
-              <div className="w-20 h-20 md:w-28 md:h-28 rounded-full border-2 border-white/20 overflow-hidden bg-bg-card shadow-lg shadow-black/40">
+          <div className="relative">
+            {/* Avatar — positioned to the left, independent of text flow */}
+            <div className="absolute left-0 top-0">
+              <div className="relative group">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/20 overflow-hidden bg-bg-card shadow-lg shadow-black/40">
                 {user.avatarUrl ? (
                   <Image
                     src={user.avatarUrl}
                     alt={user.username}
-                    width={112}
-                    height={112}
+                    width={80}
+                    height={80}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-neon-navy/20 text-neon-navy">
-                    <User size={36} className="md:w-12 md:h-12" />
+                    <User size={24} className="md:w-7 md:h-7" />
                   </div>
                 )}
               </div>
@@ -309,9 +310,11 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
                 </button>
               )}
             </div>
+            </div>
 
             {/* Info + XP + Stats */}
-            <div className="pb-1 flex-1 min-w-0">
+            <div className="pb-1">
+              <div className="pl-[4.5rem] md:pl-[5.5rem]">
               {/* Name + Level + HP + heal */}
               <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">{user.username}</h1>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -344,6 +347,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
                   <span className="text-[10px] font-mono text-white/25 drop-shadow-lg">{user.xp.toLocaleString()} / {user.xpNeeded?.toLocaleString()} XP</span>
                   <span className="text-[10px] text-white/25 flex items-center gap-1 drop-shadow-lg"><Flame size={7} />{user.xpNeeded ? user.xpNeeded - user.xp : 0} to next</span>
                 </div>
+              </div>
               </div>
 
               {/* Attributes — larger font row */}
