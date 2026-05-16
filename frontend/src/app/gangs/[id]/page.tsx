@@ -55,15 +55,6 @@ export default function GangDetailPage() {
   const [opLoading, setOpLoading] = useState(false);
   const [confirmOp, setConfirmOp] = useState<string | null>(null);
   const [opActionLoading, setOpActionLoading] = useState(false);
-  const collectedOpsRef = useRef<Set<number>>(new Set());
-  const showCollectButton = (op: any) => {
-    if (op.pendingPayout <= 0) return false;
-    if (collectedOpsRef.current.has(op.id)) return false;
-    try {
-      const today = new Date().toLocaleDateString();
-      return !localStorage.getItem(`gw_collected_${gangId}_${op.id}_${today}`);
-    } catch { return true; }
-  };
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
   const [showBannerPicker, setShowBannerPicker] = useState(false);
   const [bannerSetting, setBannerSetting] = useState(false);
@@ -369,23 +360,11 @@ const handleInvite = async () => {
 
   const handleCollectPayout = async (activeOperationId: number) => {
     setOpActionLoading(true);
-    // Hide button immediately + persist across refreshes via localStorage
-    collectedOpsRef.current.add(activeOperationId);
-    const today = new Date().toLocaleDateString();
-    try { localStorage.setItem(`gw_collected_${gangId}_${activeOperationId}_${today}`, "1"); } catch {}
-    setOpData((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        activeOperations: prev.activeOperations.map((op) =>
-          op.id === activeOperationId ? { ...op, pendingPayout: 0 } : op
-        ),
-      };
-    });
     try {
       const result = await gangsApi.collectPayout(gangId, activeOperationId);
       showNotif("Payout", `Collected $${result.collected.toLocaleString()} to gang vault!`, "success");
       setGang((prev) => prev ? { ...prev, vault: result.vault } : prev);
+      loadOperations();
     } catch (err: any) {
       showNotif("Payout", err.message, "error");
     } finally {
@@ -1543,7 +1522,7 @@ const handleWithdrawInvestment = () => {
                             })()}
 
                             {/* Collect payout button */}
-                            {showCollectButton(op) && (
+                            {(op.pendingPayout > 0) && (
                               <button
                                 onClick={() => handleCollectPayout(op.id)}
                                 disabled={opActionLoading}

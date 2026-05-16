@@ -207,6 +207,7 @@ gangOperationsRouter.get("/:id/operations", authMiddleware, (req: AuthRequest, r
           userId: a.userId,
           username: member?.username ?? "Unknown",
           completed: task ? !!task.completed : false,
+          verifiedAt: task?.verifiedAt ?? null,
           isEligible,
           assignedAt: a.assignedAt,
         };
@@ -214,8 +215,11 @@ gangOperationsRouter.get("/:id/operations", authMiddleware, (req: AuthRequest, r
 
       const completedCount = assignedMembers.filter(m => m.completed).length;
 
-      // Calculate pending payout (tasks completed since last payout)
-      const pendingPayout = completedCount * incomeRate;
+      // Count tasks completed since last payout (same logic as collect endpoint)
+      const completedSinceLastPayout = activeOp.lastPayoutAt
+        ? assignedMembers.filter(m => m.completed && m.verifiedAt !== null && m.verifiedAt >= (activeOp.lastPayoutAt as string)).length
+        : 0;
+      const pendingPayout = completedSinceLastPayout * incomeRate;
 
       return {
         id: activeOp.id,

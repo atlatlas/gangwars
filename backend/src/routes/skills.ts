@@ -181,40 +181,50 @@ skillsRouter.post("/:id/train", authMiddleware, hpCheck, async (req: AuthRequest
         .where(eq(schema.gangMembers.userId, user.id))
         .all()[0];
       if (gm) {
-        const activeOp = db.select()
-          .from(schema.gangActiveOperations)
-          .where(eq(schema.gangActiveOperations.gangId, gm.gangId))
+        // Check which active operation this member is assigned to
+        const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
+          .from(schema.gangOperationAssignments)
+          .where(and(
+            eq(schema.gangOperationAssignments.userId, user.id),
+            eq(schema.gangOperationAssignments.gangId, gm.gangId),
+          ))
           .all()[0];
-        if (activeOp) {
-          const opDef = db.select()
-            .from(schema.gangOperationDefs)
-            .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
+        if (assignment) {
+          const activeOp = db.select()
+            .from(schema.gangActiveOperations)
+            .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
             .all()[0];
-          if (opDef && opDef.dailyTaskType === "train_skill") {
-            const today = new Date().toISOString().split("T")[0];
-            const now = new Date().toISOString();
-            const existingTask = db.select()
-              .from(schema.gangDailyTasks)
-              .where(and(
-                eq(schema.gangDailyTasks.userId, user.id),
-                eq(schema.gangDailyTasks.operationDefId, opDef.id),
-                eq(schema.gangDailyTasks.taskDate, today),
-              ))
+          if (activeOp) {
+            const opDef = db.select()
+              .from(schema.gangOperationDefs)
+              .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
               .all()[0];
-            if (!existingTask) {
-              db.insert(schema.gangDailyTasks).values({
-                gangId: gm.gangId,
-                userId: user.id,
-                operationDefId: opDef.id,
-                taskDate: today,
-                completed: true,
-                verifiedAt: now,
-              }).run();
-            } else if (!existingTask.completed) {
-              db.update(schema.gangDailyTasks)
-                .set({ completed: true, verifiedAt: now })
-                .where(eq(schema.gangDailyTasks.id, existingTask.id))
-                .run();
+            if (opDef && opDef.dailyTaskType === "train_skill") {
+              const today = new Date().toISOString().split("T")[0];
+              const now = new Date().toISOString();
+              const existingTask = db.select()
+                .from(schema.gangDailyTasks)
+                .where(and(
+                  eq(schema.gangDailyTasks.userId, user.id),
+                  eq(schema.gangDailyTasks.operationDefId, opDef.id),
+                  eq(schema.gangDailyTasks.taskDate, today),
+                ))
+                .all()[0];
+              if (!existingTask) {
+                db.insert(schema.gangDailyTasks).values({
+                  gangId: gm.gangId,
+                  userId: user.id,
+                  operationDefId: opDef.id,
+                  taskDate: today,
+                  completed: true,
+                  verifiedAt: now,
+                }).run();
+              } else if (!existingTask.completed) {
+                db.update(schema.gangDailyTasks)
+                  .set({ completed: true, verifiedAt: now })
+                  .where(eq(schema.gangDailyTasks.id, existingTask.id))
+                  .run();
+              }
             }
           }
         }

@@ -394,11 +394,20 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
       .where(eq(schema.gangMembers.userId, user.id))
       .all()[0];
     if (gm) {
-      const activeOp = db.select()
-        .from(schema.gangActiveOperations)
-        .where(eq(schema.gangActiveOperations.gangId, gm.gangId))
+      // Check which active operation this member is assigned to
+      const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
+        .from(schema.gangOperationAssignments)
+        .where(and(
+          eq(schema.gangOperationAssignments.userId, user.id),
+          eq(schema.gangOperationAssignments.gangId, gm.gangId),
+        ))
         .all()[0];
-      if (activeOp) {
+      if (assignment) {
+        const activeOp = db.select()
+          .from(schema.gangActiveOperations)
+          .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
+          .all()[0];
+        if (activeOp) {
         const opDef = db.select()
           .from(schema.gangOperationDefs)
           .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
@@ -428,6 +437,7 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
               .set({ completed: true, verifiedAt: now })
               .where(eq(schema.gangDailyTasks.id, existingTask.id))
               .run();
+            }
           }
         }
       }

@@ -644,16 +644,25 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
         .where(eq(schema.gangMembers.userId, attacker.id))
         .all()[0];
       if (gm) {
-        const activeOp = db.select()
-          .from(schema.gangActiveOperations)
-          .where(eq(schema.gangActiveOperations.gangId, gm.gangId))
+        // Check which active operation this member is assigned to
+        const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
+          .from(schema.gangOperationAssignments)
+          .where(and(
+            eq(schema.gangOperationAssignments.userId, attacker.id),
+            eq(schema.gangOperationAssignments.gangId, gm.gangId),
+          ))
           .all()[0];
-        if (activeOp) {
-          const opDef = db.select()
+        if (assignment) {
+          const activeOp = db.select()
+            .from(schema.gangActiveOperations)
+            .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
+            .all()[0];
+          if (activeOp) {
+            const opDef = db.select()
             .from(schema.gangOperationDefs)
             .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
             .all()[0];
-          if (opDef && opDef.dailyTaskType === "pvp_win") {
+            if (opDef && opDef.dailyTaskType === "pvp_win") {
             const today = new Date().toISOString().split("T")[0];
             const existingTask = db.select()
               .from(schema.gangDailyTasks)
@@ -678,11 +687,12 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
                 .where(eq(schema.gangDailyTasks.id, existingTask.id))
                 .run();
             }
-          }
+            }
         }
       }
     }
 
+  }
     // Update stats
     const atkStats = await db.query.playerStats.findFirst({
       where: eq(schema.playerStats.userId, attacker.id),
@@ -690,11 +700,11 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     if (atkStats) {
       db.update(schema.playerStats)
         .set({
-          pvpWins: atkStats.pvpWins + (attackerWins ? 1 : 0),
-          pvpLosses: atkStats.pvpLosses + (attackerWins ? 0 : 1),
-          totalMoneyEarned: atkStats.totalMoneyEarned + (lootCash || 0),
-          earnedPvp: atkStats.earnedPvp + (lootCash || 0),
-          respectPvp: atkStats.respectPvp + respectChange,
+            pvpWins: atkStats.pvpWins + (attackerWins ? 1 : 0),
+            pvpLosses: atkStats.pvpLosses + (attackerWins ? 0 : 1),
+            totalMoneyEarned: atkStats.totalMoneyEarned + (lootCash || 0),
+            earnedPvp: atkStats.earnedPvp + (lootCash || 0),
+            respectPvp: atkStats.respectPvp + respectChange,
         })
         .where(eq(schema.playerStats.userId, attacker.id))
         .run();
@@ -706,9 +716,9 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     if (defStats) {
       db.update(schema.playerStats)
         .set({
-          pvpWins: defStats.pvpWins + (attackerWins ? 0 : 1),
-          pvpLosses: defStats.pvpLosses + (attackerWins ? 1 : 0),
-          totalMoneyLost: defStats.totalMoneyLost + (lootCash || 0),
+            pvpWins: defStats.pvpWins + (attackerWins ? 0 : 1),
+            pvpLosses: defStats.pvpLosses + (attackerWins ? 1 : 0),
+            totalMoneyLost: defStats.totalMoneyLost + (lootCash || 0),
         })
         .where(eq(schema.playerStats.userId, defender.id))
         .run();
@@ -718,24 +728,24 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     if (attackerWins) {
       if (lootCash >= 500) {
         logActivityEvent(attacker.id, "pvp_win",
-          `Won a ${attackType} against ${defender.username} and stole $${lootCash.toLocaleString()}`,
-          { attackType, targetUsername: defender.username, lootCash });
+            `Won a ${attackType} against ${defender.username} and stole $${lootCash.toLocaleString()}`,
+            { attackType, targetUsername: defender.username, lootCash });
       }
       if (defender.hp - damageDealt <= 0) {
         logActivityEvent(attacker.id, "pvp_win",
-          `Defeated ${defender.username} in a ${attackType} and sent them to the hospital`,
-          { attackType, targetUsername: defender.username, damageDealt });
+            `Defeated ${defender.username} in a ${attackType} and sent them to the hospital`,
+            { attackType, targetUsername: defender.username, damageDealt });
         logActivityEvent(defender.id, "pvp_loss",
-          `Was hospitalized by ${attacker.username} in a ${attackType}`,
-          { attackerUsername: attacker.username, attackType });
+            `Was hospitalized by ${attacker.username} in a ${attackType}`,
+            { attackerUsername: attacker.username, attackType });
       }
       if (itemStolen) {
         logActivityEvent(attacker.id, "pvp_item_stolen",
-          `Stole ${itemStolen.quantity}x ${itemStolen.name} from ${defender.username}`,
-          { attackType, targetUsername: defender.username, itemName: itemStolen.name, quantity: itemStolen.quantity });
+            `Stole ${itemStolen.quantity}x ${itemStolen.name} from ${defender.username}`,
+            { attackType, targetUsername: defender.username, itemName: itemStolen.name, quantity: itemStolen.quantity });
         logActivityEvent(defender.id, "pvp_item_stolen",
-          `Had ${itemStolen.quantity}x ${itemStolen.name} stolen by ${attacker.username}`,
-          { attackerUsername: attacker.username, itemName: itemStolen.name, quantity: itemStolen.quantity });
+            `Had ${itemStolen.quantity}x ${itemStolen.name} stolen by ${attacker.username}`,
+            { attackerUsername: attacker.username, itemName: itemStolen.name, quantity: itemStolen.quantity });
       }
     } else if (attacker.hp - damageTaken <= 0) {
       logActivityEvent(attacker.id, "pvp_loss",

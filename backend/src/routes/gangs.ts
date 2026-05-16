@@ -744,39 +744,49 @@ gangsRouter.post("/:id/deposit", authMiddleware, jailCheck, hpCheck, (req: AuthR
       .run();
 
     // If gang has a deposit_vault operation active, auto-mark today's task
-    const activeOp = db.select()
-      .from(schema.gangActiveOperations)
-      .where(eq(schema.gangActiveOperations.gangId, gangId))
+    // Check which active operation this member is assigned to
+    const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
+      .from(schema.gangOperationAssignments)
+      .where(and(
+        eq(schema.gangOperationAssignments.userId, req.userId!),
+        eq(schema.gangOperationAssignments.gangId, gangId),
+      ))
       .all()[0];
-    if (activeOp) {
-      const opDef = db.select()
-        .from(schema.gangOperationDefs)
-        .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
+    if (assignment) {
+      const activeOp = db.select()
+        .from(schema.gangActiveOperations)
+        .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
         .all()[0];
-      if (opDef && opDef.dailyTaskType === "deposit_vault") {
-        const today = new Date().toISOString().split("T")[0];
-        const existingTask = db.select()
-          .from(schema.gangDailyTasks)
-          .where(and(
-            eq(schema.gangDailyTasks.userId, req.userId!),
-            eq(schema.gangDailyTasks.operationDefId, opDef.id),
-            eq(schema.gangDailyTasks.taskDate, today),
-          ))
+      if (activeOp) {
+        const opDef = db.select()
+          .from(schema.gangOperationDefs)
+          .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
           .all()[0];
-        if (!existingTask) {
-          db.insert(schema.gangDailyTasks).values({
-            gangId,
-            userId: req.userId!,
-            operationDefId: opDef.id,
-            taskDate: today,
-            completed: true,
-            verifiedAt: new Date().toISOString(),
-          }).run();
-        } else if (!existingTask.completed) {
-          db.update(schema.gangDailyTasks)
-            .set({ completed: true, verifiedAt: new Date().toISOString() })
-            .where(eq(schema.gangDailyTasks.id, existingTask.id))
-            .run();
+        if (opDef && opDef.dailyTaskType === "deposit_vault") {
+          const today = new Date().toISOString().split("T")[0];
+          const existingTask = db.select()
+            .from(schema.gangDailyTasks)
+            .where(and(
+              eq(schema.gangDailyTasks.userId, req.userId!),
+              eq(schema.gangDailyTasks.operationDefId, opDef.id),
+              eq(schema.gangDailyTasks.taskDate, today),
+            ))
+            .all()[0];
+          if (!existingTask) {
+            db.insert(schema.gangDailyTasks).values({
+              gangId,
+              userId: req.userId!,
+              operationDefId: opDef.id,
+              taskDate: today,
+              completed: true,
+              verifiedAt: new Date().toISOString(),
+            }).run();
+          } else if (!existingTask.completed) {
+            db.update(schema.gangDailyTasks)
+              .set({ completed: true, verifiedAt: new Date().toISOString() })
+              .where(eq(schema.gangDailyTasks.id, existingTask.id))
+              .run();
+          }
         }
       }
     }
