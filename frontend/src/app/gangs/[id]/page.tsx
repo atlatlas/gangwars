@@ -907,10 +907,7 @@ const handleWithdrawInvestment = () => {
                     </p>
                     {gang.levelBenefits && (
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        <span className="text-[10px] font-mono text-cyan-400/60 bg-cyan-500/5 px-1.5 py-0.5 rounded-sm">
-                          Capacity ${(gang.levelBenefits.vaultCapacity ?? 100000).toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-mono text-green-400/60 bg-green-500/5 px-1.5 py-0.5 rounded-sm">
+  <span className="text-[10px] font-mono text-green-400/60 bg-green-500/5 px-1.5 py-0.5 rounded-sm">
                           +{gang.levelBenefits.crimeBonus ?? 0}% Crime
                         </span>
                         <span className="text-[10px] font-mono text-orange-400/60 bg-orange-500/5 px-1.5 py-0.5 rounded-sm">
