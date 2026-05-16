@@ -73,6 +73,10 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
     if (user && user.statPoints > 0) setShowStatTip(true);
   }, [user?.statPoints]);
 
+  useEffect(() => {
+    if (user && !user.specialization && user.level >= 10) setShowSpecPicker(true);
+  }, [user?.specialization, user?.level]);
+
   if (!user) return null;
 
   const handleQuickCrime = async (crimeId: number) => {
