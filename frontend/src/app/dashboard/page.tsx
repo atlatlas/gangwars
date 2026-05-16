@@ -36,6 +36,7 @@ import {
   Gauge,
   Brain,
   MessageCircle,
+  Star,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [showStatTip, setShowStatTip] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 const [hoveredStat, setHoveredStat] = useState<string | null>(null);
+  const lastHoveredRef = useRef<string | null>(null);
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -258,7 +260,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         <style>{`@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 24px rgba(147,51,234,0.3))}50%{filter:drop-shadow(0 0 56px rgba(147,51,234,0.8))}}`}</style>
 
         {/* Profile overlay — avatar + name + level + HP + XP + attributes (consolidated) */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-2 md:pb-3">
           <div className="relative">
             {/* Avatar — positioned to the left, independent of text flow */}
             <div className="absolute left-0 top-0">
@@ -313,7 +315,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
             </div>
 
             {/* Info + XP + Stats */}
-            <div className="pb-1">
+            <div>
               <div className="pl-[4.5rem] md:pl-[5.5rem]">
               {/* Name + Level + HP + heal */}
               <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">{user.username}</h1>
@@ -351,18 +353,46 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
               </div>
 
               {/* Attributes — larger font row */}
-              <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-white/10">
+              <div className="flex items-center gap-2 mt-2 mb-1">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                {(() => {
+                  const count = Math.min(10, Math.floor(user.level / 10));
+                  if (count === 0) return <Star size={8} className="text-purple-400/40" />;
+                  let starClass: string;
+                  if (user.level >= 100) {
+                    starClass = "text-cyan-300 drop-shadow-[0_0_6px_rgba(34,211,238,0.6)]";
+                  } else if (user.level >= 50) {
+                    starClass = "text-purple-400 drop-shadow-[0_0_6px_rgba(147,51,234,0.4)]";
+                  } else if (user.level >= 20) {
+                    starClass = "text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.4)]";
+                  } else {
+                    starClass = "text-white/50";
+                  }
+                  return (
+                    <div className="flex items-center gap-[1px]">
+                      {Array.from({ length: count }).map((_, i) => (
+                        <Star key={i} size={8} className={starClass} fill="currentColor" />
+                      ))}
+                    </div>
+                  );
+                })()}
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+              </div>
+              <div className="flex items-center gap-3 mt-3">
                 {stats.map((stat) => (
                   <div
                     key={stat.key}
                     className={`flex flex-1 cursor-default transition-all duration-150 ${
                       hoveredStat && hoveredStat !== stat.key ? "opacity-40" : ""
                     }`}
-                    onMouseEnter={() => setHoveredStat(stat.key)}
+                    onMouseEnter={() => {
+                      lastHoveredRef.current = stat.key;
+                      setHoveredStat(stat.key);
+                    }}
                     onMouseLeave={() => setHoveredStat(null)}
                   >
                     <div className="flex items-center gap-1 flex-1">
-                      <span className="text-xs font-mono text-white/30 uppercase drop-shadow-lg">{stat.label.substring(0, 3)}</span>
+                      <span className={`text-xs font-mono uppercase drop-shadow-lg ${stat.colorClass}`}>{stat.label.substring(0, 3)}</span>
                       <div className="flex-1 h-1.5 bg-black/30 rounded-full overflow-hidden">
                         <div className="h-full rounded-full" style={{
                           width: `${Math.min(100, stat.value)}%`,
@@ -412,39 +442,46 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-45" aria-hidden="true" />
 
       {/* Stat info panel — between hero and dashboard, no clipping */}
-      {hoveredStat && (() => {
-        const stat = stats.find(s => s.key === hoveredStat);
-        if (!stat) return null;
-        const colorMap: Record<string, { bar: string; bg: string; text: string; border: string }> = {
-          strength: { bar: "bg-pink-400", bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-400/20" },
-          agility: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
-          intelligence: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
-          charisma: { bar: "bg-yellow-400", bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-400/20" },
-          endurance: { bar: "bg-purple-400", bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-400/20" },
-        };
-        const c = colorMap[stat.key];
-        return (
-          <div className="animate-slide-up border-b border-white/5">
-            <div className="max-w-5xl mx-auto px-4 py-3">
-              <div className={`rounded-sm border ${c.border} ${c.bg} backdrop-blur-sm`}>
-                <div className={`h-0.5 w-full rounded-t-sm ${c.bar}`} />
-                <div className="p-3 flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-sm flex items-center justify-center shrink-0 ${c.bg} ${c.text}`}>
-                    <stat.icon size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className={`text-xs font-mono font-semibold tracking-wider uppercase ${c.text}`}>{stat.label}</span>
-                      <span className="text-[11px] font-mono text-white/50">{stat.value} pts</span>
+      <div
+        className={`border-b border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${
+          hoveredStat !== null ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+        }`}
+      >
+        {(() => {
+          const activeKey = hoveredStat || lastHoveredRef.current;
+          const stat = activeKey ? stats.find(s => s.key === activeKey) : null;
+          if (!stat) return null;
+          const colorMap: Record<string, { bar: string; bg: string; text: string; border: string }> = {
+            strength: { bar: "bg-pink-400", bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-400/20" },
+            agility: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
+            intelligence: { bar: "bg-cyan-400", bg: "bg-cyan-500/10", text: "text-cyan-400", border: "border-cyan-400/20" },
+            charisma: { bar: "bg-yellow-400", bg: "bg-yellow-500/10", text: "text-yellow-400", border: "border-yellow-400/20" },
+            endurance: { bar: "bg-purple-400", bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-400/20" },
+          };
+          const c = colorMap[stat.key];
+          return (
+            <div className="animate-slide-up border-b border-white/5">
+              <div className="max-w-5xl mx-auto px-4 py-3">
+                <div className={`rounded-sm border ${c.border} ${c.bg} backdrop-blur-sm`}>
+                  <div className={`h-0.5 w-full rounded-t-sm ${c.bar}`} />
+                  <div className="p-3 flex items-start gap-3">
+                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center shrink-0 ${c.bg} ${c.text}`}>
+                      <stat.icon size={14} />
                     </div>
-                    <p className="text-xs font-mono text-white/60 leading-relaxed">{stat.tooltip}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`text-xs font-mono font-semibold tracking-wider uppercase ${c.text}`}>{stat.label}</span>
+                        <span className="text-[11px] font-mono text-white/50">{stat.value} pts</span>
+                      </div>
+                      <p className="text-xs font-mono text-white/60 leading-relaxed">{stat.tooltip}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </div>
 
       {/* Dashboard content — constrained width */}
       <div className="max-w-5xl mx-auto px-4 py-6">
