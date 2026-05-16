@@ -213,7 +213,7 @@ export default function GangDetailPage() {
   const handleInvestPublic = async () => {
     const amount = parseInt(investAmount);
     if (isNaN(amount) || amount < 10000) {
-      showNotif("Invest", "Minimum investment is 0,000", "error");
+      showNotif("Invest", "Minimum investment is $10,000", "error");
       return;
     }
     setInvestingPublic(true);
