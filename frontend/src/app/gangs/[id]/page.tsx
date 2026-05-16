@@ -1791,7 +1791,7 @@ const handleWithdrawInvestment = () => {
                                   <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mb-1.5">Select members to assign:</p>
                                   <div className="max-h-32 overflow-y-auto space-y-1 mb-2 bg-black/30 rounded-sm p-2 border border-white/5">
                                     {entry.memberEligibility
-                                      .filter((em: any) => em.isEligible && !em.isAssigned)
+                                      .filter((em: any) => em.isEligible)
                                       .map((em: any) => (
                                         <label key={em.userId} className="flex items-center gap-2 text-xs font-mono cursor-pointer hover:text-white/80 transition-colors">
                                           <input
@@ -1810,8 +1810,8 @@ const handleWithdrawInvestment = () => {
                                           <span className="text-white/30">({em.satisfiedReqs.length} req(s))</span>
                                         </label>
                                       ))}
-                                    {entry.memberEligibility.filter((em: any) => em.isEligible && !em.isAssigned).length === 0 && (
-                                      <p className="text-xs font-mono text-yellow-400/60">No eligible unassigned members available</p>
+                                    {entry.memberEligibility.filter((em: any) => em.isEligible).length === 0 && (
+                                      <p className="text-xs font-mono text-yellow-400/60">No eligible members available</p>
                                     )}
                                   </div>
                                   <div className="flex gap-2">

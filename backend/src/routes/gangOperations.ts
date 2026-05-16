@@ -362,22 +362,6 @@ gangOperationsRouter.post("/:id/operations/start", authMiddleware, jailCheck, hp
       return;
     }
 
-    // Check none are already assigned to another active operation
-    const existingAssignments = db.select()
-      .from(schema.gangOperationAssignments)
-      .where(and(
-        eq(schema.gangOperationAssignments.gangId, gangId),
-        inArray(schema.gangOperationAssignments.userId, memberIds),
-      ))
-      .all();
-    if (existingAssignments.length > 0) {
-      const alreadyAssigned = existingAssignments.map(a => a.userId);
-      res.status(400).json({
-        error: "Some selected members are already assigned to another operation",
-        alreadyAssignedMemberIds: alreadyAssigned,
-      });
-      return;
-    }
 
     const now = new Date().toISOString();
 
