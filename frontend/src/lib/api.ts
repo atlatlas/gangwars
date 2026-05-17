@@ -74,7 +74,7 @@ export const profile = {
 
 // Crimes
 export const crimes = {
-  list: () => request<{ turns: number; crimes: any[]; locked: any[] }>("/crimes"),
+  list: () => request<{ turns: number; crimes: any[]; locked: any[]; stats?: { totalCrimes: number; totalSuccesses: number; totalCash: number } }>("/crimes"),
   commit: (id: number, times = 1) =>
     request<any>(`/crimes/${id}/commit`, { method: "POST", body: JSON.stringify({ times }) }),
 };
@@ -91,6 +91,7 @@ export const pvp = {
       method: "POST",
       body: JSON.stringify({ type }),
     }),
+  log: () => request<any[]>("/pvp/log"),
 };
 
 // Market

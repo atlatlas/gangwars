@@ -206,8 +206,8 @@ export default function GameLayout({ children }: GameLayoutProps) {
             )}
             {jailRemaining > 0 && (
               <>
-                <div className="w-px h-3 md:h-4 bg-white/5 shrink-0 hidden sm:block" />
-                <span className="text-[9px] md:text-[10px] text-yellow-500 uppercase tracking-wider font-mono bg-yellow-500/10 px-1.5 md:px-2 py-0.5 rounded border border-yellow-500/20 shrink-0 hidden sm:inline">
+                <div className="w-px h-3 md:h-4 bg-white/5 shrink-0" />
+                <span className="text-[9px] md:text-[10px] text-yellow-500 uppercase tracking-wider font-mono bg-yellow-500/10 px-1.5 md:px-2 py-0.5 rounded border border-yellow-500/20 shrink-0">
                   Jail {jailRemaining}m
                 </span>
               </>
@@ -236,8 +236,11 @@ export default function GameLayout({ children }: GameLayoutProps) {
         {/* Mobile drawer — rendered outside the hidden wrapper so fixed positioning works */}
         <Sidebar mobileOpen={mobileMenuOpen} onMobileClose={() => setMobileMenuOpen(false)} />
 
-        <main className="flex-1 min-w-0 pb-4 md:pb-8">
-          {children}
+        <main className="flex-1 min-w-0 pb-4 md:pb-8 relative">
+          <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-45" aria-hidden="true" />
+          <div className="relative z-10">
+            {children}
+          </div>
         </main>
       </div>
     </div>

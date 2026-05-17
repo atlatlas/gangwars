@@ -5,7 +5,8 @@ import GameLayout from "@/components/GameLayout";
 import { bank as bankApi, gangs as gangsApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { useTopNotification } from "@/components/TopNotification";
-import { Building, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Shield, TrendingUp, Users, TrendingDown, Search, SortAsc, Package, Crosshair, Skull, Hand, VenetianMask, Gem } from "lucide-react";
+import Image from "next/image";
+import { Building, DollarSign, ArrowUpRight, ArrowDownRight, Loader2, Shield, TrendingUp, Users, TrendingDown, Search, SortAsc, Package, Crosshair, Skull, Hand, VenetianMask, Gem, Star } from "lucide-react";
 
 // ─── Interest Projection Chart ───
 
@@ -246,16 +247,39 @@ export default function BankPage() {
 
   return (
     <GameLayout>
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5 reveal">
-          <div>
-            <h1 className="text-lg font-mono tracking-wider text-white/90 flex items-center gap-2 uppercase">
-              <Building size={16} className="text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.3)]" /> Bank
-            </h1>
-            <p className="text-xs font-mono text-white/30 tracking-wider mt-1">Secure your cash from mugging</p>
+      {/* Hero Section */}
+      <div className="relative mb-0 h-[180px] md:h-[260px]">
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5" />
+        <Image
+          src="/bank.png?v=1"
+          alt="Bank"
+          width={1897}
+          height={829}
+          className="w-full h-full max-h-[200px] md:max-h-[280px] object-cover object-bottom relative z-0"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
+          <div className="flex items-center gap-2">
+            <Building size={18} className="text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.3)]" />
+            <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">Bank</h1>
+          </div>
+          <div className="w-36 h-px bg-cyan-400/40 mt-1 mb-2" />
+          <div className="bg-black/30 backdrop-blur-sm rounded-sm px-2 py-1.5 mb-1 -mx-1 border-t border-l border-white/10">
+            <p className="text-[10px] md:text-xs font-mono text-white/60 tracking-wider">
+              Secure your cash — deposit earns 0.4% daily interest.
+              <br />Invest in other gangs for a share of their profits.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
+            <Star size={10} className="text-cyan-400 drop-shadow-[0_0_4px_rgba(34,211,238,0.5)]" fill="#22d3ee" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-cyan-500/40 to-transparent" />
           </div>
         </div>
+      </div>
+      <div className="shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-cyan-500/15">
+        <div className="max-w-5xl mx-auto px-4 py-6">
 
         {/* Balance cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
@@ -530,6 +554,7 @@ export default function BankPage() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </GameLayout>
   );

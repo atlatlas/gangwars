@@ -4,27 +4,14 @@ import { db, schema } from "../db";
 import { eq, and, sql } from "drizzle-orm";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
 import { logActivityEvent } from "./activityEvents";
+import { parseItemEffects } from "../utils/itemEffects";
 
 export const marketRouter = Router();
 
 // ─── Helpers ───
 
-interface ItemEffects {
-  crimeBonus?: number;
-  pvpPower?: number;
-  arrestReduction?: number;
-  hpBonus?: number;
-  passiveIncome?: number;
-  drugProduction?: number;
-  incomePerHour?: number;
-}
-
-function getItemEffects(item: typeof schema.items.$inferSelect): ItemEffects {
-  try {
-    return JSON.parse(item.effects);
-  } catch {
-    return {};
-  }
+function getItemEffects(item: typeof schema.items.$inferSelect) {
+  return parseItemEffects(item.effects);
 }
 
 function refreshDrugPrices(): boolean {

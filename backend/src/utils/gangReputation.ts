@@ -70,3 +70,62 @@ function updateContractProgress(gangId: number, userId: number, type: "earn_cash
     }).run();
   }
 }
+
+/**
+ * Record a gang daily task completion for the user, if they are assigned
+ * to an active operation whose dailyTaskType matches `requiredTaskType`.
+ */
+export function recordGangDailyTask(userId: number, requiredTaskType: string): void {
+  const gm = db.select({ gangId: schema.gangMembers.gangId })
+    .from(schema.gangMembers)
+    .where(eq(schema.gangMembers.userId, userId))
+    .all()[0];
+  if (!gm) return;
+
+  const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
+    .from(schema.gangOperationAssignments)
+    .where(and(
+      eq(schema.gangOperationAssignments.userId, userId),
+      eq(schema.gangOperationAssignments.gangId, gm.gangId),
+    ))
+    .all()[0];
+  if (!assignment) return;
+
+  const activeOp = db.select()
+    .from(schema.gangActiveOperations)
+    .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
+    .all()[0];
+  if (!activeOp) return;
+
+  const opDef = db.select()
+    .from(schema.gangOperationDefs)
+    .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
+    .all()[0];
+  if (!opDef || opDef.dailyTaskType !== requiredTaskType) return;
+
+  const today = new Date().toISOString().split("T")[0];
+  const existingTask = db.select()
+    .from(schema.gangDailyTasks)
+    .where(and(
+      eq(schema.gangDailyTasks.userId, userId),
+      eq(schema.gangDailyTasks.operationDefId, opDef.id),
+      eq(schema.gangDailyTasks.taskDate, today),
+    ))
+    .all()[0];
+  const now = new Date().toISOString();
+  if (!existingTask) {
+    db.insert(schema.gangDailyTasks).values({
+      gangId: gm.gangId,
+      userId,
+      operationDefId: opDef.id,
+      taskDate: today,
+      completed: true,
+      verifiedAt: now,
+    }).run();
+  } else if (!existingTask.completed) {
+    db.update(schema.gangDailyTasks)
+      .set({ completed: true, verifiedAt: now })
+      .where(eq(schema.gangDailyTasks.id, existingTask.id))
+      .run();
+  }
+}

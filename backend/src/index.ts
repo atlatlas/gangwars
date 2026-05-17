@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { authRouter } from "./routes/auth";
@@ -37,6 +38,23 @@ const io = new Server(httpServer, {
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+
+// Rate limiting
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(generalLimiter);
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api/auth", authLimiter);
 
 // API routes
 app.use("/api/auth", authRouter);

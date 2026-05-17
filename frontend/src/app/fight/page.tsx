@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GameLayout from "@/components/GameLayout";
 import { pvp, profileExt } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { PlayerIntel, AttackResult } from "@/types";
-import { Swords, Search, Skull, Shield, Crosshair, AlertTriangle, Zap, TrendingUp, Terminal } from "lucide-react";
+import Image from "next/image";
+import { Swords, Search, Skull, Shield, Crosshair, AlertTriangle, Zap, TrendingUp, Terminal, Clock, ChevronDown, ChevronUp, Star } from "lucide-react";
 
 export default function FightPage() {
   const { user, refreshUser } = useUser();
@@ -18,6 +19,15 @@ export default function FightPage() {
   const [result, setResult] = useState<AttackResult | null>(null);
   const [hackResult, setHackResult] = useState<{ success: boolean; targetUsername: string; respectStolen: number; turnsLeft: number } | null>(null);
   const [error, setError] = useState("");
+  const [combatLog, setCombatLog] = useState<any[]>([]);
+  const [logOpen, setLogOpen] = useState(false);
+  const [loadingLog, setLoadingLog] = useState(false);
+
+  useEffect(() => {
+    if (!logOpen || combatLog.length > 0) return;
+    setLoadingLog(true);
+    pvp.log().then(data => setCombatLog(data)).catch(() => {}).finally(() => setLoadingLog(false));
+  }, [logOpen, combatLog.length]);
 
   const handleSearch = async (q: string) => {
     setQuery(q);
@@ -86,6 +96,16 @@ export default function FightPage() {
     }
   };
 
+  function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  }
+
   const threatColor = (threat: string) => {
     switch (threat) {
       case "Easy": return "text-pink-300";
@@ -98,13 +118,39 @@ export default function FightPage() {
 
   return (
     <GameLayout>
-      <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="mb-5 reveal">
-        <h1 className="text-lg font-mono tracking-wider text-white/90 flex items-center gap-2 uppercase">
-          <Swords size={16} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" /> Fight
-        </h1>
-        <p className="text-xs font-mono text-white/30 tracking-wider mt-1">Find and attack other players</p>
+      {/* Hero Section */}
+      <div className="relative mb-0 h-[180px] md:h-[260px]">
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5" />
+        <Image
+          src="/fight.png?v=1"
+          alt="Fight"
+          width={1897}
+          height={829}
+          className="w-full h-full max-h-[200px] md:max-h-[280px] object-cover object-bottom relative z-0"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
+          <div className="flex items-center gap-2">
+            <Swords size={18} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" />
+            <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">Fight</h1>
+          </div>
+          <div className="w-36 h-px bg-pink-400/40 mt-1 mb-2" />
+          <div className="bg-black/30 backdrop-blur-sm rounded-sm px-2 py-1.5 mb-1 -mx-1 border-t border-l border-white/10">
+            <p className="text-[10px] md:text-xs font-mono text-white/60 tracking-wider">
+              Find and attack other players — mug, ambush, rob, or put a hit on them.
+              <br />Higher respect gives you an intimidation edge in combat.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+            <Star size={10} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.5)]" fill="#f472b6" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+          </div>
+        </div>
       </div>
+      <div className="shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-pink-500/15">
+        <div className="max-w-5xl mx-auto px-4 py-6">
 
       {/* Search */}
       <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-3.5 mb-4 reveal reveal-delay-1">
@@ -387,7 +433,65 @@ export default function FightPage() {
           </button>
         </div>
       )}
+
+      {/* Combat Log */}
+      <div className="rounded-sm border border-white/5 bg-bg-dark/80 p-3.5 reveal">
+        <button
+          onClick={() => setLogOpen(!logOpen)}
+          className="w-full flex items-center justify-between text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-white/30" />
+            <span className="font-mono text-xs tracking-wider text-white/50 uppercase">Combat Log</span>
+          </div>
+          {logOpen ? <ChevronUp size={14} className="text-white/30" /> : <ChevronDown size={14} className="text-white/30" />}
+        </button>
+
+        {logOpen && (
+          <div className="mt-3 space-y-1">
+            {loadingLog && <p className="text-xs font-mono text-white/20 text-center py-3">Loading...</p>}
+            {!loadingLog && combatLog.length === 0 && (
+              <p className="text-xs font-mono text-white/20 text-center py-3">No fights yet</p>
+            )}
+            {combatLog.map((fight) => {
+              const iWon = (fight.attackerId === user?.id) === fight.attackerWin;
+              return (
+                <div
+                  key={fight.id}
+                  className={`rounded-sm px-3 py-2 border text-xs font-mono ${
+                    iWon
+                      ? "bg-pink-500/[0.03] border-pink-500/10"
+                      : "bg-cyan-500/[0.03] border-cyan-500/10"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={iWon ? "text-pink-400/80" : "text-cyan-400/80"}>
+                      {iWon ? "WON" : "LOST"} {fight.attackType.toUpperCase()}
+                    </span>
+                    <span className="text-white/20 text-[10px]">{timeAgo(fight.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-white/40 text-[11px]">
+                    <span className={fight.attackerId === user?.id ? "text-white/60" : ""}>{fight.attackerUsername}</span>
+                    <span className="text-white/20">vs</span>
+                    <span className={fight.defenderId === user?.id ? "text-white/60" : ""}>{fight.defenderUsername}</span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-[10px]">
+                    <span className="text-white/25">DMG: <span className="text-pink-300/60">{fight.damageDealt}</span> / <span className="text-cyan-300/60">{fight.damageTaken}</span></span>
+                    {fight.lootCash > 0 && <span className="text-pink-300/60">+${fight.lootCash}</span>}
+                    {fight.respectChange !== 0 && (
+                      <span className={fight.respectChange > 0 ? "text-pink-300/60" : "text-cyan-300/60"}>
+                        {fight.respectChange > 0 ? "+" : ""}{fight.respectChange} rep
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
+      </div>
+    </div>
     </GameLayout>
   );
 }

@@ -299,10 +299,10 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
               Your Stash ({holdings.length} types)
             </span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="bg-bg-deep border border-white/5 rounded-sm p-3 space-y-3 overflow-x-auto w-full shadow-[0_-6px_12px_-4px_rgba(0,0,0,0.6)]">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="text-[10px] font-mono text-white/30 uppercase tracking-wider border-b border-white/5">
+                <tr className="text-[10px] font-mono text-white/30 uppercase tracking-wider border-b border-white/10">
                   <th className="pb-2 pr-3">Drug</th>
                   <th className="pb-2 pr-3">Qty</th>
                   <th className="pb-2 pr-3">Avg Price</th>
@@ -367,12 +367,12 @@ export default function DrugMarketPanel({ onRefreshUser }: { onRefreshUser: () =
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="flex justify-end gap-4 text-[11px] font-mono pt-1">
+          <div className="flex justify-end gap-4 text-[11px] font-mono pt-2 border-t border-white/5">
             <span className="text-white/40">Invested: <span className="text-white/60">${totalInvested.toLocaleString()}</span></span>
             <span className="text-white/40">P&L: <span className={totalPnl >= 0 ? "text-neon-green" : "text-neon-red"}>
               {totalPnl >= 0 ? "+" : ""}${totalPnl.toLocaleString()}
             </span></span>
+          </div>
           </div>
         </div>
       )}

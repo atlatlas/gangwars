@@ -16,18 +16,27 @@ function calcLevel(influence: number): number {
 }
 
 export class TurfEngine {
-  private intervalId: NodeJS.Timeout | null = null;
+  private timeoutId: NodeJS.Timeout | null = null;
 
   start(): void {
-    this.intervalId = setInterval(() => this.tick(), TICK_INTERVAL);
+    this.scheduleTick();
     console.log("[TurfEngine] Started — 5min tick interval");
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
+  }
+
+  private scheduleTick(): void {
+    const now = Date.now();
+    const nextTick = Math.ceil(now / TICK_INTERVAL) * TICK_INTERVAL;
+    this.timeoutId = setTimeout(() => {
+      this.tick();
+      this.scheduleTick();
+    }, nextTick - now);
   }
 
   private tick(): void {

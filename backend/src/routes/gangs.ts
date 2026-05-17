@@ -6,6 +6,8 @@ import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/a
 import { logActivityEvent } from "./activityEvents";
 import { addGangReputation } from "../utils/gangReputation";
 import { TurfEngine } from "../engine/turfEngine";
+import { getRepToNext, getLevelBenefits, getActiveContract, generateContract, checkAndResetExpiredContract } from "../utils/gangContracts";
+import { processSalaryPayout, processOperationPayout } from "../utils/gangFinance";
 
 export const gangsRouter = Router();
 
@@ -70,87 +72,6 @@ function getMemberCount(gangId: number): number {
     .where(eq(schema.gangMembers.gangId, gangId))
     .all()[0];
   return result?.count ?? 0;
-}
-
-// ─── Gang Leveling Helpers ───
-
-function getRepToNext(level: number): number {
-  return Math.floor(500 * Math.pow(level, 1.5));
-}
-
-function getLevelBenefits(level: number) {
-  return {
-    maxMembers: 10 + (level - 1) * 2,
-    vaultCapacity: 100000 + (level - 1) * 50000,
-    crimeBonus: (level - 1) * 1,
-    pvpBonus: (level - 1) * 2,
-    incomeBonus: 0,
-    tagColor: level >= 10 ? "red" : level >= 5 ? "gold" : level >= 3 ? "cyan" : "purple",
-  };
-}
-
-function getActiveContract(gangId: number) {
-  const contract = db.select()
-    .from(schema.gangContracts)
-    .where(eq(schema.gangContracts.gangId, gangId))
-    .all()[0];
-  if (!contract) return null;
-
-  const contributors = db.select({
-    userId: schema.gangContractContributors.userId,
-    username: schema.users.username,
-    contribution: schema.gangContractContributors.contribution,
-  })
-    .from(schema.gangContractContributors)
-    .innerJoin(schema.users, eq(schema.gangContractContributors.userId, schema.users.id))
-    .where(eq(schema.gangContractContributors.contractId, contract.id))
-    .all();
-
-  return {
-    type: contract.contractType,
-    target: contract.target,
-    progress: contract.progress,
-    deadline: contract.deadline,
-    completed: contract.completed === 1,
-    contributors,
-  };
-}
-
-function generateContract(gangId: number, level: number) {
-  const types: Array<"earn_cash" | "pvp_wins" | "vault_deposits" | "crimes"> = [
-    "earn_cash", "pvp_wins", "vault_deposits", "crimes",
-  ];
-  const type = types[Math.floor(Math.random() * types.length)];
-
-  let target: number;
-  switch (type) {
-    case "earn_cash": target = level * 20000 + 10000; break;
-    case "pvp_wins": target = level * 5 + 3; break;
-    case "vault_deposits": target = level * 15000 + 5000; break;
-    case "crimes": target = level * 15; break;
-  }
-
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-  const deadline = new Date(now);
-  deadline.setDate(deadline.getDate() + daysUntilSunday);
-  deadline.setHours(23, 59, 59, 999);
-
-  const weekStart = new Date(now);
-  weekStart.setDate(weekStart.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
-
-  db.insert(schema.gangContracts).values({
-    gangId,
-    contractType: type,
-    target,
-    progress: 0,
-    weekStart: weekStart.toISOString(),
-    deadline: deadline.toISOString(),
-    completed: 0,
-    createdAt: now.toISOString(),
-  }).run();
 }
 
 // GET /api/gangs — list all gangs with member count
@@ -475,72 +396,18 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
       .where(eq(schema.gangActiveOperations.gangId, gangId))
       .all()[0];
     if (activeOp && activeOp.lastPayoutAt) {
-      const elapsedHours = (Date.now() - new Date(activeOp.lastPayoutAt).getTime()) / 3600000;
-      if (elapsedHours >= 24) {
-        const def = db.select()
-          .from(schema.gangOperationDefs)
-          .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
-          .all()[0];
-        if (def) {
-          const today = new Date().toISOString().split("T")[0];
-          const incomeRate = activeOp.level === 3 ? def.incomePerMemberL3
-            : activeOp.level === 2 ? def.incomePerMemberL2
-            : def.incomePerMemberL1;
-          const completedCount = db.select({ count: sql<number>`COUNT(*)` })
-            .from(schema.gangDailyTasks)
-            .where(and(
-              eq(schema.gangDailyTasks.gangId, gangId),
-              eq(schema.gangDailyTasks.operationDefId, def.id),
-              eq(schema.gangDailyTasks.taskDate, today),
-              eq(schema.gangDailyTasks.completed, true),
-            ))
-            .all()[0]?.count ?? 0;
-          if (completedCount > 0) {
-            const totalIncome = completedCount * incomeRate;
-            const investorSharePct = gang.investorShare ?? 30;
-            const investorPortion = Math.floor(totalIncome * investorSharePct / 100);
-            const vaultPortion = totalIncome - investorPortion;
-
-            // Track investor returns (must be collected manually)
-            if (investorPortion > 0 && (gang.totalInvestments ?? 0) > 0) {
-              const investors = db.select()
-                .from(schema.gangInvestments)
-                .where(and(
-                  eq(schema.gangInvestments.gangId, gangId),
-                  sql`${schema.gangInvestments.amount} > 0`,
-                ))
-                .all();
-              for (const inv of investors) {
-                const share = Math.floor(investorPortion * inv.amount / gang.totalInvestments!);
-                if (share > 0) {
-                  db.update(schema.gangInvestments)
-                    .set({ returnsEarned: sql`${schema.gangInvestments.returnsEarned} + ${share}` })
-                    .where(eq(schema.gangInvestments.id, inv.id))
-                    .run();
-                }
-              }
-            }
-
-            db.update(schema.gangs)
-              .set({ vault: sql`vault + ${vaultPortion}` })
-              .where(eq(schema.gangs.id, gangId))
-              .run();
-            // Record payout history (total income, not just vault portion)
-            db.insert(schema.gangOperationPayouts).values({
-              gangId,
-              operationDefId: def.id,
-              level: activeOp.level,
-              amountPerMember: incomeRate,
-              totalPayout: totalIncome,
-              eligibleMemberCount: completedCount,
-              paidAt: now.toISOString(),
-            }).run();
-          }
-          db.update(schema.gangActiveOperations)
-            .set({ lastPayoutAt: now.toISOString() })
-            .where(eq(schema.gangActiveOperations.id, activeOp.id))
-            .run();
-        }
+      const def = db.select()
+        .from(schema.gangOperationDefs)
+        .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
+        .all()[0];
+      if (def) {
+        processOperationPayout(
+          gangId,
+          activeOp,
+          def,
+          gang.investorShare ?? 30,
+          gang.totalInvestments ?? 0,
+        );
       }
     }
 
@@ -548,49 +415,7 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
     if (gang.accountantId && gang.lastSalaryPayout) {
       const elapsedHours = (Date.now() - new Date(gang.lastSalaryPayout).getTime()) / 3600000;
       if (elapsedHours >= 24) {
-        const salaryMembers = db.select({
-          userId: schema.gangMembers.userId,
-          username: schema.users.username,
-          salary: schema.gangMembers.salary,
-        })
-          .from(schema.gangMembers)
-          .innerJoin(schema.users, eq(schema.gangMembers.userId, schema.users.id))
-          .where(and(
-            eq(schema.gangMembers.gangId, gangId),
-            sql`${schema.gangMembers.salary} > 0`,
-          ))
-          .all();
-
-        if (salaryMembers.length > 0) {
-          const totalSalaries = salaryMembers.reduce((sum, m) => sum + (m.salary ?? 0), 0);
-          const accountantFee = Math.ceil(totalSalaries * 0.02);
-          const totalCost = totalSalaries + accountantFee;
-
-          if (gang.vault >= totalCost) {
-            db.transaction(() => {
-              // Deduct from vault
-              db.update(schema.gangs)
-                .set({ vault: gang.vault - totalCost })
-                .where(eq(schema.gangs.id, gangId))
-                .run();
-
-              // Pay each member
-              for (const m of salaryMembers) {
-                if (m.salary > 0) {
-                  db.update(schema.users)
-                    .set({ cash: sql`cash + ${m.salary}` })
-                    .where(eq(schema.users.id, m.userId))
-                    .run();
-                }
-              }
-
-              // 2% accountant fee is burnt (overhead cost)
-            });
-
-            gang.vault -= totalCost;
-          }
-        }
-
+        processSalaryPayout(gangId);
         db.update(schema.gangs)
           .set({ lastSalaryPayout: now.toISOString() })
           .where(eq(schema.gangs.id, gangId))
@@ -690,37 +515,10 @@ gangsRouter.get("/:id", authMiddleware, (req: AuthRequest, res: Response) => {
     }
 
     // Check if deadline passed on active contract → reset progress
-    const existingContract = db.select()
-      .from(schema.gangContracts)
-      .where(eq(schema.gangContracts.gangId, gangId))
-      .all()[0];
-    if (existingContract) {
-      const now2 = new Date();
-      if (new Date(existingContract.deadline) < now2 && !existingContract.completed) {
-        // Reset progress
-        db.update(schema.gangContracts)
-          .set({ progress: 0, completed: 0 })
-          .where(eq(schema.gangContracts.id, existingContract.id))
-          .run();
-        // Delete stale contributor records
-        db.delete(schema.gangContractContributors)
-          .where(eq(schema.gangContractContributors.contractId, existingContract.id))
-          .run();
-        contract = {
-          type: existingContract.contractType,
-          target: existingContract.target,
-          progress: 0,
-          deadline: existingContract.deadline,
-          completed: false,
-          contributors: [],
-        };
-      } else {
-        contract = getActiveContract(gangId);
-      }
-    }
+    contract = checkAndResetExpiredContract(gangId);
 
     // Auto-generate contract if at threshold and no active contract
-    if (!existingContract && gang.reputation >= reputationToNext) {
+    if (!contract && gang.reputation >= reputationToNext) {
       generateContract(gangId, gang.level);
       contract = getActiveContract(gangId);
     }

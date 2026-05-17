@@ -54,6 +54,7 @@ export default function DashboardPage() {
   const [showStatTip, setShowStatTip] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 const [hoveredStat, setHoveredStat] = useState<string | null>(null);
+const [pinnedStat, setPinnedStat] = useState<string | null>(null);
   const lastHoveredRef = useRef<string | null>(null);
   const [feed, setFeed] = useState<FeedEntry[]>([]);
   const [feedLoading, setFeedLoading] = useState(false);
@@ -234,7 +235,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
   return (
     <GameLayout>
       {/* Hero Section — full viewport width, direct child of main */}
-      <div className="relative mb-0">
+      <div className="relative mb-0 min-h-[280px] md:min-h-[360px]">
 
         <div
           className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5"
@@ -245,7 +246,7 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
           alt="Your Character"
           width={1897}
           height={829}
-          className="w-full h-auto max-h-[300px] md:max-h-[380px] object-cover object-bottom relative z-0"
+          className="w-full h-full max-h-[300px] md:max-h-[380px] object-cover object-bottom relative z-0"
           priority
         />
 
@@ -253,11 +254,11 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         <div className="absolute inset-0 bg-gradient-to-t from-bg-deep/90 via-bg-deep/30 to-transparent" />
 
         {/* Logo — right on mobile, centered on desktop */}
-        <div className="absolute top-[38%] right-4 sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2 z-10">
+        <div className="absolute top-[32%] right-4 sm:top-[42%] sm:left-1/2 sm:right-auto -translate-y-1/2 sm:-translate-x-1/2 z-10">
           <img
             src="/logo.png"
             alt="Gang Wars"
-            className="h-32 md:h-40 w-auto"
+            className="h-40 md:h-52 w-auto"
             style={{ filter: 'drop-shadow(0 0 32px rgba(147,51,234,0.6))', animation: 'logoGlow 6s ease-in-out infinite' }}
           />
         </div>
@@ -403,14 +404,19 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
                 {stats.map((stat) => (
                   <div
                     key={stat.key}
-                    className={`flex flex-1 cursor-default transition-all duration-150 ${
-                      hoveredStat && hoveredStat !== stat.key ? "opacity-40" : ""
+                    className={`flex flex-1 cursor-pointer transition-all duration-150 ${
+                      (hoveredStat ?? pinnedStat) && (hoveredStat ?? pinnedStat) !== stat.key ? "opacity-40" : ""
                     }`}
                     onMouseEnter={() => {
                       lastHoveredRef.current = stat.key;
                       setHoveredStat(stat.key);
                     }}
-                    onMouseLeave={() => setHoveredStat(null)}
+                    onMouseLeave={() => {
+                      if (!pinnedStat) setHoveredStat(null);
+                    }}
+                    onClick={() => {
+                      setPinnedStat(pinnedStat === stat.key ? null : stat.key);
+                    }}
                   >
                     <div className="flex items-center gap-1 flex-1">
                       <span className={`text-xs font-mono uppercase drop-shadow-lg ${stat.colorClass}`}>{stat.label.substring(0, 3)}</span>
@@ -458,18 +464,17 @@ const [hoveredStat, setHoveredStat] = useState<string | null>(null);
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-bg-deep via-bg-deep/50 to-transparent pointer-events-none" />
       </div>
 
-      {/* Content area with bg.png background below hero */}
+      {/* Content area below hero */}
       <div className="relative shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-purple-500/15">
-        <div className="absolute inset-0 z-0 bg-[url('/bg.png')] bg-cover bg-center bg-repeat-y pointer-events-none opacity-45" aria-hidden="true" />
 
       {/* Stat info panel — between hero and dashboard, no clipping */}
       <div
         className={`border-b border-white/5 overflow-hidden transition-all duration-300 ease-in-out ${
-          hoveredStat !== null ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
+          (hoveredStat ?? pinnedStat) !== null ? 'max-h-32 opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         {(() => {
-          const activeKey = hoveredStat || lastHoveredRef.current;
+          const activeKey = hoveredStat ?? pinnedStat ?? lastHoveredRef.current;
           const stat = activeKey ? stats.find(s => s.key === activeKey) : null;
           if (!stat) return null;
           const colorMap: Record<string, { bar: string; bg: string; text: string; border: string }> = {

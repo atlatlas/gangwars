@@ -6,14 +6,9 @@ import { authMiddleware, AuthRequest, hpCheck } from "../middleware/auth";
 import { refreshTurns } from "./turns";
 import { logActivityEvent } from "./activityEvents";
 import { applyArsenalDurabilityLoss, getUserGangId } from "../utils/arsenalDurability";
-import { addGangReputation } from "../utils/gangReputation";
+import { addGangReputation, recordGangDailyTask } from "../utils/gangReputation";
 import { getCrimeRespectBonus } from "../utils/respect";
-
-interface ItemEffects {
-  crimeBonus?: number;
-  pvpPower?: number;
-  arrestReduction?: number;
-}
+import { parseItemEffects } from "../utils/itemEffects";
 
 interface CrimeBonuses {
   crimeBonus: number;
@@ -46,23 +41,19 @@ function getCrimeBonuses(userId: number): CrimeBonuses {
   let arrestReduction = 0;
 
   if (weaponRow) {
-    try {
-      const effects = JSON.parse(weaponRow.item.effects) as ItemEffects;
-      crimeBonus += effects.crimeBonus ?? 0;
-    } catch {}
+    const effects = parseItemEffects(weaponRow.item.effects);
+    crimeBonus += effects.crimeBonus ?? 0;
   }
 
   // Group footmen by itemId to cap each type at 3 effective copies
   const footmenByType = new Map<number, { count: number; bonus: number; reduction: number }>();
   for (const f of footmenRows) {
-    try {
-      const effects = JSON.parse(f.item.effects) as ItemEffects;
-      const entry = footmenByType.get(f.item.id) || { count: 0, bonus: 0, reduction: 0 };
-      entry.count++;
-      entry.bonus += effects.crimeBonus ?? 0;
-      entry.reduction += effects.arrestReduction ?? 0;
-      footmenByType.set(f.item.id, entry);
-    } catch {}
+    const effects = parseItemEffects(f.item.effects);
+    const entry = footmenByType.get(f.item.id) || { count: 0, bonus: 0, reduction: 0 };
+    entry.count++;
+    entry.bonus += effects.crimeBonus ?? 0;
+    entry.reduction += effects.arrestReduction ?? 0;
+    footmenByType.set(f.item.id, entry);
   }
   // Apply cap: each footman type contributes at most 3 copies worth
   for (const entry of footmenByType.values()) {
@@ -150,7 +141,17 @@ crimesRouter.get("/", authMiddleware, async (req: AuthRequest, res: Response) =>
         successChance: 0,
       }));
 
-    res.json({ turns: refreshedTurns, crimes: available, locked });
+    // Player crime statistics
+    const stats = db.select({
+      totalCrimes: sql<number>`COUNT(*)`,
+      totalSuccesses: sql<number>`SUM(CASE WHEN ${schema.crimeLog.success} = 1 THEN 1 ELSE 0 END)`,
+      totalCash: sql<number>`COALESCE(SUM(${schema.crimeLog.reward}), 0)`,
+    })
+      .from(schema.crimeLog)
+      .where(eq(schema.crimeLog.userId, req.userId!))
+      .all()[0];
+
+    res.json({ turns: refreshedTurns, crimes: available, locked, stats });
   } catch (err) {
     console.error("Crimes list error:", err);
     res.status(500).json({ error: "Server error" });
@@ -206,16 +207,15 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
     let totalRespectGained = 0;
     let drugsConfiscatedFinal: { name: string; quantity: number } | null = null;
 
-    for (let i = 0; i < times; i++) {
-      // Re-fetch fresh state each iteration (cash/hp/jail may have changed)
-      const currentUser = await db.query.users.findFirst({
-        where: eq(schema.users.id, req.userId!),
-      });
-      if (!currentUser) break;
-      if (currentUser.jailUntil && new Date(currentUser.jailUntil) > new Date()) break;
-      if (currentUser.hp <= 0) break;
+    // Track mutable state in-memory instead of re-fetching every iteration
+    let mutableHp = user.hp;
+    let mutableJailUntil = user.jailUntil;
 
-      const successChance = calcSuccess(currentUser, crime, bonuses);
+    for (let i = 0; i < times; i++) {
+      if (mutableJailUntil && new Date(mutableJailUntil) > new Date()) break;
+      if (mutableHp <= 0) break;
+
+      const successChance = calcSuccess(user, crime, bonuses);
       const success = Math.random() * 100 < successChance;
 
       let reward = 0;
@@ -232,17 +232,12 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
         if (crime.riskLevel === "low") respectGained = 1 + Math.floor(Math.random() * 3);
         else if (crime.riskLevel === "medium") respectGained = 3 + Math.floor(Math.random() * 6);
         else respectGained = 8 + Math.floor(Math.random() * 8);
-        respectGained += Math.floor(currentUser.level / 10);
+        respectGained += Math.floor(user.level / 10);
         totalRespectGained += respectGained;
 
-        db.update(schema.users)
-          .set({
-            cash: currentUser.cash + reward,
-            xp: currentUser.xp + xpGained,
-            respect: currentUser.respect + respectGained,
-          })
-          .where(eq(schema.users.id, user.id))
-          .run();
+        user.cash += reward;
+        user.xp += xpGained;
+        user.respect += respectGained;
 
         // Log big scores to activity feed
         if (reward >= 10000) {
@@ -256,19 +251,16 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
           hpLost = 5 + Math.floor(Math.random() * 10);
         } else if (crime.riskLevel === "medium") {
           hpLost = 15 + Math.floor(Math.random() * 15);
-          const cashLost = Math.floor(Math.max(0, currentUser.cash) * (0.1 + Math.random() * 0.1));
-          db.update(schema.users)
-            .set({ cash: Math.max(0, currentUser.cash - cashLost) })
-            .where(eq(schema.users.id, user.id))
-            .run();
+          const cashLost = Math.floor(Math.max(0, user.cash) * (0.1 + Math.random() * 0.1));
+          user.cash = Math.max(0, user.cash - cashLost);
         } else {
           hpLost = 30 + Math.floor(Math.random() * 20);
           if (Math.random() < 0.3) {
             const jailMinutes = 10 + Math.floor(Math.random() * 20);
             arrested = true;
-            const jailUntil = new Date(Date.now() + jailMinutes * 60000).toISOString();
+            mutableJailUntil = new Date(Date.now() + jailMinutes * 60000).toISOString();
             db.update(schema.users)
-              .set({ jailUntil })
+              .set({ jailUntil: mutableJailUntil })
               .where(eq(schema.users.id, user.id))
               .run();
 
@@ -276,15 +268,13 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
               `Got arrested attempting ${crime.name}! Sentenced to ${jailMinutes} minutes.`,
               { crimeName: crime.name, jailMinutes });
           }
-          const cashLost = Math.floor(Math.max(0, currentUser.cash) * (0.15 + Math.random() * 0.15));
-          db.update(schema.users)
-            .set({ cash: Math.max(0, currentUser.cash - cashLost) })
-            .where(eq(schema.users.id, user.id))
-            .run();
+          const cashLost = Math.floor(Math.max(0, user.cash) * (0.15 + Math.random() * 0.15));
+          user.cash = Math.max(0, user.cash - cashLost);
         }
 
-        // Apply HP loss
-        const newHp = Math.max(0, currentUser.hp - hpLost);
+        // Apply HP loss (keep DB write for crash recovery)
+        const newHp = Math.max(0, mutableHp - hpLost);
+        mutableHp = newHp;
         db.update(schema.users)
           .set({ hp: newHp })
           .where(eq(schema.users.id, user.id))
@@ -358,6 +348,12 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
       if (arrested) break;
     }
 
+    // Batch-write accumulated cash/xp/respect
+    db.update(schema.users)
+      .set({ cash: user.cash, xp: user.xp, respect: user.respect })
+      .where(eq(schema.users.id, user.id))
+      .run();
+
     // Update player stats
     const pStats = await db.query.playerStats.findFirst({
       where: eq(schema.playerStats.userId, user.id),
@@ -389,59 +385,7 @@ crimesRouter.post("/:id/commit", authMiddleware, hpCheck, async (req: AuthReques
     }
 
     // Auto-track gang daily task for crime-type operations (once)
-    const gm = db.select({ gangId: schema.gangMembers.gangId })
-      .from(schema.gangMembers)
-      .where(eq(schema.gangMembers.userId, user.id))
-      .all()[0];
-    if (gm) {
-      // Check which active operation this member is assigned to
-      const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
-        .from(schema.gangOperationAssignments)
-        .where(and(
-          eq(schema.gangOperationAssignments.userId, user.id),
-          eq(schema.gangOperationAssignments.gangId, gm.gangId),
-        ))
-        .all()[0];
-      if (assignment) {
-        const activeOp = db.select()
-          .from(schema.gangActiveOperations)
-          .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
-          .all()[0];
-        if (activeOp) {
-        const opDef = db.select()
-          .from(schema.gangOperationDefs)
-          .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
-          .all()[0];
-        if (opDef && opDef.dailyTaskType === "crime") {
-          const today = new Date().toISOString().split("T")[0];
-          const existingTask = db.select()
-            .from(schema.gangDailyTasks)
-            .where(and(
-              eq(schema.gangDailyTasks.userId, user.id),
-              eq(schema.gangDailyTasks.operationDefId, opDef.id),
-              eq(schema.gangDailyTasks.taskDate, today),
-            ))
-            .all()[0];
-          const now = new Date().toISOString();
-          if (!existingTask) {
-            db.insert(schema.gangDailyTasks).values({
-              gangId: gm.gangId,
-              userId: user.id,
-              operationDefId: opDef.id,
-              taskDate: today,
-              completed: true,
-              verifiedAt: now,
-            }).run();
-          } else if (!existingTask.completed) {
-            db.update(schema.gangDailyTasks)
-              .set({ completed: true, verifiedAt: now })
-              .where(eq(schema.gangDailyTasks.id, existingTask.id))
-              .run();
-            }
-          }
-        }
-      }
-    }
+    recordGangDailyTask(user.id, "crime");
 
     // Get final user state for level-up check
     const finalUser = await db.query.users.findFirst({

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import GameLayout from "@/components/GameLayout";
 import CrimeCard from "@/components/CrimeCard";
 import SkillCrimeCard from "@/components/SkillCrimeCard";
@@ -12,7 +13,7 @@ import TerminalHackGame from "@/components/TerminalHackGame";
 import { crimes as crimesApi, skillCrimes as skillCrimesApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { Crime, SkillCrimeDefinition } from "@/types";
-import { Swords, Zap, Trophy, Skull, Crosshair } from "lucide-react";
+import { Swords, Zap, Trophy, Skull, Crosshair, Star } from "lucide-react";
 
 type Tab = "crimes" | "skill-crimes";
 
@@ -35,6 +36,8 @@ export default function CrimesPage() {
   const [skillTurns, setSkillTurns] = useState(0);
   const [skillLoading, setSkillLoading] = useState(false);
   const [playing, setPlaying] = useState<SkillCrimeDefinition | null>(null);
+  const [practicing, setPracticing] = useState<SkillCrimeDefinition | null>(null);
+  const [crimeStats, setCrimeStats] = useState<{ totalCrimes: number; totalSuccesses: number; totalCash: number } | null>(null);
 
   // Auto-dismiss notification
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function CrimesPage() {
       setCrimes(data.crimes);
       setLocked(data.locked);
       setTurns(data.turns);
+      if (data.stats) setCrimeStats(data.stats);
     } catch (err) {
       console.error("Failed to load crimes", err);
     } finally {
@@ -136,9 +140,84 @@ export default function CrimesPage() {
     }
   };
 
+  const handlePractice = (crime: SkillCrimeDefinition) => {
+    setPracticing(crime);
+  };
+
+  const handlePracticeResult = (accuracy: number) => {
+    if (!practicing) return;
+    notifKey.current++;
+    setNotif({
+      id: notifKey.current,
+      title: `${practicing.name} — Practice`,
+      message: accuracy >= 40
+        ? `Pass! ${accuracy}% accuracy (would earn $${Math.floor(practicing.rewardMin + (practicing.rewardMax - practicing.rewardMin) * ((accuracy - 40) / 60)).toLocaleString()})`
+        : `Failed (${accuracy}% accuracy — need 40% to pass)`,
+      type: accuracy >= 40 ? "success" : "error",
+    });
+    setPracticing(null);
+  };
+
   return (
     <GameLayout>
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      {/* Hero Section */}
+      <div className="relative mb-0 h-[180px] md:h-[260px]">
+
+        <div
+          className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5"
+        />
+
+        <Image
+          src="/crimes.png?v=2"
+          alt="Crimes"
+          width={1897}
+          height={829}
+          className="w-full h-full max-h-[200px] md:max-h-[280px] object-cover object-bottom relative z-0"
+          priority
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+
+        {/* Turns badge */}
+        <div className="absolute top-3 right-3 md:top-4 md:right-6 z-10 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm border border-white/10 rounded-sm px-2.5 py-1.5">
+          <Zap size={14} className="text-neon-yellow drop-shadow-[0_0_4px_rgba(250,204,21,0.3)]" />
+          <span className="font-mono text-xs text-cyan-300">{tab === "skill-crimes" ? skillTurns : turns}</span>
+          <span className="text-[10px] font-mono text-white/30">turns</span>
+        </div>
+
+        {/* Overlay title */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
+          <div className="flex items-center gap-2">
+            <Swords size={18} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" />
+            <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">Crimes</h1>
+          </div>
+          <div className="w-36 h-px bg-red-400/40 mt-1 mb-2" />
+          <div className="bg-black/30 backdrop-blur-sm rounded-sm px-2 py-1.5 mb-1 -mx-1 border-t border-l border-white/10">
+            <p className="text-[10px] md:text-xs font-mono text-white/60 tracking-wider">
+              From street-level hustles to high-stakes heists — use your turns to earn cash and XP.
+              <br />Higher stats improve your success chance. Some crimes require a minimum level.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+            <Star size={10} className="text-red-400 drop-shadow-[0_0_4px_rgba(239,68,68,0.5)]" fill="#f87171" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-red-500/40 to-transparent" />
+          </div>
+        </div>
+      </div>
+
+      {/* Content area */}
+      <div className="shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-purple-500/15">
+        <div className="max-w-5xl mx-auto px-4 py-6">
+        {crimeStats && (
+          <div className="flex items-center gap-3 mb-5 text-[10px] md:text-[11px] font-mono text-white/40">
+            <span>Total crimes: <span className="text-white/70">{crimeStats.totalCrimes}</span></span>
+            <span className="text-white/20">|</span>
+            <span>Success rate: <span className="text-emerald-400/70">{crimeStats.totalCrimes > 0 ? Math.round(crimeStats.totalSuccesses / crimeStats.totalCrimes * 100) : 0}%</span></span>
+            <span className="text-white/20 hidden sm:inline">|</span>
+            <span className="hidden sm:inline">Earned: <span className="text-cyan-300/70">${crimeStats.totalCash.toLocaleString()}</span></span>
+          </div>
+        )}
         {/* Top notification overlay — portaled to body */}
         {notif && createPortal(
           <div
@@ -174,18 +253,19 @@ export default function CrimesPage() {
         )}
 
         {/* Game modals — dispatch by crime ID */}
-        {playing && (() => {
-          const difficultyBonus = (playing.statValue / 10) + playing.skillLevel;
+        {(playing || practicing) && (() => {
+          const crime = playing ?? practicing!;
+          const difficultyBonus = (crime.statValue / 10) + crime.skillLevel;
           const props = {
-            speed: playing.timingSpeed,
-            rewardMin: playing.rewardMin,
-            rewardMax: playing.rewardMax,
-            crimeName: playing.name,
-            onResult: handleTimingResult,
-            onClose: () => setPlaying(null),
+            speed: crime.timingSpeed,
+            rewardMin: crime.rewardMin,
+            rewardMax: crime.rewardMax,
+            crimeName: crime.name,
+            onResult: practicing ? handlePracticeResult : handleTimingResult,
+            onClose: () => { setPlaying(null); setPracticing(null); },
             difficultyBonus,
           };
-          switch (playing.id) {
+          switch (crime.id) {
             case 1: return <TimingGame {...props} />;
             case 2: return <PickpocketGame {...props} />;
             case 3: return <MastermindGame {...props} />;
@@ -193,20 +273,6 @@ export default function CrimesPage() {
             default: return null;
           }
         })()}
-
-        <div className="flex items-center justify-between mb-5 reveal">
-          <div>
-            <h1 className="text-lg font-mono tracking-wider text-white/90 flex items-center gap-2 uppercase">
-              <Swords size={16} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" /> Crimes
-            </h1>
-            <p className="text-xs font-mono text-white/30 tracking-wider mt-1">Choose your next hustle</p>
-          </div>
-          <div className="flex items-center gap-2 bg-bg-dark/80 border border-white/5 rounded-sm px-3 py-1.5">
-            <Zap size={13} className="text-neon-yellow" />
-            <span className="font-mono text-xs text-white/90">{tab === "skill-crimes" ? skillTurns : turns}</span>
-            <span className="text-xs font-mono text-white/30">turns</span>
-          </div>
-        </div>
 
         {/* Tab bar */}
         <div className="flex gap-1 mb-4 border-b border-white/5">
@@ -289,7 +355,8 @@ export default function CrimesPage() {
                   key={crime.id}
                   crime={crime}
                   onPlay={() => handlePlay(crime)}
-                  disabled={playing !== null}
+                  onPractice={() => handlePractice(crime)}
+                  disabled={playing !== null || practicing !== null}
                 />
               ))}
 
@@ -312,6 +379,7 @@ export default function CrimesPage() {
             </div>
           )
         )}
+        </div>
       </div>
     </GameLayout>
   );

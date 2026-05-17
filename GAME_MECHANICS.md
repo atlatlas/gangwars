@@ -528,7 +528,7 @@ cost = ALL current turns
 | Jail phonecall | free (once) | Deposit from jail, no turn cost |
 
 - Bank is protected from PvP loot
-- No interest earned
+- 0.4% daily interest earned (prorated by time since last turn refresh)
 
 ---
 
@@ -624,7 +624,7 @@ Payouts calculated when gang detail is loaded (≥1 hour elapsed).
 ### Vault
 - Members can deposit cash (costs 1 turn)
 - Used for operation upgrade costs, turf claiming, arsenal purchases
-- No withdrawal mechanism
+- Leader/enforcer can withdraw (costs 1 turn)
 - Deposit grants gang reputation: 1 rep per $500 deposited
 
 ### Gang Reputation
@@ -659,17 +659,16 @@ reputationToNext = floor(500 × level^1.5)
 - A new contract is generated when rep reaches the next threshold
 
 ### Level Benefits
-| Level | Max Members | Vault Cap | Crime Bonus | PvP Bonus | Tag Color |
-|---|---|---|---|---|---|
-| 1 | 10 | $100K | 0% | 0% | purple |
-| 2 | 12 | $150K | +1% | +2% | purple |
-| 5 | 18 | $300K | +4% | +8% | gold |
-| 10 | 28 | $550K | +9% | +18% | red |
-| 20 | 48 | $1.05M | +19% | +38% | red |
+| Level | Max Members | Crime Bonus | PvP Bonus | Tag Color |
+|---|---|---|---|---|
+| 1 | 10 | 0% | 0% | purple |
+| 2 | 12 | +1% | +2% | purple |
+| 5 | 18 | +4% | +8% | gold |
+| 10 | 28 | +9% | +18% | red |
+| 20 | 48 | +19% | +38% | red |
 
 ```
 maxMembers = 10 + (level - 1) × 2
-vaultCapacity = 100000 + (level - 1) × 50000
 crimeBonus = (level - 1) × 1%
 pvpBonus = (level - 1) × 2%
 tagColor: level ≥ 10 = "red", level ≥ 5 = "gold", level ≥ 3 = "cyan", else "purple"

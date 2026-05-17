@@ -28,7 +28,7 @@ const ASSET_SEEDS: {
 ];
 
 export class TradingEngine {
-  private intervalId: NodeJS.Timeout | null = null;
+  private timeoutId: NodeJS.Timeout | null = null;
   private io: Server;
   private priceCache: Map<number, PriceTick> = new Map();
 
@@ -38,15 +38,24 @@ export class TradingEngine {
 
   start(): void {
     this.seedAssets();
-    this.intervalId = setInterval(() => this.tick(), TICK_INTERVAL);
+    this.scheduleTick();
     console.log("[TradingEngine] Started — 5s tick interval");
   }
 
   stop(): void {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
     }
+  }
+
+  private scheduleTick(): void {
+    const now = Date.now();
+    const nextTick = Math.ceil(now / TICK_INTERVAL) * TICK_INTERVAL;
+    this.timeoutId = setTimeout(() => {
+      this.tick();
+      this.scheduleTick();
+    }, nextTick - now);
   }
 
   private seedAssets(): void {

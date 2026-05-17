@@ -1,21 +1,16 @@
 import { Router, Response } from "express";
 import { z } from "zod";
 import { db, schema } from "../db";
-import { eq, and, like, sql, inArray } from "drizzle-orm";
+import { eq, and, like, sql, inArray, or, desc } from "drizzle-orm";
 import { authMiddleware, AuthRequest, jailCheck, hpCheck } from "../middleware/auth";
 import { refreshTurns } from "./turns";
 import { logActivityEvent } from "./activityEvents";
 import { applyArsenalDurabilityLoss, getUserGangId } from "../utils/arsenalDurability";
-import { addGangReputation } from "../utils/gangReputation";
+import { addGangReputation, recordGangDailyTask } from "../utils/gangReputation";
 import { calcWarfareRatings } from "../utils/combat";
+import { parseItemEffects } from "../utils/itemEffects";
 
 export const pvpRouter = Router();
-
-interface ItemEffects {
-  crimeBonus?: number;
-  pvpPower?: number;
-  arrestReduction?: number;
-}
 
 // ─── Helpers ───
 
@@ -41,22 +36,18 @@ function getCombatBonuses(userId: number): number {
 
   let bonusPower = 0;
   if (weaponRow) {
-    try {
-      const effects = JSON.parse(weaponRow.item.effects) as ItemEffects;
-      bonusPower += effects.pvpPower ?? 0;
-    } catch {}
+    const effects = parseItemEffects(weaponRow.item.effects);
+    bonusPower += effects.pvpPower ?? 0;
   }
 
   // Group footmen by itemId to cap each type at 3 effective copies
   const footmenByType = new Map<number, { count: number; power: number }>();
   for (const f of footmenRows) {
-    try {
-      const effects = JSON.parse(f.item.effects) as ItemEffects;
-      const entry = footmenByType.get(f.item.id) || { count: 0, power: 0 };
-      entry.count++;
-      entry.power += effects.pvpPower ?? 0;
-      footmenByType.set(f.item.id, entry);
-    } catch {}
+    const effects = parseItemEffects(f.item.effects);
+    const entry = footmenByType.get(f.item.id) || { count: 0, power: 0 };
+    entry.count++;
+    entry.power += effects.pvpPower ?? 0;
+    footmenByType.set(f.item.id, entry);
   }
   for (const entry of footmenByType.values()) {
     const capRatio = Math.min(entry.count, 3) / entry.count;
@@ -687,60 +678,9 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
 
     // Auto-track gang daily task for pvp_win-type operations
     if (attackerWins) {
-      const gm = db.select({ gangId: schema.gangMembers.gangId })
-        .from(schema.gangMembers)
-        .where(eq(schema.gangMembers.userId, attacker.id))
-        .all()[0];
-      if (gm) {
-        // Check which active operation this member is assigned to
-        const assignment = db.select({ activeOperationId: schema.gangOperationAssignments.activeOperationId })
-          .from(schema.gangOperationAssignments)
-          .where(and(
-            eq(schema.gangOperationAssignments.userId, attacker.id),
-            eq(schema.gangOperationAssignments.gangId, gm.gangId),
-          ))
-          .all()[0];
-        if (assignment) {
-          const activeOp = db.select()
-            .from(schema.gangActiveOperations)
-            .where(eq(schema.gangActiveOperations.id, assignment.activeOperationId))
-            .all()[0];
-          if (activeOp) {
-            const opDef = db.select()
-            .from(schema.gangOperationDefs)
-            .where(eq(schema.gangOperationDefs.id, activeOp.operationDefId))
-            .all()[0];
-            if (opDef && opDef.dailyTaskType === "pvp_win") {
-            const today = new Date().toISOString().split("T")[0];
-            const existingTask = db.select()
-              .from(schema.gangDailyTasks)
-              .where(and(
-                eq(schema.gangDailyTasks.userId, attacker.id),
-                eq(schema.gangDailyTasks.operationDefId, opDef.id),
-                eq(schema.gangDailyTasks.taskDate, today),
-              ))
-              .all()[0];
-            if (!existingTask) {
-              db.insert(schema.gangDailyTasks).values({
-                gangId: gm.gangId,
-                userId: attacker.id,
-                operationDefId: opDef.id,
-                taskDate: today,
-                completed: true,
-                verifiedAt: now,
-              }).run();
-            } else if (!existingTask.completed) {
-              db.update(schema.gangDailyTasks)
-                .set({ completed: true, verifiedAt: now })
-                .where(eq(schema.gangDailyTasks.id, existingTask.id))
-                .run();
-            }
-            }
-        }
-      }
+      recordGangDailyTask(attacker.id, "pvp_win");
     }
 
-  }
     // Update stats
     const atkStats = await db.query.playerStats.findFirst({
       where: eq(schema.playerStats.userId, attacker.id),
@@ -831,6 +771,52 @@ pvpRouter.post("/players/:id/attack", authMiddleware, jailCheck, hpCheck, async 
     });
   } catch (err) {
     console.error("Attack error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// GET /api/pvp/log — combat log for the current user
+pvpRouter.get("/log", authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId!;
+
+    const logs = db.select({
+      id: schema.pvpLog.id,
+      attackerId: schema.pvpLog.attackerId,
+      defenderId: schema.pvpLog.defenderId,
+      attackType: schema.pvpLog.attackType,
+      attackerWin: schema.pvpLog.attackerWin,
+      lootCash: schema.pvpLog.lootCash,
+      respectChange: schema.pvpLog.respectChange,
+      damageDealt: schema.pvpLog.damageDealt,
+      damageTaken: schema.pvpLog.damageTaken,
+      createdAt: schema.pvpLog.createdAt,
+    })
+      .from(schema.pvpLog)
+      .where(or(
+        eq(schema.pvpLog.attackerId, userId),
+        eq(schema.pvpLog.defenderId, userId),
+      ))
+      .orderBy(desc(schema.pvpLog.createdAt))
+      .limit(50)
+      .all();
+
+    // Batch-fetch usernames for all involved users
+    const allUserIds = [...new Set(logs.flatMap(l => [l.attackerId, l.defenderId]))];
+    const usernames = db.select({ id: schema.users.id, username: schema.users.username })
+      .from(schema.users)
+      .where(inArray(schema.users.id, allUserIds))
+      .all();
+    const userMap = new Map(usernames.map(u => [u.id, u.username]));
+
+    res.json(logs.map(l => ({
+      ...l,
+      attackerWin: !!l.attackerWin,
+      attackerUsername: userMap.get(l.attackerId) ?? "Unknown",
+      defenderUsername: userMap.get(l.defenderId) ?? "Unknown",
+    })));
+  } catch (err) {
+    console.error("PvP log error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

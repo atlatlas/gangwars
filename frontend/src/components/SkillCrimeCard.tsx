@@ -6,11 +6,12 @@ import { Crosshair, Zap, Lock, Star } from "lucide-react";
 interface Props {
   crime: SkillCrimeDefinition;
   onPlay: () => void;
+  onPractice?: () => void;
   disabled?: boolean;
   locked?: boolean;
 }
 
-export default function SkillCrimeCard({ crime, onPlay, disabled, locked }: Props) {
+export default function SkillCrimeCard({ crime, onPlay, onPractice, disabled, locked }: Props) {
   // Difficulty display based on timingSpeed
   const difficulty = crime.timingSpeed <= 1.2 ? "Easy" : crime.timingSpeed <= 2.0 ? "Medium" : "Hard";
   const difficultyColor = difficulty === "Easy" ? "text-emerald-400" : difficulty === "Medium" ? "text-amber-400" : "text-red-400";
@@ -49,17 +50,28 @@ export default function SkillCrimeCard({ crime, onPlay, disabled, locked }: Prop
             <span className="text-white/20">${crime.rewardMin.toLocaleString()}-${crime.rewardMax.toLocaleString()}</span>
           </div>
 
-          <button
-            onClick={onPlay}
-            disabled={disabled || locked}
-            className={`text-[11px] font-mono tracking-wider uppercase px-3 py-1.5 rounded-sm border transition-all duration-200 ${
-              locked
-                ? "border-white/5 text-white/10 cursor-not-allowed"
-                : "border-cyan-400/20 text-cyan-400/80 hover:bg-cyan-400/10 hover:border-cyan-400/30 active:scale-95"
-            }`}
-          >
-            {locked ? "Locked" : disabled ? "..." : "Play"}
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {onPractice && !locked && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onPractice(); }}
+                disabled={disabled}
+                className="text-[10px] font-mono tracking-wider uppercase px-2 py-1.5 rounded-sm border border-white/5 text-white/30 hover:text-white/60 hover:border-white/10 transition-all duration-200 active:scale-95"
+              >
+                Practice
+              </button>
+            )}
+            <button
+              onClick={onPlay}
+              disabled={disabled || locked}
+              className={`text-[11px] font-mono tracking-wider uppercase px-3 py-1.5 rounded-sm border transition-all duration-200 ${
+                locked
+                  ? "border-white/5 text-white/10 cursor-not-allowed"
+                  : "border-cyan-400/20 text-cyan-400/80 hover:bg-cyan-400/10 hover:border-cyan-400/30 active:scale-95"
+              }`}
+            >
+              {locked ? "Locked" : disabled ? "..." : "Play"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

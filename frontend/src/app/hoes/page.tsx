@@ -5,7 +5,8 @@ import GameLayout from "@/components/GameLayout";
 import { hoes as hoesApi } from "@/lib/api";
 import { useUser } from "@/lib/UserContext";
 import { useTopNotification } from "@/components/TopNotification";
-import { DollarSign, Users, Eye, TrendingUp, RefreshCw, Plus, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
+import Image from "next/image";
+import { DollarSign, Users, Eye, TrendingUp, RefreshCw, Plus, ShieldAlert, ShieldCheck, AlertTriangle, Star } from "lucide-react";
 
 interface Hoe {
   id: number;
@@ -145,13 +146,39 @@ export default function HoesPage() {
 
   return (
     <GameLayout>
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        <div className="mb-5 reveal">
-          <h1 className="text-lg font-mono tracking-wider text-white/90 flex items-center gap-2 uppercase">
-            <Eye size={16} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" /> Hoes
-          </h1>
-          <p className="text-xs font-mono text-white/30 tracking-wider mt-1">Manage your stable. They work for you.</p>
+      {/* Hero Section */}
+      <div className="relative mb-0 h-[180px] md:h-[260px]">
+        <div className="absolute inset-0 z-0 bg-gradient-to-r from-pink-500/5 via-purple-500/5 to-cyan-500/5" />
+        <Image
+          src="/hoes.png?v=1"
+          alt="Hoes"
+          width={1897}
+          height={829}
+          className="w-full h-full max-h-[200px] md:max-h-[280px] object-cover object-bottom relative z-0"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 z-10 px-4 md:px-6 pb-3 md:pb-4">
+          <div className="flex items-center gap-2">
+            <Eye size={18} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.3)]" />
+            <h1 className="text-lg md:text-xl font-bold text-white drop-shadow-lg">Hoes</h1>
+          </div>
+          <div className="w-36 h-px bg-pink-400/40 mt-1 mb-2" />
+          <div className="bg-black/30 backdrop-blur-sm rounded-sm px-2 py-1.5 mb-1 -mx-1 border-t border-l border-white/10">
+            <p className="text-[10px] md:text-xs font-mono text-white/60 tracking-wider">
+              Manage your stable. Recruit, collect earnings, and keep them protected.
+              <br />Charisma and skills determine how much your hoes bring in.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+            <Star size={10} className="text-pink-400 drop-shadow-[0_0_4px_rgba(236,72,153,0.5)]" fill="#f472b6" />
+            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-pink-500/40 to-transparent" />
+          </div>
         </div>
+      </div>
+      <div className="shadow-[inset_0_20px_20px_-12px_rgba(0,0,0,0.7)] border-t border-pink-500/15">
+        <div className="max-w-5xl mx-auto px-4 py-6">
 
         {/* Pending earnings banner */}
         {totalPending > 0 && (
@@ -315,6 +342,7 @@ export default function HoesPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </GameLayout>
   );
